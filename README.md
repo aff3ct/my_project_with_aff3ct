@@ -5,6 +5,7 @@ First, clone `aff3ct` into the `lib` folder:
     $ git clone git@gitlab.inria.fr:fec/aff3ct.git lib/aff3ct
 
 And then, compile the code:
+
     $ mkdir build
     $ cd build
     $ cmake .. -G"Unix Makefiles" -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-funroll-loops -march=native -DENABLE_COOL_BASH"
