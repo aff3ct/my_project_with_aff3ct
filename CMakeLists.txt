@@ -7,6 +7,13 @@ project (my_project)
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 set (CMAKE_MACOSX_RPATH 1)
 
+# Enable C++11
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+    set (CMAKE_CXX_STANDARD 14)
+else ()
+    set (CMAKE_CXX_STANDARD 11)
+endif()
+
 # Specify bin path
 set (EXECUTABLE_OUTPUT_PATH bin/)
 
@@ -27,15 +34,15 @@ add_subdirectory(lib/aff3ct/)
 target_link_libraries (my_project-bin aff3ct-shared-lib)
 include_directories (lib/aff3ct/src/)
 
-# Enable C++11 and pthread
+# Enable pthread
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"
         OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
-    add_definitions (-std=c++1y -Wno-overloaded-virtual)
+    add_definitions (-Wno-overloaded-virtual)
     target_link_libraries (my_project-bin -lpthread)
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    add_definitions (-std=c++11 -pthread)
+    add_definitions (-pthread)
     target_link_libraries (my_project-bin -lpthread)
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-    add_definitions (-std=c++11 -pthread)
+    add_definitions (-pthread)
     target_link_libraries (my_project-bin -pthread)
 endif()
