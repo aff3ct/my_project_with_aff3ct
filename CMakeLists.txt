@@ -29,14 +29,14 @@ set_target_properties (my_project-bin PROPERTIES OUTPUT_NAME my_project)
 
 # Add AFF3CT as a library
 add_definitions (-DMULTI_PREC)
-set(ENABLE_EXEC OFF CACHE BOOL "Enable to compile AFF3CT executable" FORCE)
+set(ENABLE_SHARED_LIB ON  CACHE BOOL "Enable to compile AFF3CT shared library" FORCE)
+set(ENABLE_EXEC       OFF CACHE BOOL "Enable to compile AFF3CT executable"     FORCE)
 add_subdirectory(lib/aff3ct/)
 target_link_libraries (my_project-bin aff3ct-shared-lib)
 include_directories (lib/aff3ct/src/)
 
 # Enable pthread
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"
-        OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
     add_definitions (-Wno-overloaded-virtual)
     target_link_libraries (my_project-bin -lpthread)
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
