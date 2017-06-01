@@ -9,7 +9,7 @@ int main(int argc, char** argv)
 	std::cout << "# This is a basic program using the AFF3CT library."      << std::endl;
 	std::cout << "# Feel free to improve it as you want to fit your needs." << std::endl;
 	std::cout << "#-------------------------------------------------------" << std::endl;
-	std::cout << "#"                                                       << std::endl;
+	std::cout << "#"                                                        << std::endl;
 
 	const int   fe       = 100;                 // frame errors
 	const int   K        = 32;                  // info bits
@@ -35,15 +35,12 @@ int main(int argc, char** argv)
 	mipp::vector<float> LLRs         (N);
 	mipp::vector<int  > dec_bits     (K);
 
-	auto ebn0  = ebn0_min;
-	auto esn0  = aff3ct::tools::ebn0_to_esn0 (ebn0, R);
-	auto sigma = aff3ct::tools::esn0_to_sigma(esn0   );
-
-	// create AFF3CT objects
+	// create the AFF3CT objects
+	float ebn0, esn0, sigma;
 	aff3ct::module::Source_random<>          source  (K                          );
 	aff3ct::module::Encoder_repetition_sys<> encoder (K, N                       );
-	aff3ct::module::Modem_BPSK<>             modem   (N, sigma                   );
-	aff3ct::module::Channel_AWGN_LLR<>       channel (N, sigma                   );
+	aff3ct::module::Modem_BPSK<>             modem   (N                          );
+	aff3ct::module::Channel_AWGN_LLR<>       channel (N                          );
 	aff3ct::module::Decoder_repetition_std<> decoder (K, N                       );
 	aff3ct::module::Monitor_std<>            monitor (K, fe                      );
 	aff3ct::tools ::Terminal_BFER<>          terminal(K, N, monitor, &esn0, &ebn0);
