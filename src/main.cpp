@@ -5,39 +5,68 @@
 
 int main(int argc, char** argv)
 {
-	constexpr int    size  = 16;
-	constexpr double sigma = 1.f;
+	std::cout << "-------------------------------------------------------" << std::endl;
+	std::cout << " This is a basic program using the AFF3CT library."      << std::endl;
+	std::cout << " Feel free to improve it as you want to fit your needs." << std::endl;
+	std::cout << "-------------------------------------------------------" << std::endl;
+	std::cout <<                                                              std::endl;
 	
-	// buffers
-	mipp::vector<int  > refs (size);
-	mipp::vector<int  > bits (size);
-	mipp::vector<float> symbs(size);
-	mipp::vector<float> LLRs (size);
+	const int   K        = 16;    // frame size
+	const int   fe       = 100;   // frame errors
+	const float ebn0_min = 1.00f; // dB
+	const float ebn0_max = 10.1f; // dB
 
-	// AFF3CT objects
-	aff3ct::module::Source_random<>        source   (size       );
-	aff3ct::module::Encoder_NO<>           encoder  (size, size );
-	aff3ct::module::Modulator_BPSK<>       modulator(size, sigma);
-	aff3ct::module::Channel_AWGN_std_LLR<> channel  (size, sigma);
-	aff3ct::module::Decoder_NO<>           decoder  (size, size );
-	aff3ct::tools ::Frame_trace<>          trace    (size       );
+	auto ebn0  = ebn0_min;  
+	auto esn0  = aff3ct::tools::ebn0_to_esn0 (ebn0);
+	auto sigma = aff3ct::tools::esn0_to_sigma(esn0);
+	
+	// buffers to store the data
+	mipp::vector<int  > refs (K);
+	mipp::vector<int  > bits (K);
+	mipp::vector<float> symbs(K);
+	mipp::vector<float> LLRs (K);
 
-	// run a small simulation chain
-	source   .generate   (       refs );
-	encoder  .encode     (refs,  bits );
-	modulator.modulate   (bits,  symbs);
-	channel  .add_noise  (symbs, LLRs );
-	modulator.demodulate (LLRs,  LLRs );
-	decoder  .hard_decode(LLRs,  bits );
+	// create AFF3CT objects
+	aff3ct::module::Source_random<>    source  (K                       );
+	aff3ct::module::Encoder_NO<>       encoder (K                       );
+	aff3ct::module::Modem_BPSK<>       modem   (K, sigma                );
+	aff3ct::module::Channel_AWGN_LLR<> channel (K, sigma                );
+	aff3ct::module::Decoder_NO<>       decoder (K                       );
+	aff3ct::module::Monitor_std<>      monitor (K, fe                   );
+	aff3ct::tools ::Terminal_BFER<>    terminal(K, monitor, &esn0, &ebn0);
 
-	// display the resulting bits
-	std::cout << "AFF3CT Hello World!" << std::endl;
+	// display the legend in the terminal
+	terminal.legend();
 
-	std::cout << "Input bits:" << std::endl;
-	trace.display_bit_vector(refs);
+	// a loop over the various SNRs
+	for (ebn0 = ebn0_min; ebn0 < ebn0_max; ebn0 += 1.f)
+	{
+		// compute the current sigma for the channel noise
+		esn0  = aff3ct::tools::ebn0_to_esn0 (ebn0);
+		sigma = aff3ct::tools::esn0_to_sigma(esn0);
 
-	std::cout << "Output bits:" << std::endl;
-	trace.display_bit_vector(bits, refs);
+		// update the sigma of the modem and the channel
+		modem  .set_sigma(sigma);
+		channel.set_sigma(sigma);
+
+		// run a small simulation chain
+		while (!monitor.fe_limit_achieved())
+		{
+			source .generate    (       refs );
+			encoder.encode      (refs,  bits );
+			modem  .modulate    (bits,  symbs);
+			channel.add_noise   (symbs, LLRs );
+			modem  .demodulate  (LLRs,  LLRs );
+			decoder.hard_decode (LLRs,  bits );
+			monitor.check_errors(bits,  refs );
+		}
+
+		// diplay the performance (BER and FER) in the terminal
+		terminal.final_report();
+
+		// reset the monitor for the next SNR
+		monitor.reset();
+	}
 
 	return 0;
 }
