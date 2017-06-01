@@ -10,7 +10,7 @@ int main(int argc, char** argv)
 	std::cout << " Feel free to improve it as you want to fit your needs." << std::endl;
 	std::cout << "-------------------------------------------------------" << std::endl;
 	std::cout <<                                                              std::endl;
-	
+
 	const int   K        = 16;    // frame size
 	const int   fe       = 100;   // frame errors
 	const float ebn0_min = 1.00f; // dB
@@ -21,10 +21,11 @@ int main(int argc, char** argv)
 	auto sigma = aff3ct::tools::esn0_to_sigma(esn0);
 	
 	// buffers to store the data
-	mipp::vector<int  > refs (K);
-	mipp::vector<int  > bits (K);
-	mipp::vector<float> symbs(K);
-	mipp::vector<float> LLRs (K);
+	mipp::vector<int  > ref_bits     (K);
+	mipp::vector<float> symbols      (K);
+	mipp::vector<float> noisy_symbols(K);
+	mipp::vector<float> LLRs         (K);
+	mipp::vector<int  > dec_bits     (K);
 
 	// create AFF3CT objects
 	aff3ct::module::Source_random<>    source  (K                       );
@@ -52,13 +53,13 @@ int main(int argc, char** argv)
 		// run a small simulation chain
 		while (!monitor.fe_limit_achieved())
 		{
-			source .generate    (       refs );
-			encoder.encode      (refs,  bits );
-			modem  .modulate    (bits,  symbs);
-			channel.add_noise   (symbs, LLRs );
-			modem  .demodulate  (LLRs,  LLRs );
-			decoder.hard_decode (LLRs,  bits );
-			monitor.check_errors(bits,  refs );
+			source .generate    (               ref_bits     );
+			encoder.encode      (ref_bits,      ref_bits     );
+			modem  .modulate    (ref_bits,      symbols      );
+			channel.add_noise   (symbols,       noisy_symbols);
+			modem  .demodulate  (noisy_symbols, LLRs         );
+			decoder.hard_decode (LLRs,          dec_bits     );
+			monitor.check_errors(dec_bits,      ref_bits     );
 		}
 
 		// diplay the performance (BER and FER) in the terminal
