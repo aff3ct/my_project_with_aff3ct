@@ -36,24 +36,27 @@ int main(int argc, char** argv)
 	mipp::vector<int  > dec_bits     (K);
 
 	// create the AFF3CT objects
-	float ebn0, esn0, sigma;
-	aff3ct::module::Source_random<>          source  (K                          );
-	aff3ct::module::Encoder_repetition_sys<> encoder (K, N                       );
-	aff3ct::module::Modem_BPSK<>             modem   (N                          );
-	aff3ct::module::Channel_AWGN_LLR<>       channel (N                          );
-	aff3ct::module::Decoder_repetition_std<> decoder (K, N                       );
-	aff3ct::module::Monitor_std<>            monitor (K, fe                      );
-	aff3ct::tools ::Terminal_BFER<>          terminal(K, N, monitor, &esn0, &ebn0);
+	aff3ct::module::Source_random<>          source  (K            );
+	aff3ct::module::Encoder_repetition_sys<> encoder (K, N         );
+	aff3ct::module::Modem_BPSK<>             modem   (N            );
+	aff3ct::module::Channel_AWGN_LLR<>       channel (N            );
+	aff3ct::module::Decoder_repetition_std<> decoder (K, N         );
+	aff3ct::module::Monitor_std<>            monitor (K, fe        );
+	aff3ct::tools ::Terminal_BFER<>          terminal(K, N, monitor);
 
 	// display the legend in the terminal
 	terminal.legend();
 
 	// a loop over the various SNRs
-	for (ebn0 = ebn0_min; ebn0 < ebn0_max; ebn0 += 1.f)
+	for (auto ebn0 = ebn0_min; ebn0 < ebn0_max; ebn0 += 1.f)
 	{
 		// compute the current sigma for the channel noise
-		esn0  = aff3ct::tools::ebn0_to_esn0 (ebn0, R);
-		sigma = aff3ct::tools::esn0_to_sigma(esn0   );
+		const auto esn0  = aff3ct::tools::ebn0_to_esn0 (ebn0, R);
+		const auto sigma = aff3ct::tools::esn0_to_sigma(esn0   );
+
+		// give the current SNR to the terminal
+		terminal.set_esn0(esn0);
+		terminal.set_ebn0(ebn0);
 
 		// update the sigma of the modem and the channel
 		modem  .set_sigma(sigma);
