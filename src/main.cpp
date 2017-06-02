@@ -11,15 +11,17 @@ int main(int argc, char** argv)
 	std::cout << "#-------------------------------------------------------" << std::endl;
 	std::cout << "#"                                                        << std::endl;
 
-	const int   fe       = 100;                 // frame errors
-	const int   K        = 32;                  // info bits
-	const int   N        = 128;                 // frame size
-	const float R        = (float)K / (float)N; // code rate
-	const float ebn0_min = 0.00f;               // dB
-	const float ebn0_max = 10.1f;               // dB
+	const int   fe       = 100;
+	const int   seed     = argc >= 2 ? std::atoi(argv[1]) : 0;
+	const int   K        = 32;
+	const int   N        = 128;
+	const float R        = (float)K / (float)N;
+	const float ebn0_min = 0.00f;
+	const float ebn0_max = 10.1f;
 
 	std::cout << "# Simulation parameters: "         << std::endl;
 	std::cout << "# * Frame errors   = " << fe       << std::endl;
+	std::cout << "# * Noise seed     = " << seed     << std::endl;
 	std::cout << "# * Info. bits (K) = " << K        << std::endl;
 	std::cout << "# * Frame size (N) = " << N        << std::endl;
 	std::cout << "# * Code rate  (R) = " << R        << std::endl;
@@ -39,7 +41,7 @@ int main(int argc, char** argv)
 	aff3ct::module::Source_random<>          source  (K            );
 	aff3ct::module::Encoder_repetition_sys<> encoder (K, N         );
 	aff3ct::module::Modem_BPSK<>             modem   (N            );
-	aff3ct::module::Channel_AWGN_LLR<>       channel (N            );
+	aff3ct::module::Channel_AWGN_LLR<>       channel (N, seed      );
 	aff3ct::module::Decoder_repetition_std<> decoder (K, N         );
 	aff3ct::module::Monitor_std<>            monitor (K, fe        );
 	aff3ct::tools ::Terminal_BFER<>          terminal(K, N, monitor);
