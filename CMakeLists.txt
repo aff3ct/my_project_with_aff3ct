@@ -4,6 +4,7 @@ cmake_minimum_required (VERSION 3.0.2)
 project (my_project)
 
 # Set the path to the CMake modules
+set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 set (CMAKE_MACOSX_RPATH 1)
 
 # Enable C++11
