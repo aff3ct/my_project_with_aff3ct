@@ -4,7 +4,6 @@ cmake_minimum_required (VERSION 3.0.2)
 project (my_project)
 
 # Set the path to the CMake modules
-set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 set (CMAKE_MACOSX_RPATH 1)
 
 # Enable C++11
@@ -29,10 +28,10 @@ set_target_properties (my_project-bin PROPERTIES OUTPUT_NAME my_project)
 
 # Add AFF3CT as a library
 add_definitions (-DMULTI_PREC)
-set(ENABLE_SHARED_LIB ON  CACHE BOOL "Enable to compile AFF3CT shared library" FORCE)
+set(ENABLE_STATIC_LIB ON  CACHE BOOL "Enable to compile AFF3CT static library" FORCE)
 set(ENABLE_EXEC       OFF CACHE BOOL "Enable to compile AFF3CT executable"     FORCE)
 add_subdirectory(lib/aff3ct/)
-target_link_libraries (my_project-bin aff3ct-shared-lib)
+target_link_libraries (my_project-bin aff3ct-static-lib)
 include_directories (lib/aff3ct/src/)
 
 # Enable pthread
