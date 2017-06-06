@@ -19,15 +19,15 @@ int main(int argc, char** argv)
 	const float ebn0_min = 0.00f;
 	const float ebn0_max = 10.1f;
 
-	std::cout << "# Simulation parameters: "         << std::endl;
-	std::cout << "# * Frame errors   = " << fe       << std::endl;
-	std::cout << "# * Noise seed     = " << seed     << std::endl;
-	std::cout << "# * Info. bits (K) = " << K        << std::endl;
-	std::cout << "# * Frame size (N) = " << N        << std::endl;
-	std::cout << "# * Code rate  (R) = " << R        << std::endl;
-	std::cout << "# * SNR min   (dB) = " << ebn0_min << std::endl;
-	std::cout << "# * SNR max   (dB) = " << ebn0_max << std::endl;
-	std::cout << "#"                                 << std::endl;
+	std::cout << "# * Simulation parameters: "           << std::endl;
+	std::cout << "#    ** Frame errors   = " << fe       << std::endl;
+	std::cout << "#    ** Noise seed     = " << seed     << std::endl;
+	std::cout << "#    ** Info. bits (K) = " << K        << std::endl;
+	std::cout << "#    ** Frame size (N) = " << N        << std::endl;
+	std::cout << "#    ** Code rate  (R) = " << R        << std::endl;
+	std::cout << "#    ** SNR min   (dB) = " << ebn0_min << std::endl;
+	std::cout << "#    ** SNR max   (dB) = " << ebn0_max << std::endl;
+	std::cout << "#"                                     << std::endl;
 
 	// buffers to store the data
 	mipp::vector<int  > ref_bits     (K);

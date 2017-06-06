@@ -8,7 +8,7 @@ Compile the code on Linux/MacOS/MinGW:
 
     $ mkdir build
     $ cd build
-    $ cmake .. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-funroll-loops -march=native -DENABLE_COOL_BASH"
+    $ cmake .. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-funroll-loops -march=native"
     $ make -j4
 
 Create the project on Windows (Visual Studio, MSVC)
