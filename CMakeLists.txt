@@ -31,9 +31,24 @@ set_target_properties (my_project-bin PROPERTIES OUTPUT_NAME my_project)
 add_definitions (-DMULTI_PREC)
 set(ENABLE_STATIC_LIB ON  CACHE BOOL "Enable to compile AFF3CT static library" FORCE)
 set(ENABLE_EXEC       OFF CACHE BOOL "Enable to compile AFF3CT executable"     FORCE)
-add_subdirectory(lib/aff3ct/)
-target_link_libraries (my_project-bin aff3ct-static-lib)
-include_directories (lib/aff3ct/src/)
+
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/CMakeLists.txt")
+    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/")
+    target_link_libraries (my_project-bin aff3ct-static-lib)
+    include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/src/")
+    message(STATUS "AFF3CT found")
+else ()
+    message(FATAL_ERROR "AFF3CT can't be found, try to init the submodules with the following cmd:\n"
+                        "$ git submodule update --init --recursive")
+endif ()
+
+# Add MIPP wrapper includes
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/lib/MIPP/src/mipp.h")
+    include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/lib/MIPP/src/")
+else ()
+    message(FATAL_ERROR "MIPP can't be found, try to init the submodules with the following cmd:\n"
+                        "$ git submodule update --init --recursive")
+endif ()
 
 # Enable pthread
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
