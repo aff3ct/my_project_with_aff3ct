@@ -76,7 +76,7 @@ int main(int argc, char** argv)
 			monitor.check_errors(dec_bits,      ref_bits     );
 		}
 
-		// diplay the performance (BER and FER) in the terminal
+		// display the performance (BER and FER) in the terminal
 		terminal.final_report();
 
 		// reset the monitor for the next SNR
