@@ -1,6 +1,5 @@
+#include <vector>
 #include <iostream>
-
-// AFF3CT header
 #include <aff3ct.hpp>
 
 int main(int argc, char** argv)
