@@ -30,12 +30,12 @@ int main(int argc, char** argv)
 	std::cout << "#"                                     << std::endl;
 
 	// buffers to store the data
-	mipp::vector<int  > ref_bits     (K);
-	mipp::vector<int  > enc_bits     (N);
-	mipp::vector<float> symbols      (N);
-	mipp::vector<float> noisy_symbols(N);
-	mipp::vector<float> LLRs         (N);
-	mipp::vector<int  > dec_bits     (K);
+	std::vector<int  > ref_bits     (K);
+	std::vector<int  > enc_bits     (N);
+	std::vector<float> symbols      (N);
+	std::vector<float> noisy_symbols(N);
+	std::vector<float> LLRs         (N);
+	std::vector<int  > dec_bits     (K);
 
 	// create the AFF3CT objects
 	aff3ct::module::Source_random<>          source  (K            );
@@ -72,7 +72,7 @@ int main(int argc, char** argv)
 			modem  .modulate    (enc_bits,      symbols      );
 			channel.add_noise   (symbols,       noisy_symbols);
 			modem  .demodulate  (noisy_symbols, LLRs         );
-			decoder.hard_decode (LLRs,          dec_bits     );
+			decoder.decode_siho (LLRs,          dec_bits     );
 			monitor.check_errors(dec_bits,      ref_bits     );
 		}
 
