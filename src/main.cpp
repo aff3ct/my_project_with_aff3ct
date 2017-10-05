@@ -37,13 +37,13 @@ int main(int argc, char** argv)
 	std::vector<int  > dec_bits     (K);
 
 	// create the AFF3CT objects
-	aff3ct::module::Source_random<>          source  (K            );
-	aff3ct::module::Encoder_repetition_sys<> encoder (K, N         );
-	aff3ct::module::Modem_BPSK<>             modem   (N            );
-	aff3ct::module::Channel_AWGN_LLR<>       channel (N, seed      );
-	aff3ct::module::Decoder_repetition_std<> decoder (K, N         );
-	aff3ct::module::Monitor_std<>            monitor (K, fe        );
-	aff3ct::tools ::Terminal_BFER<>          terminal(K, N, monitor);
+	aff3ct::module::Source_random<>          source  (K      );
+	aff3ct::module::Encoder_repetition_sys<> encoder (K, N   );
+	aff3ct::module::Modem_BPSK<>             modem   (N      );
+	aff3ct::module::Channel_AWGN_LLR<>       channel (N, seed);
+	aff3ct::module::Decoder_repetition_std<> decoder (K, N   );
+	aff3ct::module::Monitor_BFER<>           monitor (K, fe  );
+	aff3ct::tools ::Terminal_BFER<>          terminal(monitor);
 
 	// display the legend in the terminal
 	terminal.legend();
