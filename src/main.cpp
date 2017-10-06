@@ -123,15 +123,8 @@ int new_main(int argc, char** argv)
 	aff3ct::module::Monitor_BFER<>           monitor (K, fe  );
 	aff3ct::tools ::Terminal_BFER<>          terminal(monitor);
 
-	std::vector<aff3ct::module::Module*> modules;
-	modules.push_back(&source);
-	modules.push_back(&encoder);
-	modules.push_back(&modem);
-	modules.push_back(&channel);
-	modules.push_back(&decoder);
-	modules.push_back(&monitor);
-
 	// configuration of the tasks
+	std::vector<aff3ct::module::Module*> modules = {&source, &encoder, &modem, &channel, &decoder, &monitor};
 	for (auto *m : modules)
 		for (auto &t : m->tasks)
 		{
