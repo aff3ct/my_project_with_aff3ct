@@ -118,41 +118,42 @@ int new_main(int argc, char** argv)
 	std::cout << "#    ** SNR max   (dB) = " << ebn0_max << std::endl;
 	std::cout << "#"                                     << std::endl;
 
-	// create the AFF3CT objects
+	// create the AFF3CT modules
 	aff3ct::module::Source_random<>          source  (K      );
 	aff3ct::module::Encoder_repetition_sys<> encoder (K, N   );
 	aff3ct::module::Modem_BPSK<>             modem   (N      );
 	aff3ct::module::Channel_AWGN_LLR<>       channel (N, seed);
 	aff3ct::module::Decoder_repetition_std<> decoder (K, N   );
 	aff3ct::module::Monitor_BFER<>           monitor (K, fe  );
-	aff3ct::tools ::Terminal_BFER<>          terminal(monitor);
 
-	// configuration of the tasks
+	// configuration of the module tasks
 	std::vector<const aff3ct::module::Module*> modules = {&source, &encoder, &modem, &channel, &decoder, &monitor};
 	for (auto *m : modules)
-		for (auto &t : m->tasks)
+		for (auto *t : m->tasks)
 		{
-			t.second->set_autoalloc  (true ); // enable the automatic allocation of the data in the tasks
-			t.second->set_autoexec   (false); // disable the auto execution mode of the tasks
-			t.second->set_debug      (false); // disable the debug mode
-			t.second->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
-			t.second->set_stats      (true ); // enable the statistics
+			t->set_autoalloc  (true ); // enable the automatic allocation of the data in the tasks
+			t->set_autoexec   (false); // disable the auto execution mode of the tasks
+			t->set_debug      (false); // disable the debug mode
+			t->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
+			t->set_stats      (true ); // enable the statistics
 
-			// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats mode
-			if (!t.second->is_debug() && !t.second->is_stats())
-				t.second->set_fast(true);
+			// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
+			if (!t->is_debug() && !t->is_stats())
+				t->set_fast(true);
 		}
 
-	// sockets binding (connect the sockets of tasks = fill the input sockets with the output sockets)
-	encoder["encode"      ]["U_K" ].bind(source ["generate"   ]["U_K" ]);
-	modem  ["modulate"    ]["X_N1"].bind(encoder["encode"     ]["X_N" ]);
-	channel["add_noise"   ]["X_N" ].bind(modem  ["modulate"   ]["X_N2"]);
-	modem  ["demodulate"  ]["Y_N1"].bind(channel["add_noise"  ]["Y_N" ]);
-	decoder["decode_siho" ]["Y_N" ].bind(modem  ["demodulate" ]["Y_N2"]);
-	monitor["check_errors"]["U"   ].bind(encoder["encode"     ]["U_K" ]);
-	monitor["check_errors"]["V"   ].bind(decoder["decode_siho"]["V_K" ]);
+	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
+	using namespace aff3ct::module;
+	encoder[enc::tsk::encode      ][enc::sck::encode      ::U_K ](source [src::tsk::generate   ][src::sck::generate   ::U_K ]);
+	modem  [mdm::tsk::modulate    ][mdm::sck::modulate    ::X_N1](encoder[enc::tsk::encode     ][enc::sck::encode     ::X_N ]);
+	channel[chn::tsk::add_noise   ][chn::sck::add_noise   ::X_N ](modem  [mdm::tsk::modulate   ][mdm::sck::modulate   ::X_N2]);
+	modem  [mdm::tsk::demodulate  ][mdm::sck::demodulate  ::Y_N1](channel[chn::tsk::add_noise  ][chn::sck::add_noise  ::Y_N ]);
+	decoder[dec::tsk::decode_siho ][dec::sck::decode_siho ::Y_N ](modem  [mdm::tsk::demodulate ][mdm::sck::demodulate ::Y_N2]);
+	monitor[mnt::tsk::check_errors][mnt::sck::check_errors::U   ](encoder[enc::tsk::encode     ][enc::sck::encode     ::U_K ]);
+	monitor[mnt::tsk::check_errors][mnt::sck::check_errors::V   ](decoder[dec::tsk::decode_siho][dec::sck::decode_siho::V_K ]);
 
-	// display the legend in the terminal
+	// create a Terminal and display the legend
+	aff3ct::tools::Terminal_BFER<> terminal(monitor);
 	terminal.legend();
 
 	// a loop over the various SNRs
@@ -176,13 +177,13 @@ int new_main(int argc, char** argv)
 		// run the simulation chain
 		while (!monitor.fe_limit_achieved())
 		{
-			source ["generate"    ].exec();
-			encoder["encode"      ].exec();
-			modem  ["modulate"    ].exec();
-			channel["add_noise"   ].exec();
-			modem  ["demodulate"  ].exec();
-			decoder["decode_siho" ].exec();
-			monitor["check_errors"].exec();
+			source [src::tsk::generate    ].exec();
+			encoder[enc::tsk::encode      ].exec();
+			modem  [mdm::tsk::modulate    ].exec();
+			channel[chn::tsk::add_noise   ].exec();
+			modem  [mdm::tsk::demodulate  ].exec();
+			decoder[dec::tsk::decode_siho ].exec();
+			monitor[mnt::tsk::check_errors].exec();
 		}
 
 		// display the performance (BER and FER) in the terminal
@@ -194,7 +195,8 @@ int new_main(int argc, char** argv)
 	std::cout << "#" << std::endl;
 
 	// display the statistics of the tasks (if enabled)
-	aff3ct::tools::Stats::show(modules, true);
+	auto ordered = true;
+	aff3ct::tools::Stats::show(modules, ordered);
 
 	std::cout << "#" << std::endl;
 	std::cout << "# Powered by AFF3CT (v" << aff3ct::version_major() << "." << aff3ct::version_minor() << "."
