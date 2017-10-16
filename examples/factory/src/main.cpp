@@ -19,29 +19,18 @@ int main(int argc, char** argv)
 	std::vector<aff3ct::factory::Factory::parameters*> params = {&p_src, &p_cdc, &p_mdm, &p_chn, &p_mnt, &p_ter};
 
 	// build the required and optional arguments for the cmd line
-	aff3ct::factory::arg_map req_args, opt_args;
-	for (auto *p : params)
-		p->get_description(req_args, opt_args);
+	auto args = aff3ct::factory::Factory::get_description(params);
 
 	// parse the argument from the command line and store them in the parameter objects
 	aff3ct::tools::Arguments_reader areader(argc, (const char**)argv);
-
-	if (areader.parse_arguments(req_args, opt_args))
-		for (auto *p : params)
-			p->store(areader.get_args());
+	if (areader.parse_arguments(args.first, args.second))
+	{
+		aff3ct::factory::Factory::store(params, areader.get_args());
+	}
 	else // if some required arguments are missing, display the help and exit the code
 	{
 		// create groups of arguments
-		aff3ct::factory::arg_grp grps;
-		for (auto *p : params)
-		{
-			auto prefixes = p->get_prefixes();
-			auto short_names = p->get_short_names();
-			assert(prefixes.size() == short_names.size());
-
-			for (size_t i = 0; i < prefixes.size(); i++)
-				grps.push_back({prefixes[i], short_names[i] + " parameter(s)"});
-		}
+		auto grps = aff3ct::factory::Factory::create_groups(params);
 
 		// display the command usage and the help (the parameters are ordered by group)
 		areader.print_usage(grps);
@@ -56,19 +45,7 @@ int main(int argc, char** argv)
 	std::cout << "# Feel free to improve it as you want to fit your needs." << std::endl;
 	std::cout << "#-------------------------------------------------------" << std::endl;
 	std::cout << "#"                                                        << std::endl;
-	for (auto *p : params)
-	{
-		std::map<std::string,aff3ct::factory::header_list> headers;
-		p->get_headers(headers, true);
-
-		auto prefixes = p->get_prefixes();
-		auto short_names = p->get_short_names();
-		assert(prefixes.size() == short_names.size());
-
-		for (size_t i = 0; i < prefixes.size(); i++)
-			if (headers[prefixes[i]].size())
-				aff3ct::factory::Header::print_parameters(prefixes[i], short_names[i], headers[prefixes[i]], 25);
-	}
+	aff3ct::factory::Header::print_parameters(params);
 	std::cout << "#" << std::endl;
 
 	// create the AFF3CT modules
@@ -155,12 +132,7 @@ int main(int argc, char** argv)
 	aff3ct::tools::Stats::show(modules, ordered);
 
 	// delete the aff3ct objects
-	delete source;
-	delete modem;
-	delete channel;
-	delete monitor;
-	delete codec;
-	delete terminal;
+	delete source; delete modem; delete channel; delete monitor; delete codec; delete terminal;
 
 	std::cout << "# End of the simulation" << std::endl;
 
