@@ -3,7 +3,7 @@
 #include <iostream>
 #include <aff3ct.hpp>
 
-constexpr float ebn0_min = 0.00f;
+constexpr float ebn0_min =  0.0f;
 constexpr float ebn0_max = 10.1f;
 
 int main(int argc, char** argv)
@@ -87,13 +87,24 @@ int main(int argc, char** argv)
 	auto *terminal = p_ter.build(*monitor);
 	terminal->legend();
 
+	// reset the memory of the decoder after the end of each communication
+	monitor->add_handler_check(std::bind(&aff3ct::module::Decoder::reset, decoder));
+
+	// initialize the interleaver if this code use an interleaver
+	try
+	{
+		auto interleaver = codec->get_interleaver();
+		interleaver->init();
+	}
+	catch (const std::exception&) { /* do nothing if there is no interleaver */ }
+
 	// a loop over the various SNRs
-	const float R = (float)p_cdc.enc->K / (float)p_cdc.enc->N_cw;
+	const float R = (float)p_cdc.enc->K / (float)p_cdc.enc->N_cw; // compute the code rate
 	for (auto ebn0 = ebn0_min; ebn0 < ebn0_max; ebn0 += 1.f)
 	{
 		// compute the current sigma for the channel noise
-		const auto esn0  = aff3ct::tools::ebn0_to_esn0 (ebn0, R);
-		const auto sigma = aff3ct::tools::esn0_to_sigma(esn0   );
+		const auto esn0  = aff3ct::tools::ebn0_to_esn0 (ebn0, R, p_mdm.bps);
+		const auto sigma = aff3ct::tools::esn0_to_sigma(esn0   , p_mdm.upf);
 
 		// give the current SNR to the terminal
 		terminal->set_esn0(esn0);
@@ -105,7 +116,7 @@ int main(int argc, char** argv)
 		channel->set_sigma(sigma);
 
 		// display the performance (BER and FER) in real time (in a separate thread)
-		terminal->start_temp_report();
+		terminal->start_temp_report(p_ter.frequency);
 
 		// run the simulation chain
 		while (!monitor->fe_limit_achieved())
