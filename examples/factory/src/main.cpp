@@ -18,7 +18,7 @@ int main(int argc, char** argv)
 
 	std::vector<aff3ct::factory::Factory::parameters*> params = {&p_src, &p_cdc, &p_mdm, &p_chn, &p_mnt, &p_ter};
 
-	aff3ct::factory::Command_scanner cp(argc, argv, params, true);
+	aff3ct::factory::Command_parser cp(argc, argv, params, true);
 
 	// parse the command for the given parameters and fill them
 	if (cp.parsing_failed())
