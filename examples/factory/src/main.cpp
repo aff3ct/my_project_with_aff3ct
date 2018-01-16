@@ -18,33 +18,11 @@ int main(int argc, char** argv)
 
 	std::vector<aff3ct::factory::Factory::parameters*> params = {&p_src, &p_cdc, &p_mdm, &p_chn, &p_mnt, &p_ter};
 
-	// build the required and optional arguments for the cmd line
-	auto args = aff3ct::factory::Factory::get_description(params);
-
-	// parse the argument from the command line
-	aff3ct::tools::Argument_handler ahandler(argc, (const char**)argv);
-	std::vector<std::string> warnings, errors;
-	auto read_args = ahandler.parse_arguments(args.first, args.second, warnings, errors);
-	
-	// if there is blocking errors
-	if (errors.size())
+	// parse the command for the given parameters and fill them
+	if (aff3ct::factory::Factory::parse_command(argc, argv, params))
 	{
-		// create groups of arguments
-		auto grps = aff3ct::factory::Factory::create_groups(params);
-
-		// display the command usage and the help (the parameters are ordered by group)
-		ahandler.print_help(args.first, args.second, grps);
-
-		// print the errors
-		for (size_t e = 0; e < errors.size(); e++)
-			std::cerr << aff3ct::tools::format_error(errors[e]) << std::endl;
-
-		// exit the program here
-		return 0;
+		return EXIT_FAILURE;
 	}
-
-	// write the parameters values in "params" from "read_args"
-	aff3ct::factory::Factory::store(params, read_args);
 
 	// display the headers (= print the AFF3CT parameters on the screen)
 	std::cout << "#-------------------------------------------------------" << std::endl;
@@ -54,10 +32,6 @@ int main(int argc, char** argv)
 	std::cout << "#"                                                        << std::endl;
 	aff3ct::factory::Header::print_parameters(params);
 	std::cout << "#" << std::endl;
-
-	// print the warnings
-	for (size_t w = 0; w < warnings.size(); w++)
-		std::cerr << aff3ct::tools::format_warning(warnings[w]) << std::endl;
 
 	// create the AFF3CT modules
 	auto *source  = p_src.build();

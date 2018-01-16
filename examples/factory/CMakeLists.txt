@@ -29,7 +29,7 @@ add_executable        (my_project-bin $<TARGET_OBJECTS:my_project-obj>)
 set_target_properties (my_project-bin PROPERTIES OUTPUT_NAME my_project)
 
 # Add AFF3CT as a library
-add_definitions (-DMULTI_PREC)
+add_definitions (-DMULTI_PREC -DENABLE_COOL_BASH -DENABLE_BACK_TRACE)
 set(ENABLE_STATIC_LIB ON  CACHE BOOL "Enable to compile AFF3CT static library" FORCE)
 set(ENABLE_EXEC       OFF CACHE BOOL "Enable to compile AFF3CT executable"     FORCE)
 
