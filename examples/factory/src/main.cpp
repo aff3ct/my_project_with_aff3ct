@@ -3,8 +3,6 @@
 #include <iostream>
 #include <aff3ct.hpp>
 
-#include "Factory/Command_scanner.hpp"
-
 constexpr float ebn0_min =  0.0f;
 constexpr float ebn0_max = 10.1f;
 
