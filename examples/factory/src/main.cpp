@@ -3,6 +3,8 @@
 #include <iostream>
 #include <aff3ct.hpp>
 
+#include "Factory/Command_scanner.hpp"
+
 constexpr float ebn0_min =  0.0f;
 constexpr float ebn0_max = 10.1f;
 
@@ -18,9 +20,15 @@ int main(int argc, char** argv)
 
 	std::vector<aff3ct::factory::Factory::parameters*> params = {&p_src, &p_cdc, &p_mdm, &p_chn, &p_mnt, &p_ter};
 
+	aff3ct::factory::Command_scanner cp(argc, argv, params, true);
+
 	// parse the command for the given parameters and fill them
-	if (aff3ct::factory::Factory::parse_command(argc, argv, params))
+	if (cp.parsing_failed())
 	{
+		cp.print_help    ();
+		cp.print_warnings();
+		cp.print_errors  ();
+
 		return EXIT_FAILURE;
 	}
 
@@ -32,6 +40,8 @@ int main(int argc, char** argv)
 	std::cout << "#"                                                        << std::endl;
 	aff3ct::factory::Header::print_parameters(params);
 	std::cout << "#" << std::endl;
+
+	cp.print_warnings();
 
 	// create the AFF3CT modules
 	auto *source  = p_src.build();
@@ -132,5 +142,5 @@ int main(int argc, char** argv)
 
 	std::cout << "# End of the simulation" << std::endl;
 
-	return 0;
+	return EXIT_SUCCESS;
 }
