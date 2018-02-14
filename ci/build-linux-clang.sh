@@ -12,6 +12,8 @@ function compile {
 	cd ..
 }
 
+cp $SYSTEMC_HOME/FindSystemC.cmake lib/aff3ct/cmake/Modules/
+
 cd examples
 for example in ${examples[*]}; do
 	cd $example
