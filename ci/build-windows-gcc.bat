@@ -19,6 +19,8 @@ exit /B %ERRORLEVEL%
 mkdir build
 cd build
 cmake .. -G"MinGW Makefiles" -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Wall -Wno-misleading-indentation  -Wno-deprecated-declarations -funroll-loops -march=native"
+if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
 mingw32-make
+if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
 cd ..
 exit /B 0

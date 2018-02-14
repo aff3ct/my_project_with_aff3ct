@@ -21,6 +21,8 @@ exit /B %ERRORLEVEL%
 mkdir build
 cd build
 cmake .. -G"Visual Studio 15 2017 Win64" -DCMAKE_CXX_FLAGS="-D_CRT_SECURE_NO_DEPRECATE /EHsc /arch:AVX"
-devenv /build Release aff3ct.sln
+if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+devenv /build Release my_project.sln
+if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
 cd ..
 exit /B 0
