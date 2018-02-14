@@ -6,6 +6,7 @@ set PATH=%PATH%;C:\Program Files\Git\cmd
 set PATH=%PATH%;C:\Program Files\CMake\bin
 set PATH=%PATH%;C:\Program Files\Git\mingw64\bin
 
+cd examples
 for %%a in (%examples%) do (
 	cd %%a
 	call :compile
