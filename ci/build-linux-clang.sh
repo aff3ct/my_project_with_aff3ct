@@ -12,11 +12,13 @@ function compile {
 	cd ..
 }
 
-cp $SYSTEMC_HOME/FindSystemC.cmake lib/aff3ct/cmake/Modules/
-
 cd examples
 for example in ${examples[*]}; do
 	cd $example
+	mkdir cmake
+	mkdir cmake/Modules
+	cp $SYSTEMC_HOME/FindSystemC.cmake cmake/Modules/
+	cp $SYSTEMC_HOME/FindTLM.cmake     cmake/Modules/
 	compile
 	cd ..
 done
