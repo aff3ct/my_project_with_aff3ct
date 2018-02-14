@@ -14,6 +14,7 @@ function compile {
 	cd ..
 }
 
+source /opt/intel/vars-intel.sh
 cd examples
 for example in ${examples[*]}; do
 	cd $example
