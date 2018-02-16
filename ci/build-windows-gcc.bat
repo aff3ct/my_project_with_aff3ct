@@ -16,8 +16,8 @@ for %%a in (%examples%) do (
 exit /B %ERRORLEVEL%
 
 :compile
-mkdir build
-cd build
+mkdir build_windows_gcc
+cd build_windows_gcc
 cmake .. -G"MinGW Makefiles" -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Wall -Wno-misleading-indentation  -Wno-deprecated-declarations -funroll-loops -march=native"
 if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
 mingw32-make

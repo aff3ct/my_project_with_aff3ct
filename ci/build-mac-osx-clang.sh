@@ -3,9 +3,10 @@ set -x
 
 examples=(bootstrap tasks factory)
 
+build_root=build_mac-osx_clang
 function compile {
-	mkdir build_test
-	cd build_test
+	mkdir $build_root
+	cd $build_root
 	cmake .. -G"Unix Makefiles" -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Wall -funroll-loops -march=native"
 	rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
 	make
