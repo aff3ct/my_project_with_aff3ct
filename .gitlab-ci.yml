@@ -130,11 +130,10 @@ test-linux-run-systemc:
   artifacts:
     paths:
       - ./examples/systemc/build_linux_gcc/bin/
-      - ./examples/systemc/build_linux_gcc-4.8/bin/
       - ./examples/systemc/build_linux_clang/bin/
       - ./examples/systemc/build_linux_icpc/bin/
   script:
-    - ./ci/test-linux-mac-osx-run.sh systemc " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+    - ./ci/test-linux-mac-osx-run.sh systemc " " build_linux_gcc build_linux_clang build_linux_icpc
 
 test-linux-run-tasks:
   stage: test
