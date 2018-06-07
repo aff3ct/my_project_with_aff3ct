@@ -148,6 +148,7 @@ test-linux-run-systemc:
   tags:
     - linux
     - sse4.2
+    - systemc
   artifacts:
     paths:
       - ./examples/systemc/build_linux_gcc/bin/
