@@ -7,7 +7,7 @@ build_root=build_linux_gcc-4.8
 function compile {
 	mkdir $build_root
 	cd $build_root
-	cmake .. -G"Unix Makefiles" -DCMAKE_CXX_COMPILER=g++-4.8 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Wall -funroll-loops -march=native -Wno-deprecated-declarations -DENABLE_COOL_BASH"
+	cmake .. -G"Unix Makefiles" -DCMAKE_CXX_COMPILER=g++-4.8 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations -DENABLE_COOL_BASH"
 	rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
 	THREADS=$(grep -c ^processor /proc/cpuinfo)
 	make -j $THREADS
