@@ -28,7 +28,6 @@ build-linux-gcc:
     - linux
     - gcc
     - cmake
-    - sse4.2
     - systemc
   artifacts:
     paths:
@@ -46,7 +45,6 @@ build-linux-clang:
     - gcc
     - cmake
     - x86
-    - sse4.2
     - systemc
   artifacts:
     paths:
@@ -63,7 +61,6 @@ build-linux-gcc-4.8:
     - linux
     - gcc-4.8
     - cmake
-    - sse4.2
     - systemc
   artifacts:
     paths:
@@ -80,7 +77,6 @@ build-linux-icpc:
     - linux
     - icpc
     - cmake
-    - sse4.2
     - systemc
   artifacts:
     paths:
@@ -97,7 +93,6 @@ build-windows-gcc:
     - windows
     - gcc
     - cmake
-    - avx
   artifacts:
     paths:
       - ./examples/bootstrap/build_windows_gcc/bin/
@@ -112,7 +107,6 @@ build-windows-msvc:
     - windows
     - msvc
     - cmake
-    - avx
   artifacts:
     paths:
       - ./examples/bootstrap/build_windows_msvc/bin/
@@ -127,7 +121,6 @@ build-mac-osx-clang:
     - mac-osx
     - apple-clang
     - cmake
-    - avx
   artifacts:
     paths:
       - ./examples/bootstrap/build_mac-osx_clang/bin/
@@ -195,7 +188,7 @@ test-linux-run-factory:
 #   stage: test
 #   tags:
 #    - mac-osx
-#    - avx
+#    - sse4.2
 #   artifacts:
 #     paths:
 #       - ./examples/bootstrap/build_mac-osx_clang/bin/
@@ -206,7 +199,7 @@ test-linux-run-factory:
 #   stage: test
 #   tags:
 #    - mac-osx
-#    - avx
+#    - sse4.2
 #   artifacts:
 #     paths:
 #       - ./examples/tasks/build_mac-osx_clang/bin/
@@ -217,7 +210,7 @@ test-linux-run-factory:
 #   stage: test
 #   tags:
 #    - mac-osx
-#    - avx
+#    - sse4.2
 #   artifacts:
 #     paths:
 #       - ./examples/factory/build_mac-osx_clang/bin/
