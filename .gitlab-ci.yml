@@ -13,10 +13,10 @@ before_script:
 analysis-cppcheck:
   stage: analysis
   artifacts:
-     name: analysis-cppcheck-logs
-     when: always
-     paths:
-       - cppcheck/
+    name: analysis-cppcheck-logs
+    when: always
+    paths:
+      - cppcheck/
   tags:
     - cppcheck
   script:
@@ -25,10 +25,11 @@ analysis-cppcheck:
 build-linux-gcc:
   stage: build
   tags:
-   - linux
-   - gcc
-   - cmake
-   - sse4.2
+    - linux
+    - gcc
+    - cmake
+    - sse4.2
+    - systemc
   artifacts:
     paths:
       - ./examples/bootstrap/build_linux_gcc/bin/
@@ -41,11 +42,12 @@ build-linux-gcc:
 build-linux-clang:
   stage: build
   tags:
-   - linux
-   - gcc
-   - cmake
-   - x86
-   - sse4.2
+    - linux
+    - gcc
+    - cmake
+    - x86
+    - sse4.2
+    - systemc
   artifacts:
     paths:
       - ./examples/bootstrap/build_linux_clang/bin/
@@ -58,10 +60,11 @@ build-linux-clang:
 build-linux-gcc-4.8:
   stage: build
   tags:
-   - linux
-   - gcc-4.8
-   - cmake
-   - sse4.2
+    - linux
+    - gcc-4.8
+    - cmake
+    - sse4.2
+    - systemc
   artifacts:
     paths:
       - ./examples/bootstrap/build_linux_gcc-4.8/bin/
@@ -74,10 +77,11 @@ build-linux-gcc-4.8:
 build-linux-icpc:
   stage: build
   tags:
-   - linux
-   - icpc
-   - cmake
-   - sse4.2
+    - linux
+    - icpc
+    - cmake
+    - sse4.2
+    - systemc
   artifacts:
     paths:
       - ./examples/bootstrap/build_linux_icpc/bin/
@@ -90,10 +94,10 @@ build-linux-icpc:
 build-windows-gcc:
   stage: build
   tags:
-   - windows
-   - gcc
-   - cmake
-   - avx
+    - windows
+    - gcc
+    - cmake
+    - avx
   artifacts:
     paths:
       - ./examples/bootstrap/build_windows_gcc/bin/
@@ -105,10 +109,10 @@ build-windows-gcc:
 build-windows-msvc:
   stage: build
   tags:
-   - windows
-   - msvc
-   - cmake
-   - avx
+    - windows
+    - msvc
+    - cmake
+    - avx
   artifacts:
     paths:
       - ./examples/bootstrap/build_windows_msvc/bin/
@@ -120,10 +124,10 @@ build-windows-msvc:
 build-mac-osx-clang:
   stage: build
   tags:
-   - mac-osx
-   - apple-clang
-   - cmake
-   - avx
+    - mac-osx
+    - apple-clang
+    - cmake
+    - avx
   artifacts:
     paths:
       - ./examples/bootstrap/build_mac-osx_clang/bin/
@@ -135,8 +139,8 @@ build-mac-osx-clang:
 test-linux-run-bootstrap:
   stage: test
   tags:
-   - linux
-   - sse4.2
+    - linux
+    - sse4.2
   artifacts:
     paths:
       - ./examples/bootstrap/build_linux_gcc/bin/
@@ -149,8 +153,8 @@ test-linux-run-bootstrap:
 test-linux-run-systemc:
   stage: test
   tags:
-   - linux
-   - sse4.2
+    - linux
+    - sse4.2
   artifacts:
     paths:
       - ./examples/systemc/build_linux_gcc/bin/
@@ -176,8 +180,8 @@ test-linux-run-tasks:
 test-linux-run-factory:
   stage: test
   tags:
-   - linux
-   - sse4.2
+    - linux
+    - sse4.2
   artifacts:
     paths:
       - ./examples/factory/build_linux_gcc/bin/
