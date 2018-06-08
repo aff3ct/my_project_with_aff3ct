@@ -134,12 +134,6 @@ test-linux-run-bootstrap:
   tags:
     - linux
     - sse4.2
-  artifacts:
-    paths:
-      - ./examples/bootstrap/build_linux_gcc/bin/
-      - ./examples/bootstrap/build_linux_gcc-4.8/bin/
-      - ./examples/bootstrap/build_linux_clang/bin/
-      - ./examples/bootstrap/build_linux_icpc/bin/
   script:
     - ./ci/test-linux-mac-osx-run.sh bootstrap " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
 
@@ -149,11 +143,6 @@ test-linux-run-systemc:
     - linux
     - sse4.2
     - systemc
-  artifacts:
-    paths:
-      - ./examples/systemc/build_linux_gcc/bin/
-      - ./examples/systemc/build_linux_clang/bin/
-      - ./examples/systemc/build_linux_icpc/bin/
   script:
     - ./ci/test-linux-mac-osx-run.sh systemc " " build_linux_gcc build_linux_clang build_linux_icpc
 
@@ -162,12 +151,6 @@ test-linux-run-tasks:
   tags:
    - linux
    - sse4.2
-  artifacts:
-    paths:
-      - ./examples/tasks/build_linux_gcc/bin/
-      - ./examples/tasks/build_linux_gcc-4.8/bin/
-      - ./examples/tasks/build_linux_clang/bin/
-      - ./examples/tasks/build_linux_icpc/bin/
   script:
     - ./ci/test-linux-mac-osx-run.sh tasks " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
 
@@ -176,12 +159,6 @@ test-linux-run-factory:
   tags:
     - linux
     - sse4.2
-  artifacts:
-    paths:
-      - ./examples/factory/build_linux_gcc/bin/
-      - ./examples/factory/build_linux_gcc-4.8/bin/
-      - ./examples/factory/build_linux_clang/bin/
-      - ./examples/factory/build_linux_icpc/bin/
   script:
     - ./ci/test-linux-mac-osx-run.sh factory "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
 
@@ -190,9 +167,6 @@ test-linux-run-factory:
 #   tags:
 #    - mac-osx
 #    - sse4.2
-#   artifacts:
-#     paths:
-#       - ./examples/bootstrap/build_mac-osx_clang/bin/
 #   script:
 #     - ./ci/test-linux-mac-osx-run.sh bootstrap " " build_mac-osx_clang
 
@@ -201,9 +175,6 @@ test-linux-run-factory:
 #   tags:
 #    - mac-osx
 #    - sse4.2
-#   artifacts:
-#     paths:
-#       - ./examples/tasks/build_mac-osx_clang/bin/
 #   script:
 #     - ./ci/test-linux-mac-osx-run.sh tasks " " build_mac-osx_clang
 
@@ -212,9 +183,6 @@ test-linux-run-factory:
 #   tags:
 #    - mac-osx
 #    - sse4.2
-#   artifacts:
-#     paths:
-#       - ./examples/factory/build_mac-osx_clang/bin/
 #   script:
 #     - ./ci/test-linux-mac-osx-run.sh factory "-K 32 -N 128" build_mac-osx_clang
 
@@ -223,10 +191,6 @@ test-linux-run-factory:
 #   tags:
 #    - windows
 #    - avx
-#   artifacts:
-#     paths:
-#       - ./examples/bootstrap/build_windows_gcc/bin/
-#       - ./examples/bootstrap/build_windows_msvc/bin/
 #   script:
 #     - ./ci/test-windows-run.bat bootstrap " " build_windows_gcc build_windows_msvc
 
@@ -235,10 +199,6 @@ test-linux-run-factory:
 #   tags:
 #    - windows
 #    - avx
-#   artifacts:
-#     paths:
-#       - ./examples/tasks/build_windows_gcc/bin/
-#       - ./examples/tasks/build_windows_msvc/bin/
 #   script:
 #     - ./ci/test-windows-run.bat tasks " " build_windows_gcc build_windows_msvc
 
@@ -247,9 +207,5 @@ test-linux-run-factory:
 #   tags:
 #    - windows
 #    - avx
-#   artifacts:
-#     paths:
-#       - ./examples/factory/build_windows_gcc/bin/
-#       - ./examples/factory/build_windows_msvc/bin/
 #   script:
 #     - ./ci/test-windows-run.bat factory "-K 32 -N 128" build_windows_gcc build_windows_msvc
