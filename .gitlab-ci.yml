@@ -28,6 +28,7 @@ build-linux-gcc:
     - linux
     - gcc
     - cmake
+    - x86
     - systemc
   artifacts:
     paths:
@@ -77,6 +78,7 @@ build-linux-icpc:
     - linux
     - icpc
     - cmake
+    - x86
     - systemc
   artifacts:
     paths:
@@ -121,6 +123,7 @@ build-mac-osx-clang:
     - mac-osx
     - apple-clang
     - cmake
+    - x86
   artifacts:
     paths:
       - ./examples/bootstrap/build_mac-osx_clang/bin/
