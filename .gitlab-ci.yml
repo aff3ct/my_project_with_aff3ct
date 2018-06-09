@@ -1,0 +1,211 @@
+stages:
+  - analysis
+  - build
+  - test
+
+before_script:
+  - hostname
+  - whoami
+# - pwd
+  - git submodule sync --recursive
+  - git submodule update --init --recursive
+
+analysis-cppcheck:
+  stage: analysis
+  artifacts:
+    name: analysis-cppcheck-logs
+    when: always
+    paths:
+      - cppcheck/
+  tags:
+    - cppcheck
+  script:
+    - ./ci/analysis-cppcheck.sh
+
+build-linux-gcc:
+  stage: build
+  tags:
+    - linux
+    - gcc
+    - cmake
+    - systemc
+  artifacts:
+    paths:
+      - ./examples/bootstrap/build_linux_gcc/bin/
+      - ./examples/factory/build_linux_gcc/bin/
+      - ./examples/systemc/build_linux_gcc/bin/
+      - ./examples/tasks/build_linux_gcc/bin/
+  script:
+    - ./ci/build-linux-gcc.sh
+
+build-linux-clang:
+  stage: build
+  tags:
+    - linux
+    - gcc
+    - cmake
+    - x86
+    - systemc
+  artifacts:
+    paths:
+      - ./examples/bootstrap/build_linux_clang/bin/
+      - ./examples/factory/build_linux_clang/bin/
+      - ./examples/systemc/build_linux_clang/bin/
+      - ./examples/tasks/build_linux_clang/bin/
+  script:
+    - ./ci/build-linux-clang.sh
+
+build-linux-gcc-4.8:
+  stage: build
+  tags:
+    - linux
+    - gcc-4.8
+    - cmake
+    - systemc
+  artifacts:
+    paths:
+      - ./examples/bootstrap/build_linux_gcc-4.8/bin/
+      - ./examples/factory/build_linux_gcc-4.8/bin/
+      - ./examples/systemc/build_linux_gcc-4.8/bin/
+      - ./examples/tasks/build_linux_gcc-4.8/bin/
+  script:
+    - ./ci/build-linux-gcc-4.8.sh
+
+build-linux-icpc:
+  stage: build
+  tags:
+    - linux
+    - icpc
+    - cmake
+    - systemc
+  artifacts:
+    paths:
+      - ./examples/bootstrap/build_linux_icpc/bin/
+      - ./examples/factory/build_linux_icpc/bin/
+      - ./examples/systemc/build_linux_icpc/bin/
+      - ./examples/tasks/build_linux_icpc/bin/
+  script:
+    - ./ci/build-linux-icpc.sh
+
+build-windows-gcc:
+  stage: build
+  tags:
+    - windows
+    - gcc
+    - cmake
+  artifacts:
+    paths:
+      - ./examples/bootstrap/build_windows_gcc/bin/
+      - ./examples/factory/build_windows_gcc/bin/
+      - ./examples/tasks/build_windows_gcc/bin/
+  script:
+    - ./ci/build-windows-gcc.bat
+
+build-windows-msvc:
+  stage: build
+  tags:
+    - windows
+    - msvc
+    - cmake
+  artifacts:
+    paths:
+      - ./examples/bootstrap/build_windows_msvc/bin/
+      - ./examples/factory/build_windows_msvc/bin/
+      - ./examples/tasks/build_windows_msvc/bin/
+  script:
+    - ./ci/build-windows-msvc.bat
+
+build-mac-osx-clang:
+  stage: build
+  tags:
+    - mac-osx
+    - apple-clang
+    - cmake
+  artifacts:
+    paths:
+      - ./examples/bootstrap/build_mac-osx_clang/bin/
+      - ./examples/factory/build_mac-osx_clang/bin/
+      - ./examples/tasks/build_mac-osx_clang/bin/
+  script:
+    - ./ci/build-mac-osx-clang.sh
+
+test-linux-run-bootstrap:
+  stage: test
+  tags:
+    - linux
+    - sse4.2
+  script:
+    - ./ci/test-linux-mac-osx-run.sh bootstrap " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+
+test-linux-run-systemc:
+  stage: test
+  tags:
+    - linux
+    - sse4.2
+    - systemc
+  script:
+    - ./ci/test-linux-mac-osx-run.sh systemc " " build_linux_gcc build_linux_clang build_linux_icpc
+
+test-linux-run-tasks:
+  stage: test
+  tags:
+   - linux
+   - sse4.2
+  script:
+    - ./ci/test-linux-mac-osx-run.sh tasks " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+
+test-linux-run-factory:
+  stage: test
+  tags:
+    - linux
+    - sse4.2
+  script:
+    - ./ci/test-linux-mac-osx-run.sh factory "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+
+# test-mac-osx-run-bootstrap:
+#   stage: test
+#   tags:
+#    - mac-osx
+#    - sse4.2
+#   script:
+#     - ./ci/test-linux-mac-osx-run.sh bootstrap " " build_mac-osx_clang
+
+# test-mac-osx-run-tasks:
+#   stage: test
+#   tags:
+#    - mac-osx
+#    - sse4.2
+#   script:
+#     - ./ci/test-linux-mac-osx-run.sh tasks " " build_mac-osx_clang
+
+# test-mac-osx-run-factory:
+#   stage: test
+#   tags:
+#    - mac-osx
+#    - sse4.2
+#   script:
+#     - ./ci/test-linux-mac-osx-run.sh factory "-K 32 -N 128" build_mac-osx_clang
+
+# test-windows-run-bootstrap:
+#   stage: test
+#   tags:
+#    - windows
+#    - avx
+#   script:
+#     - ./ci/test-windows-run.bat bootstrap " " build_windows_gcc build_windows_msvc
+
+# test-windows-run-tasks:
+#   stage: test
+#   tags:
+#    - windows
+#    - avx
+#   script:
+#     - ./ci/test-windows-run.bat tasks " " build_windows_gcc build_windows_msvc
+
+# test-windows-run-factory:
+#   stage: test
+#   tags:
+#    - windows
+#    - avx
+#   script:
+#     - ./ci/test-windows-run.bat factory "-K 32 -N 128" build_windows_gcc build_windows_msvc
