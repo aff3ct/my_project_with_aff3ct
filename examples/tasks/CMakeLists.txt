@@ -21,6 +21,13 @@ set (EXECUTABLE_OUTPUT_PATH bin/)
 # Generate the source files list
 file (GLOB_RECURSE source_files src/*)
 
+# Compiler definitions
+if (WIN32) # for Windows operating system in general
+    set (WINDOWS_VISTA 0x0600)
+    add_definitions (-D_WIN32_WINNT=${WINDOWS_VISTA})
+    add_definitions (-DNOMINMAX)
+endif()
+
 # Object
 add_library (my_project-obj OBJECT ${source_files})
 
