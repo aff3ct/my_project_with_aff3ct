@@ -37,16 +37,13 @@ int main(int argc, char** argv)
 	std::vector<int  > dec_bits     (K);
 
 	// create the AFF3CT objects
-	aff3ct::module::Source_random<>          source  (K      );
-	aff3ct::module::Encoder_repetition_sys<> encoder (K, N   );
-	aff3ct::module::Modem_BPSK<>             modem   (N      );
-	aff3ct::module::Channel_AWGN_LLR<>       channel (N, seed);
-	aff3ct::module::Decoder_repetition_std<> decoder (K, N   );
-	aff3ct::module::Monitor_BFER<>           monitor (K, fe  );
-	aff3ct::tools ::Terminal_BFER<>          terminal(monitor);
-
-	// display the legend in the terminal
-	terminal.legend();
+	aff3ct::module::Source_random<>          source  (K       );
+	aff3ct::module::Encoder_repetition_sys<> encoder (K, N    );
+	aff3ct::module::Modem_BPSK<>             modem   (N       );
+	aff3ct::module::Channel_AWGN_LLR<>       channel (N, seed );
+	aff3ct::module::Decoder_repetition_std<> decoder (K, N    );
+	aff3ct::module::Monitor_BFER<>           monitor (K, N, fe);
+	aff3ct::tools ::Terminal_BFER<>          terminal(monitor );
 
 	// a loop over the various SNRs
 	for (auto ebn0 = ebn0_min; ebn0 < ebn0_max; ebn0 += 1.f)
@@ -55,13 +52,17 @@ int main(int argc, char** argv)
 		const auto esn0  = aff3ct::tools::ebn0_to_esn0 (ebn0, R);
 		const auto sigma = aff3ct::tools::esn0_to_sigma(esn0   );
 
+		const aff3ct::tools::Sigma<float> noise(sigma, ebn0, esn0);
+
 		// give the current SNR to the terminal
-		terminal.set_esn0(esn0);
-		terminal.set_ebn0(ebn0);
+		terminal.set_noise(noise);
+
+		// display the legend in the terminal
+		if (ebn0 == ebn0_min) terminal.legend();
 
 		// update the sigma of the modem and the channel
-		modem  .set_sigma(sigma);
-		channel.set_sigma(sigma);
+		modem  .set_noise(noise);
+		channel.set_noise(noise);
 
 		// display the performance (BER and FER) in real time (in a separate thread)
 		terminal.start_temp_report();

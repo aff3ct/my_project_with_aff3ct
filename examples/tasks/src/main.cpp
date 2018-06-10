@@ -29,12 +29,12 @@ int main(int argc, char** argv)
 	std::cout << "#"                                     << std::endl;
 
 	// create the AFF3CT modules
-	aff3ct::module::Source_random<>          source  (K      );
-	aff3ct::module::Encoder_repetition_sys<> encoder (K, N   );
-	aff3ct::module::Modem_BPSK<>             modem   (N      );
-	aff3ct::module::Channel_AWGN_LLR<>       channel (N, seed);
-	aff3ct::module::Decoder_repetition_std<> decoder (K, N   );
-	aff3ct::module::Monitor_BFER<>           monitor (K, fe  );
+	aff3ct::module::Source_random<>          source  (K       );
+	aff3ct::module::Encoder_repetition_sys<> encoder (K, N    );
+	aff3ct::module::Modem_BPSK<>             modem   (N       );
+	aff3ct::module::Channel_AWGN_LLR<>       channel (N, seed );
+	aff3ct::module::Decoder_repetition_std<> decoder (K, N    );
+	aff3ct::module::Monitor_BFER<>           monitor (K, N, fe);
 
 	// configuration of the module tasks
 	std::vector<const aff3ct::module::Module*> modules = {&source, &encoder, &modem, &channel, &decoder, &monitor};
@@ -54,17 +54,16 @@ int main(int argc, char** argv)
 
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	using namespace aff3ct::module;
-	encoder[enc::tsk::encode      ][enc::sck::encode      ::U_K ](source [src::tsk::generate   ][src::sck::generate   ::U_K ]);
-	modem  [mdm::tsk::modulate    ][mdm::sck::modulate    ::X_N1](encoder[enc::tsk::encode     ][enc::sck::encode     ::X_N ]);
-	channel[chn::tsk::add_noise   ][chn::sck::add_noise   ::X_N ](modem  [mdm::tsk::modulate   ][mdm::sck::modulate   ::X_N2]);
-	modem  [mdm::tsk::demodulate  ][mdm::sck::demodulate  ::Y_N1](channel[chn::tsk::add_noise  ][chn::sck::add_noise  ::Y_N ]);
-	decoder[dec::tsk::decode_siho ][dec::sck::decode_siho ::Y_N ](modem  [mdm::tsk::demodulate ][mdm::sck::demodulate ::Y_N2]);
-	monitor[mnt::tsk::check_errors][mnt::sck::check_errors::U   ](encoder[enc::tsk::encode     ][enc::sck::encode     ::U_K ]);
-	monitor[mnt::tsk::check_errors][mnt::sck::check_errors::V   ](decoder[dec::tsk::decode_siho][dec::sck::decode_siho::V_K ]);
+	encoder[enc::sck::encode      ::U_K ].bind(source [src::sck::generate   ::U_K ]);
+	modem  [mdm::sck::modulate    ::X_N1].bind(encoder[enc::sck::encode     ::X_N ]);
+	channel[chn::sck::add_noise   ::X_N ].bind(modem  [mdm::sck::modulate   ::X_N2]);
+	modem  [mdm::sck::demodulate  ::Y_N1].bind(channel[chn::sck::add_noise  ::Y_N ]);
+	decoder[dec::sck::decode_siho ::Y_N ].bind(modem  [mdm::sck::demodulate ::Y_N2]);
+	monitor[mnt::sck::check_errors::U   ].bind(encoder[enc::sck::encode     ::U_K ]);
+	monitor[mnt::sck::check_errors::V   ].bind(decoder[dec::sck::decode_siho::V_K ]);
 
 	// create a Terminal and display the legend
 	aff3ct::tools::Terminal_BFER<> terminal(monitor);
-	terminal.legend();
 
 	// a loop over the various SNRs
 	for (auto ebn0 = ebn0_min; ebn0 < ebn0_max; ebn0 += 1.f)
@@ -73,13 +72,17 @@ int main(int argc, char** argv)
 		const auto esn0  = aff3ct::tools::ebn0_to_esn0 (ebn0, R);
 		const auto sigma = aff3ct::tools::esn0_to_sigma(esn0   );
 
+		const aff3ct::tools::Sigma<float> noise(sigma, ebn0, esn0);
+
 		// give the current SNR to the terminal
-		terminal.set_esn0(esn0);
-		terminal.set_ebn0(ebn0);
+		terminal.set_noise(noise);
+
+		// display the legend in the terminal
+		if (ebn0 == ebn0_min) terminal.legend();
 
 		// update the sigma of the modem and the channel
-		modem  .set_sigma(sigma);
-		channel.set_sigma(sigma);
+		modem  .set_noise(noise);
+		channel.set_noise(noise);
 
 		// display the performance (BER and FER) in real time (in a separate thread)
 		terminal.start_temp_report();

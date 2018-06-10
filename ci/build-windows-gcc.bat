@@ -10,6 +10,7 @@ cd examples
 for %%a in (%examples%) do (
 	cd %%a
 	call :compile
+	if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
 	cd ..
 )
 

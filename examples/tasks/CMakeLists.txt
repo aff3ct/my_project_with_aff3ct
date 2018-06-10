@@ -43,13 +43,34 @@ else ()
                         "$ git submodule update --init --recursive")
 endif ()
 
-# Add MIPP wrapper includes
+# 'MIPP' includes
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/lib/MIPP/src/mipp.h")
     include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/lib/MIPP/src/")
 else ()
-    message(FATAL_ERROR "MIPP can't be found, try to init the submodules with the following cmd:\n"
+    message(FATAL_ERROR "'MIPP' can't be found, try to init the submodules with the following cmd:\n"
                         "$ git submodule update --init --recursive")
 endif ()
+
+# 'date' includes
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/lib/date/include/date/date.h")
+    include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/lib/date/include/")
+else ()
+    message(FATAL_ERROR "'date' can't be found, try to init the submodules with the following cmd:\n"
+                        "$ git submodule update --init --recursive")
+endif ()
+
+# 'rang' includes
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/lib/rang/include/rang.hpp")
+    include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/lib/rang/include/")
+else ()
+    message(FATAL_ERROR "'rang' can't be found, try to init the submodules with the following cmd:\n"
+                        "$ git submodule update --init --recursive")
+endif ()
+
+# 'dirent.h' include (only if MSVC compiler)
+if (MSVC)
+    include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/lib/MSVC/include/")
+endif()
 
 # Enable pthread
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
