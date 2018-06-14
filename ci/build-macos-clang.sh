@@ -3,7 +3,7 @@ set -x
 
 examples=(bootstrap tasks factory)
 
-build_root=build_mac-osx_clang
+build_root=build_macos_clang
 function compile {
 	mkdir $build_root
 	cd $build_root
