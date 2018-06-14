@@ -117,20 +117,20 @@ build-windows-msvc:
   script:
     - ./ci/build-windows-msvc.bat
 
-build-mac-osx-clang:
+build-macos-clang:
   stage: build
   tags:
-    - mac-osx
+    - macos
     - apple-clang
     - cmake
     - x86
   artifacts:
     paths:
-      - ./examples/bootstrap/build_mac-osx_clang/bin/
-      - ./examples/factory/build_mac-osx_clang/bin/
-      - ./examples/tasks/build_mac-osx_clang/bin/
+      - ./examples/bootstrap/build_macos_clang/bin/
+      - ./examples/factory/build_macos_clang/bin/
+      - ./examples/tasks/build_macos_clang/bin/
   script:
-    - ./ci/build-mac-osx-clang.sh
+    - ./ci/build-macos-clang.sh
 
 test-linux-run-bootstrap:
   stage: test
@@ -138,7 +138,7 @@ test-linux-run-bootstrap:
     - linux
     - sse4.2
   script:
-    - ./ci/test-linux-mac-osx-run.sh bootstrap " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh bootstrap " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
 
 test-linux-run-systemc:
   stage: test
@@ -147,7 +147,7 @@ test-linux-run-systemc:
     - sse4.2
     - systemc
   script:
-    - ./ci/test-linux-mac-osx-run.sh systemc " " build_linux_gcc build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh systemc " " build_linux_gcc build_linux_clang build_linux_icpc
 
 test-linux-run-tasks:
   stage: test
@@ -155,7 +155,7 @@ test-linux-run-tasks:
    - linux
    - sse4.2
   script:
-    - ./ci/test-linux-mac-osx-run.sh tasks " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh tasks " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
 
 test-linux-run-factory:
   stage: test
@@ -163,31 +163,31 @@ test-linux-run-factory:
     - linux
     - sse4.2
   script:
-    - ./ci/test-linux-mac-osx-run.sh factory "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh factory "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
 
-# test-mac-osx-run-bootstrap:
+# test-macos-run-bootstrap:
 #   stage: test
 #   tags:
-#    - mac-osx
+#    - macos
 #    - sse4.2
 #   script:
-#     - ./ci/test-linux-mac-osx-run.sh bootstrap " " build_mac-osx_clang
+#     - ./ci/test-linux-macos-run.sh bootstrap " " build_macos_clang
 
-# test-mac-osx-run-tasks:
+# test-macos-run-tasks:
 #   stage: test
 #   tags:
-#    - mac-osx
+#    - macos
 #    - sse4.2
 #   script:
-#     - ./ci/test-linux-mac-osx-run.sh tasks " " build_mac-osx_clang
+#     - ./ci/test-linux-macos-run.sh tasks " " build_macos_clang
 
-# test-mac-osx-run-factory:
+# test-macos-run-factory:
 #   stage: test
 #   tags:
-#    - mac-osx
+#    - macos
 #    - sse4.2
 #   script:
-#     - ./ci/test-linux-mac-osx-run.sh factory "-K 32 -N 128" build_mac-osx_clang
+#     - ./ci/test-linux-macos-run.sh factory "-K 32 -N 128" build_macos_clang
 
 # test-windows-run-bootstrap:
 #   stage: test
