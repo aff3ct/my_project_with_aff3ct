@@ -3,12 +3,13 @@
 set examples=bootstrap tasks factory
 
 set "VSCMD_START_DIR=%CD%"
-call "vcvars64.bat"
+call "%VS_PATH%\VC\Auxiliary\Build\vcvars64.bat"
 
 cd examples
 for %%a in (%examples%) do (
 	cd %%a
 	call :compile
+	if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
 	cd ..
 )
 
