@@ -1,8 +1,6 @@
 #!/bin/bash
 set -x
 
-source ci/threads.sh
-
 examples=(bootstrap tasks systemc factory)
 
 build_root=build_linux_gcc-4.8
