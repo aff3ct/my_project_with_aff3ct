@@ -1,5 +1,6 @@
 #include <vector>
 #include <cassert>
+#include <memory>
 #include <iostream>
 #include <aff3ct.hpp>
 
@@ -14,7 +15,7 @@ int main(int argc, char** argv)
 	aff3ct::factory::Modem           ::parameters p_mdm;
 	aff3ct::factory::Channel         ::parameters p_chn;
 	aff3ct::factory::Monitor_BFER    ::parameters p_mnt;
-	aff3ct::factory::Terminal_BFER   ::parameters p_ter;
+	aff3ct::factory::Terminal        ::parameters p_ter;
 
 	std::vector<aff3ct::factory::Factory::parameters*> params = {&p_src, &p_cdc, &p_mdm, &p_chn, &p_mnt, &p_ter};
 
@@ -42,13 +43,24 @@ int main(int argc, char** argv)
 	cp.print_warnings();
 
 	// create the AFF3CT modules
-	auto *source  = p_src.build();
-	auto *modem   = p_mdm.build();
-	auto *channel = p_chn.build();
-	auto *monitor = p_mnt.build();
-	auto *codec   = p_cdc.build();
-	auto *encoder = codec->get_encoder();
-	auto *decoder = codec->get_decoder_siho();
+	auto* source  = p_src.build();
+	auto* modem   = p_mdm.build();
+	auto* channel = p_chn.build();
+	auto* monitor = p_mnt.build();
+	auto* codec   = p_cdc.build();
+	auto* encoder = codec->get_encoder();
+	auto* decoder = codec->get_decoder_siho();
+
+	// create reporters to display results in terminal
+	aff3ct::tools::Sigma<float>                  noise;
+	aff3ct::tools::Reporter_noise<float>         rep_noise(noise   ); // reporter of the noise value
+	aff3ct::tools::Reporter_BFER <int>           rep_er   (*monitor); // reporter of the bit/frame error rate
+	aff3ct::tools::Reporter_throughput<uint64_t> rep_thr  (*monitor); // reporter of the throughput of the simulation
+	std::vector<aff3ct::tools::Reporter*> reporters{&rep_noise, &rep_er, &rep_thr};
+
+	// create a Terminal and display the legend
+	auto *terminal = p_ter.build(reporters);
+	terminal->legend();
 
 	// configuration of the module tasks
 	std::vector<const aff3ct::module::Module*> modules = {source, encoder, modem, channel, decoder, monitor};
@@ -59,11 +71,10 @@ int main(int argc, char** argv)
 			t->set_autoexec   (false); // disable the auto execution mode of the tasks
 			t->set_debug      (false); // disable the debug mode
 			t->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
-			t->set_stats      (true ); // enable the statistics
+			t->set_stats      (false); // enable the statistics
 
 			// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
-			if (!t->is_debug() && !t->is_stats())
-				t->set_fast(true);
+			t->set_fast(!t->is_debug() && !t->is_stats());
 		}
 
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
@@ -76,8 +87,6 @@ int main(int argc, char** argv)
 	(*monitor)[mnt::sck::check_errors::U   ].bind((*encoder)[enc::sck::encode     ::U_K ]);
 	(*monitor)[mnt::sck::check_errors::V   ].bind((*decoder)[dec::sck::decode_siho::V_K ]);
 
-	// create a Terminal and display the legend
-	auto *terminal = p_ter.build(*monitor);
 
 	// reset the memory of the decoder after the end of each communication
 	monitor->add_handler_check(std::bind(&aff3ct::module::Decoder::reset, decoder));
@@ -95,16 +104,10 @@ int main(int argc, char** argv)
 	for (auto ebn0 = ebn0_min; ebn0 < ebn0_max; ebn0 += 1.f)
 	{
 		// compute the current sigma for the channel noise
-		const auto esn0  = aff3ct::tools::ebn0_to_esn0 (ebn0, R, p_mdm.bps);
-		const auto sigma = aff3ct::tools::esn0_to_sigma(esn0   , p_mdm.upf);
+		const auto esn0  = aff3ct::tools::ebn0_to_esn0 (ebn0, R);
+		const auto sigma = aff3ct::tools::esn0_to_sigma(esn0   );
 
-		const aff3ct::tools::Sigma<float> noise(sigma, ebn0, esn0);
-
-		// give the current SNR to the terminal
-		terminal->set_noise(noise);
-
-		// display the legend in the terminal
-		if (ebn0 == ebn0_min) terminal->legend();
+		noise.set_noise(sigma, ebn0, esn0);
 
 		// update the sigma of the modem and the channel
 		codec  ->set_noise(noise);
@@ -115,7 +118,7 @@ int main(int argc, char** argv)
 		terminal->start_temp_report(p_ter.frequency);
 
 		// run the simulation chain
-		while (!monitor->fe_limit_achieved())
+		while (!monitor->fe_limit_achieved() && !aff3ct::tools::Terminal::is_interrupt())
 		{
 			(*source )[src::tsk::generate    ].exec();
 			(*encoder)[enc::tsk::encode      ].exec();
@@ -129,8 +132,12 @@ int main(int argc, char** argv)
 		// display the performance (BER and FER) in the terminal
 		terminal->final_report();
 
-		// reset the monitor for the next SNR
+		if (aff3ct::tools::Terminal::is_over())
+			break;
+
+		// reset the monitor and the terminal for the next SNR
 		monitor->reset();
+		aff3ct::tools::Terminal::reset();
 	}
 	std::cout << "#" << std::endl;
 
@@ -139,9 +146,9 @@ int main(int argc, char** argv)
 	aff3ct::tools::Stats::show(modules, ordered);
 
 	// delete the aff3ct objects
-	delete source; delete modem; delete channel; delete monitor; delete codec; delete terminal;
-
 	std::cout << "# End of the simulation" << std::endl;
+
+	delete source; delete modem; delete channel; delete monitor; delete codec; delete terminal;
 
 	return EXIT_SUCCESS;
 }
