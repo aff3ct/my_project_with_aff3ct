@@ -1,4 +1,5 @@
  #include <vector>
+ #include <memory>
  #include <iostream>
  #include <aff3ct.hpp>
 
@@ -10,7 +11,7 @@ int main(int argc, char** argv)
 	std::cout << "#-------------------------------------------------------" << std::endl;
 	std::cout << "#"                                                        << std::endl;
 
-	const int   fe       = 100;
+	const int   fe       = 100000;
 	const int   seed     = argc >= 2 ? std::atoi(argv[1]) : 0;
 	const int   K        = 32;
 	const int   N        = 128;
@@ -28,30 +29,33 @@ int main(int argc, char** argv)
 	std::cout << "#    ** SNR max   (dB) = " << ebn0_max << std::endl;
 	std::cout << "#"                                     << std::endl;
 
+	using namespace aff3ct;
+
 	// create the AFF3CT modules
-	aff3ct::module::Source_random<>          source (K      );
-	aff3ct::module::Encoder_repetition_sys<> encoder(K, N   );
-	aff3ct::module::Modem_BPSK<>             modem  (N      );
-	aff3ct::module::Channel_AWGN_LLR<>       channel(N, seed);
-	aff3ct::module::Decoder_repetition_std<> decoder(K, N   );
-	aff3ct::module::Monitor_BFER<>           monitor(K, fe  );
+	module::Source_random<>          source (K      );
+	module::Encoder_repetition_sys<> encoder(K, N   );
+	module::Modem_BPSK<>             modem  (N      );
+	module::Channel_AWGN_LLR<>       channel(N, seed);
+	module::Decoder_repetition_std<> decoder(K, N   );
+	module::Monitor_BFER<>           monitor(K, fe  );
 
 	// create reporters to display results in terminal
-	aff3ct::tools::Sigma<float>                  noise;
-	aff3ct::tools::Reporter_noise<float>         rep_noise(noise  ); // reporter of the noise value
-	aff3ct::tools::Reporter_BFER <int>           rep_er   (monitor); // reporter of the bit/frame error rate
-	aff3ct::tools::Reporter_throughput<uint64_t> rep_thr  (monitor); // reporter of the throughput of the simulation
-	std::vector<aff3ct::tools::Reporter*> reporters{&rep_noise, &rep_er, &rep_thr};
+	tools::Sigma<float>                   noise;
+	std::vector<std::unique_ptr<tools::Reporter>> reporters;
 
-	aff3ct::tools::Terminal_std terminal(reporters); // the terminal that display all the legend associated with the
+	reporters.push_back(std::unique_ptr<tools::Reporter_noise<float>        >(new tools::Reporter_noise<float>        (noise  ))); // reporter of the noise value
+	reporters.push_back(std::unique_ptr<tools::Reporter_BFER <int>          >(new tools::Reporter_BFER <int>          (monitor))); // reporter of the bit/frame error rate
+	reporters.push_back(std::unique_ptr<tools::Reporter_throughput<uint64_t>>(new tools::Reporter_throughput<uint64_t>(monitor))); // reporter of the throughput of the simulation
+
+	tools::Terminal_std terminal(reporters); // the terminal that display all the legend associated with the
 	                                                 // reporters and the trace
 	terminal.legend();
 
 
 	// configuration of the module tasks
-	std::vector<const aff3ct::module::Module*> modules = {&source, &encoder, &modem, &channel, &decoder, &monitor};
-	for (auto *m : modules)
-		for (auto *t : m->tasks)
+	std::vector<const module::Module*> modules = {&source, &encoder, &modem, &channel, &decoder, &monitor};
+	for (auto& m : modules)
+		for (auto& t : m->tasks)
 		{
 			t->set_autoalloc  (true ); // enable the automatic allocation of the data in the tasks
 			t->set_autoexec   (false); // disable the auto execution mode of the tasks
@@ -65,7 +69,7 @@ int main(int argc, char** argv)
 		}
 
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
-	using namespace aff3ct::module;
+	using namespace module;
 	encoder[enc::sck::encode      ::U_K ].bind(source [src::sck::generate   ::U_K ]);
 	modem  [mdm::sck::modulate    ::X_N1].bind(encoder[enc::sck::encode     ::X_N ]);
 	channel[chn::sck::add_noise   ::X_N ].bind(modem  [mdm::sck::modulate   ::X_N2]);
@@ -79,8 +83,8 @@ int main(int argc, char** argv)
 	for (auto ebn0 = ebn0_min; ebn0 < ebn0_max; ebn0 += 1.f)
 	{
 		// compute the current sigma for the channel noise
-		const auto esn0  = aff3ct::tools::ebn0_to_esn0 (ebn0, R);
-		const auto sigma = aff3ct::tools::esn0_to_sigma(esn0   );
+		const auto esn0  = tools::ebn0_to_esn0 (ebn0, R);
+		const auto sigma = tools::esn0_to_sigma(esn0   );
 
 		noise.set_noise(sigma, ebn0, esn0);
 
@@ -92,7 +96,7 @@ int main(int argc, char** argv)
 		terminal.start_temp_report();
 
 		// run the simulation chain
-		while (!monitor.fe_limit_achieved() && !aff3ct::tools::Terminal::is_interrupt())
+		while (!monitor.fe_limit_achieved() && !tools::Terminal::is_interrupt())
 		{
 			source [src::tsk::generate    ].exec();
 			encoder[enc::tsk::encode      ].exec();
@@ -106,18 +110,18 @@ int main(int argc, char** argv)
 		// display the performance (BER and FER) in the terminal
 		terminal.final_report();
 
-		if (aff3ct::tools::Terminal::is_over())
+		if (tools::Terminal::is_over())
 			break;
 
 		// reset the monitor for the next SNR
 		monitor.reset();
-		aff3ct::tools::Terminal::reset();
+		tools::Terminal::reset();
 	}
 	std::cout << "#" << std::endl;
 
 	// display the statistics of the tasks (if enabled)
 	auto ordered = true;
-	aff3ct::tools::Stats::show(modules, ordered);
+	tools::Stats::show(modules, ordered);
 
 	std::cout << "# End of the simulation" << std::endl;
 
