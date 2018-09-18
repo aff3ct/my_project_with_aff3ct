@@ -11,7 +11,7 @@ int main(int argc, char** argv)
 	std::cout << "#-------------------------------------------------------" << std::endl;
 	std::cout << "#"                                                        << std::endl;
 
-	const int   fe       = 100000;
+	const int   fe       = 100;
 	const int   seed     = argc >= 2 ? std::atoi(argv[1]) : 0;
 	const int   K        = 32;
 	const int   N        = 128;
