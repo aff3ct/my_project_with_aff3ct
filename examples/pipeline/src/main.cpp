@@ -1,6 +1,9 @@
  #include <vector>
  #include <iostream>
  #include <aff3ct.hpp>
+ 
+ #include "Block.hpp"
+
 
 int main(int argc, char** argv)
 {
@@ -12,8 +15,8 @@ int main(int argc, char** argv)
 
 	const int   fe       = 100;
 	const int   seed     = argc >= 2 ? std::atoi(argv[1]) : 0;
-	const int   K        = 32;
-	const int   N        = 128;
+	const int   K        = 16;
+	const int   N        = 32;
 	const float R        = (float)K / (float)N;
 	const float ebn0_min = 0.00f;
 	const float ebn0_max = 10.1f;
@@ -41,7 +44,7 @@ int main(int argc, char** argv)
 	for (auto *m : modules)
 		for (auto *t : m->tasks)
 		{
-			t->set_autoalloc  (true ); // enable the automatic allocation of the data in the tasks
+			t->set_autoalloc  (false); // enable the automatic allocation of the data in the tasks
 			t->set_autoexec   (false); // disable the auto execution mode of the tasks
 			t->set_debug      (false); // disable the debug mode
 			t->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
@@ -54,7 +57,19 @@ int main(int argc, char** argv)
 
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	using namespace aff3ct::module;
-	encoder[enc::tsk::encode      ][enc::sck::encode      ::U_K ](source [src::tsk::generate   ][src::sck::generate   ::U_K ]);
+
+	Block bl_source (&source [src::tsk::generate],8);
+	Block bl_encoder(&encoder[enc::tsk::encode]  ,8);
+
+	bl_encoder.bind("U_K", bl_source, "U_K");
+		
+	bl_source.run();
+	bl_encoder.run();
+	
+	bl_source.join();
+	bl_encoder.join();
+
+	/* encoder[enc::tsk::encode      ][enc::sck::encode      ::U_K ](source [src::tsk::generate   ][src::sck::generate   ::U_K ]);
 	modem  [mdm::tsk::modulate    ][mdm::sck::modulate    ::X_N1](encoder[enc::tsk::encode     ][enc::sck::encode     ::X_N ]);
 	channel[chn::tsk::add_noise   ][chn::sck::add_noise   ::X_N ](modem  [mdm::tsk::modulate   ][mdm::sck::modulate   ::X_N2]);
 	modem  [mdm::tsk::demodulate  ][mdm::sck::demodulate  ::Y_N1](channel[chn::tsk::add_noise  ][chn::sck::add_noise  ::Y_N ]);
@@ -107,7 +122,7 @@ int main(int argc, char** argv)
 	// display the statistics of the tasks (if enabled)
 	auto ordered = true;
 	aff3ct::tools::Stats::show(modules, ordered);
-
+*/
 	std::cout << "# End of the simulation" << std::endl;
 
 	return 0;
