@@ -1,5 +1,6 @@
  #include <vector>
  #include <iostream>
+ #include <thread>
  #include <aff3ct.hpp>
  
  #include "Block.hpp"
@@ -15,8 +16,8 @@ int main(int argc, char** argv)
 
 	const int   fe       = 100;
 	const int   seed     = argc >= 2 ? std::atoi(argv[1]) : 0;
-	const int   K        = 16;
-	const int   N        = 32;
+	const int   K        = 1024;
+	const int   N        = 2048;
 	const float R        = (float)K / (float)N;
 	const float ebn0_min = 0.00f;
 	const float ebn0_max = 10.1f;
@@ -32,15 +33,16 @@ int main(int argc, char** argv)
 	std::cout << "#"                                     << std::endl;
 
 	// create the AFF3CT modules
-	aff3ct::module::Source_random<>          source  (K      );
-	aff3ct::module::Encoder_repetition_sys<> encoder (K, N   );
-	aff3ct::module::Modem_BPSK<>             modem   (N      );
-	aff3ct::module::Channel_AWGN_LLR<>       channel (N, seed);
-	aff3ct::module::Decoder_repetition_std<> decoder (K, N   );
-	aff3ct::module::Monitor_BFER<>           monitor (K, fe  );
-
+	aff3ct::module::Source_random<>          source      (K      );
+	aff3ct::module::Encoder_repetition_sys<> encoder     (K, N   );
+	aff3ct::module::Modem_BPSK<>             modulator   (N      );
+	aff3ct::module::Modem_BPSK<>             demodulator (N      );
+	aff3ct::module::Channel_AWGN_LLR<>       channel     (N, seed);
+	aff3ct::module::Decoder_repetition_std<> decoder     (K, N   );
+	aff3ct::module::Monitor_BFER<>           monitor     (K, fe  );
+	
 	// configuration of the module tasks
-	std::vector<const aff3ct::module::Module*> modules = {&source, &encoder, &modem, &channel, &decoder, &monitor};
+	std::vector<const aff3ct::module::Module*> modules = {&source, &encoder, &modulator, &channel, &demodulator, &decoder, &monitor};
 	for (auto *m : modules)
 		for (auto *t : m->tasks)
 		{
@@ -58,28 +60,25 @@ int main(int argc, char** argv)
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	using namespace aff3ct::module;
 
-	Block bl_source (&source [src::tsk::generate],8);
-	Block bl_encoder(&encoder[enc::tsk::encode]  ,8);
-
-	bl_encoder.bind("U_K", bl_source, "U_K");
-		
-	bl_source.run();
-	bl_encoder.run();
+	Block bl_source      (&source      [src::tsk::generate    ] , 1000);
+	Block bl_encoder     (&encoder     [enc::tsk::encode      ] , 1000);
+	Block bl_modulator   (&modulator   [mdm::tsk::modulate    ] , 1000);
+	Block bl_channel     (&channel     [chn::tsk::add_noise   ] , 1000);
+	Block bl_demodulator (&demodulator [mdm::tsk::demodulate  ] , 1000);
+	Block bl_decoder     (&decoder     [dec::tsk::decode_siho ] , 1000);
+	Block bl_monitor     (&monitor     [mnt::tsk::check_errors] , 1000);
 	
-	bl_source.join();
-	bl_encoder.join();
-
-	/* encoder[enc::tsk::encode      ][enc::sck::encode      ::U_K ](source [src::tsk::generate   ][src::sck::generate   ::U_K ]);
-	modem  [mdm::tsk::modulate    ][mdm::sck::modulate    ::X_N1](encoder[enc::tsk::encode     ][enc::sck::encode     ::X_N ]);
-	channel[chn::tsk::add_noise   ][chn::sck::add_noise   ::X_N ](modem  [mdm::tsk::modulate   ][mdm::sck::modulate   ::X_N2]);
-	modem  [mdm::tsk::demodulate  ][mdm::sck::demodulate  ::Y_N1](channel[chn::tsk::add_noise  ][chn::sck::add_noise  ::Y_N ]);
-	decoder[dec::tsk::decode_siho ][dec::sck::decode_siho ::Y_N ](modem  [mdm::tsk::demodulate ][mdm::sck::demodulate ::Y_N2]);
-	monitor[mnt::tsk::check_errors][mnt::sck::check_errors::U   ](encoder[enc::tsk::encode     ][enc::sck::encode     ::U_K ]);
-	monitor[mnt::tsk::check_errors][mnt::sck::check_errors::V   ](decoder[dec::tsk::decode_siho][dec::sck::decode_siho::V_K ]);
-
-	// create a Terminal and display the legend
+	bl_encoder.bind     ("U_K" , bl_source,    "U_K" );
+	bl_modulator.bind   ("X_N1", bl_encoder,   "X_N" );
+	bl_channel.bind     ("X_N" , bl_modulator, "X_N2");
+	bl_demodulator.bind ("Y_N1", bl_channel  , "Y_N" );
+	bl_decoder.bind     ("Y_N" , bl_demodulator, "Y_N2");
+	bl_monitor.bind_cpy ("U"   , bl_source,     "U_K");
+	bl_monitor.bind     ("V"   , bl_decoder,    "V_K");		
+	
 	aff3ct::tools::Terminal_BFER<> terminal(monitor);
 	terminal.legend();
+	terminal.start_temp_report();
 
 	// a loop over the various SNRs
 	for (auto ebn0 = ebn0_min; ebn0 < ebn0_max; ebn0 += 1.f)
@@ -93,23 +92,38 @@ int main(int argc, char** argv)
 		terminal.set_ebn0(ebn0);
 
 		// update the sigma of the modem and the channel
-		modem  .set_sigma(sigma);
-		channel.set_sigma(sigma);
+		demodulator.set_sigma(sigma);
+		channel    .set_sigma(sigma);
 
 		// display the performance (BER and FER) in real time (in a separate thread)
 		terminal.start_temp_report();
+		
+		bool isDone = false;
+		std::thread th_done_verif([&isDone, &monitor]() 
+		{
+			while(!monitor.fe_limit_achieved())
+			{
+			}
+			isDone = true;
+		});
 
 		// run the simulation chain
-		while (!monitor.fe_limit_achieved())
-		{
-			source [src::tsk::generate    ].exec();
-			encoder[enc::tsk::encode      ].exec();
-			modem  [mdm::tsk::modulate    ].exec();
-			channel[chn::tsk::add_noise   ].exec();
-			modem  [mdm::tsk::demodulate  ].exec();
-			decoder[dec::tsk::decode_siho ].exec();
-			monitor[mnt::tsk::check_errors].exec();
-		}
+		bl_source     .run(&isDone);
+		bl_encoder    .run(&isDone);
+		bl_modulator  .run(&isDone);
+		bl_channel    .run(&isDone);
+		bl_demodulator.run(&isDone);
+		bl_decoder    .run(&isDone);
+		bl_monitor    .run(&isDone);
+
+		th_done_verif .join();
+		bl_source     .join();
+		bl_encoder    .join();
+		bl_modulator  .join();
+		bl_channel    .join();
+		bl_demodulator.join();
+		bl_decoder    .join();
+		bl_monitor    .join();
 
 		// display the performance (BER and FER) in the terminal
 		terminal.final_report();
@@ -122,7 +136,7 @@ int main(int argc, char** argv)
 	// display the statistics of the tasks (if enabled)
 	auto ordered = true;
 	aff3ct::tools::Stats::show(modules, ordered);
-*/
+
 	std::cout << "# End of the simulation" << std::endl;
 
 	return 0;

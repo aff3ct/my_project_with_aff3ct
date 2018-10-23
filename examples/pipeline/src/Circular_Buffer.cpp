@@ -38,6 +38,15 @@ Circular_Buffer<T,A>
 }
 
 template <typename T, class A>
+void Circular_Buffer<T,A>
+::reset()
+{
+	this->head_buffer = 0; 
+	this->tail_buffer = 0;
+	this->cur_buffer_nbr = 0;
+}
+
+template <typename T, class A>
 std::vector<T,A>* Circular_Buffer<T,A>
 ::pop( std::vector<T,A>* elt)
 {
@@ -45,7 +54,7 @@ std::vector<T,A>* Circular_Buffer<T,A>
 
 	if (this->cur_buffer_nbr == 0)
 		return nullptr;
-	
+
 	this->lock->lock();
 	std::vector<T,A>* tmp = this->circular_buffer[this->tail_buffer];
 	this->circular_buffer[this->tail_buffer] = elt;
@@ -63,13 +72,11 @@ std::vector<T,A>* Circular_Buffer<T,A>
 	assert(elt->size() == this->elt_per_buffer);
 	if (this->cur_buffer_nbr == this->max_buffer_nbr)
 		return nullptr;
-	
+
 	this->lock->lock();
 	std::vector<T,A>* tmp=this->circular_buffer[this->head_buffer];
 	this->circular_buffer[this->head_buffer] = elt;
-	
-	//std::swap(this->circular_buffer[this->head_buffer], elt);
-	
+
 	if (this->head_buffer == this->tail_buffer && this->cur_buffer_nbr > 0)
 		this->tail_buffer = (this->tail_buffer + 1)%this->max_buffer_nbr;
 
@@ -78,6 +85,26 @@ std::vector<T,A>* Circular_Buffer<T,A>
 	this->lock->unlock();
 
 	return tmp;
+}
+
+template <typename T, class A>
+bool Circular_Buffer<T,A>
+::is_full()
+{
+	if (this->cur_buffer_nbr == this->max_buffer_nbr)
+		return true;
+	else
+		return false;
+}
+
+template <typename T, class A>
+bool Circular_Buffer<T,A>
+::is_empty()
+{
+	if (this->cur_buffer_nbr == 0)
+		return true;
+	else
+		return false;
 }
 
 template <typename T, class A>
@@ -93,7 +120,7 @@ void Circular_Buffer<T,A>
 	for (int it = 0 ; it < this->max_buffer_nbr ; it++ )
 	{
 		for (int elt = 0 ; elt < this->elt_per_buffer ; elt++ ) 
-			std::cout << (T)(this->circular_buffer[it]->at(elt)) << " ";
+			std::cout << (T)(this->circular_buffer[it]->at(elt)) << "\t ";
     	if (it == this->head_buffer)
 			std::cout << "<-H";
     	if (it == this->tail_buffer)

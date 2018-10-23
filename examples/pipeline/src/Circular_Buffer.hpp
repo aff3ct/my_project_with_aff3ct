@@ -32,9 +32,14 @@ public:
 	Circular_Buffer (size_t max_buffer_nbr = 0, size_t elt_per_buffer = 0);
 	virtual ~Circular_Buffer();
 
+	inline int get_max_buffer_nbr() const {return (int)this->max_buffer_nbr;};
+	inline int get_cur_buffer_nbr() const {return (int)this->cur_buffer_nbr;};
 	std::vector<T,A>*  pop(std::vector<T,A>* elt);
 	std::vector<T,A>* push(std::vector<T,A>* elt);
+	bool is_full();
+	bool is_empty();
 	void print();
+	void reset();
 };
 
 #endif //CIRCULAR_BUFFER_HPP

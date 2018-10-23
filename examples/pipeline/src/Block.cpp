@@ -32,7 +32,7 @@ th()
 	
 	for (auto &s : task->sockets)
 	{
-		std::cout << s->get_datatype_string() << std::endl;
+		std::cout << this->name << std::endl;
 		if (task->get_socket_type(*s) == aff3ct::module::Socket_type::IN)
 		{
 			if(s->get_datatype_string() == "int8")
@@ -152,117 +152,248 @@ int Block
 	}
 	else
 	{
+		std::cout << "No socket named '" << start_sck_name << "' for Task : '" << this->name << "'." << std::endl;
+		return 1;
+	}	
+}
+
+
+int Block
+::bind_cpy(std::string start_sck_name, Block &dest_block, std::string dest_sck_name)
+{
+	if 	(this->buffered_sockets_int8_in.count(start_sck_name) > 0)
+	{
+		return this->buffered_sockets_int8_in[start_sck_name]->bind_cpy(dest_block.get_buffered_socket_int8_out(dest_sck_name));
+	}
+	else if (this->buffered_sockets_int16_in.count(start_sck_name) > 0)
+	{
+		return this->buffered_sockets_int16_in[start_sck_name]->bind_cpy(dest_block.get_buffered_socket_int16_out(dest_sck_name));
+	}
+	else if (this->buffered_sockets_int32_in.count(start_sck_name) > 0)
+	{
+		return this->buffered_sockets_int32_in[start_sck_name]->bind_cpy(dest_block.get_buffered_socket_int32_out(dest_sck_name));
+	}
+	else if (this->buffered_sockets_int64_in.count(start_sck_name) > 0)
+	{
+		return this->buffered_sockets_int64_in[start_sck_name]->bind_cpy(dest_block.get_buffered_socket_int64_out(dest_sck_name));
+	}
+	else if (this->buffered_sockets_float_in.count(start_sck_name) > 0)
+	{
+		return this->buffered_sockets_float_in[start_sck_name]->bind_cpy(dest_block.get_buffered_socket_float_out(dest_sck_name));
+	}
+	else if (this->buffered_sockets_double_in.count(start_sck_name) > 0)
+	{
+		return this->buffered_sockets_double_in[start_sck_name]->bind_cpy(dest_block.get_buffered_socket_double_out(dest_sck_name));
+	}
+	else
+	{
+		std::cout << "No socket named '" << start_sck_name << "' for Task : '" << this->name << "'." << std::endl;
 		return 1;
 	}	
 }
 
 void Block
-::execute_task()
+::execute_task(bool const * isDone)
 {
-	static std::mutex print_mutex;
-	
-	while(1)
+	while(!(*isDone))
 	{
-		for (auto const& it : this->buffered_sockets_int8_in)  { while(it.second->pop()){}; }
-		for (auto const& it : this->buffered_sockets_int16_in) { while(it.second->pop()){}; }
-		for (auto const& it : this->buffered_sockets_int32_in) { while(it.second->pop()){}; }
-		for (auto const& it : this->buffered_sockets_int64_in) { while(it.second->pop()){}; }
-		for (auto const& it : this->buffered_sockets_float_in) { while(it.second->pop()){}; }
-		for (auto const& it : this->buffered_sockets_double_in){ while(it.second->pop()){}; }
-
-		this->task->exec();
-		print_mutex.lock();
-		std::cout << "-------------------------------------------------------" << std::endl;
-		std::cout << "Je suis le Block : " << this->name << std::endl;
-		for (auto const& it : this->buffered_sockets_int8_in)
-		{
-			std::cout << "J'ai consommé : "; 
-			it.second->print_socket_data();
-		}
-
-		for (auto const& it : this->buffered_sockets_int16_in)
-		{
-			std::cout << "J'ai consommé : "; 
-			it.second->print_socket_data();
-		}
-
-		for (auto const& it : this->buffered_sockets_int32_in)
-		{
-			std::cout << "J'ai consommé : "; 
-			it.second->print_socket_data();
-		}
-
-		for (auto const& it : this->buffered_sockets_int64_in)
-		{
-			std::cout << "J'ai consommé : "; 
-			it.second->print_socket_data();
-		}
-
-		for (auto const& it : this->buffered_sockets_float_in)
-		{
-			std::cout << "J'ai consommé : "; 
-			it.second->print_socket_data();
-		}
-
-		for (auto const& it : this->buffered_sockets_double_in)
-		{
-			std::cout << "J'ai consommé : "; 
-			it.second->print_socket_data();
-		}
-		for (auto const& it : this->buffered_sockets_int8_out)
-		{
-			std::cout << "J'ai produit  : ";
-			it.second->print_socket_data();
-		}
-
-		for (auto const& it : this->buffered_sockets_int16_out)
-		{
-			std::cout << "J'ai produit  : ";
-			it.second->print_socket_data();
-		}
-
-		for (auto const& it : this->buffered_sockets_int32_out)
-		{
-			std::cout << "J'ai produit  : ";
-			it.second->print_socket_data();
-		}
-
-		for (auto const& it : this->buffered_sockets_int64_out)
-		{
-			std::cout << "J'ai produit  : ";
-			it.second->print_socket_data();
-		}		
-
-		for (auto const& it : this->buffered_sockets_float_out)
-		{
-			std::cout << "J'ai produit  : ";
-			it.second->print_socket_data();
-		}		
-		for (auto const& it : this->buffered_sockets_double_out)
-		{
-			std::cout << "J'ai produit  : ";
-			it.second->print_socket_data();
-		}		
-		std::cout << "-------------------------------------------------------" << std::endl;
-		print_mutex.unlock();
-
-		for (auto const& it : this->buffered_sockets_int8_out)  { while(it.second->push()){}; }
-		for (auto const& it : this->buffered_sockets_int16_out) { while(it.second->push()){}; }
-		for (auto const& it : this->buffered_sockets_int32_out) { while(it.second->push()){}; }
-		for (auto const& it : this->buffered_sockets_int64_out) { while(it.second->push()){}; }
-		for (auto const& it : this->buffered_sockets_float_out) { while(it.second->push()){}; }
-		for (auto const& it : this->buffered_sockets_double_out){ while(it.second->push()){}; }
+		for (auto const& it : this->buffered_sockets_int8_in  ) { while(!(*isDone) && it.second->pop()){}; }
+		for (auto const& it : this->buffered_sockets_int16_in ) { while(!(*isDone) && it.second->pop()){}; }
+		for (auto const& it : this->buffered_sockets_int32_in ) { while(!(*isDone) && it.second->pop()){}; }
+		for (auto const& it : this->buffered_sockets_int64_in ) { while(!(*isDone) && it.second->pop()){}; }
+		for (auto const& it : this->buffered_sockets_float_in ) { while(!(*isDone) && it.second->pop()){}; }
+		for (auto const& it : this->buffered_sockets_double_in) { while(!(*isDone) && it.second->pop()){}; }
+		if (!(*isDone))
+			this->task->exec();	
+		
+		for (auto const& it : this->buffered_sockets_int8_out  ) { while(!(*isDone) && it.second->push()){}; }
+		for (auto const& it : this->buffered_sockets_int16_out ) { while(!(*isDone) && it.second->push()){}; }
+		for (auto const& it : this->buffered_sockets_int32_out ) { while(!(*isDone) && it.second->push()){}; }
+		for (auto const& it : this->buffered_sockets_int64_out ) { while(!(*isDone) && it.second->push()){}; }
+		for (auto const& it : this->buffered_sockets_float_out ) { while(!(*isDone) && it.second->push()){}; }
+		for (auto const& it : this->buffered_sockets_double_out) { while(!(*isDone) && it.second->push()){}; }			
 	}
+	this->reset();
 }
 
 void Block
-::run()
+::reset()
 {
-	this->th = std::thread{&Block::execute_task,this};
+
+		for (auto const& it : this->buffered_sockets_int8_in  )  { it.second->reset(); }
+		for (auto const& it : this->buffered_sockets_int16_in )  { it.second->reset(); }
+		for (auto const& it : this->buffered_sockets_int32_in )  { it.second->reset(); }
+		for (auto const& it : this->buffered_sockets_int64_in )  { it.second->reset(); }
+		for (auto const& it : this->buffered_sockets_float_in )  { it.second->reset(); }
+		for (auto const& it : this->buffered_sockets_double_in)  { it.second->reset(); }
+		for (auto const& it : this->buffered_sockets_int8_out  ) { it.second->reset(); }
+		for (auto const& it : this->buffered_sockets_int16_out ) { it.second->reset(); }
+		for (auto const& it : this->buffered_sockets_int32_out ) { it.second->reset(); }
+		for (auto const& it : this->buffered_sockets_int64_out ) { it.second->reset(); }
+		for (auto const& it : this->buffered_sockets_float_out ) { it.second->reset(); }
+		for (auto const& it : this->buffered_sockets_double_out) { it.second->reset(); }
 }
 
-void Block
-::join()
+Buffered_Socket<int8_t>* Block
+::get_buffered_socket_int8_in(std::string name)
 {
-	this->th.join();
-}
+	if (this->buffered_sockets_int8_in.count(name) > 0)
+		return this->buffered_sockets_int8_in[name]; 
+	else
+	{
+		std::cout << "No socket named '" << name << "' for Task : '" << this->name << "'." << std::endl;
+		return nullptr;
+	}
+};
+
+Buffered_Socket<int8_t>* Block
+::get_buffered_socket_int8_out(std::string name)
+{
+	if (this->buffered_sockets_int8_out.count(name) > 0)
+		return this->buffered_sockets_int8_out[name]; 
+	else
+	{
+		std::cout << "No socket named '" << name << "' for Task : '" << this->name << "'." << std::endl;
+		return nullptr;
+	}	
+};
+
+Buffered_Socket<int16_t>* Block
+::get_buffered_socket_int16_in(std::string name)
+{
+	if (this->buffered_sockets_int16_in.count(name) > 0)
+	{
+		return this->buffered_sockets_int16_in[name]; 
+	}
+	else
+	{
+		std::cout << "No socket named '" << name << "' for Task : '" << this->name << "'." << std::endl;
+		return nullptr;
+	}
+};
+
+Buffered_Socket<int16_t>* Block
+::get_buffered_socket_int16_out(std::string name)
+{
+	if (this->buffered_sockets_int16_out.count(name) > 0)
+	{
+		return this->buffered_sockets_int16_out[name]; 
+	}
+	else
+	{
+		std::cout << "No socket named '" << name << "' for Task : '" << this->name << "'." << std::endl;
+		return nullptr;
+	}	
+};
+
+Buffered_Socket<int32_t>* Block
+::get_buffered_socket_int32_in(std::string name)
+{
+	if (this->buffered_sockets_int32_in.count(name) > 0)
+	{
+		return this->buffered_sockets_int32_in[name]; 
+	}
+	else
+	{
+		std::cout << "No socket named '" << name << "' for Task : '" << this->name << "'." << std::endl;
+		return nullptr;
+	}
+};
+
+Buffered_Socket<int32_t>* Block
+::get_buffered_socket_int32_out(std::string name)
+{
+	if (this->buffered_sockets_int32_out.count(name) > 0)
+	{
+		return this->buffered_sockets_int32_out[name]; 
+	}
+	else
+	{
+		std::cout << "No socket named '" << name << "' for Task : '" << this->name << "'." << std::endl;
+		return nullptr;
+	}	
+};
+
+Buffered_Socket<int64_t>* Block
+::get_buffered_socket_int64_in(std::string name)
+{
+	if (this->buffered_sockets_int64_in.count(name) > 0)
+	{
+		return this->buffered_sockets_int64_in[name]; 
+	}
+	else
+	{
+		std::cout << "No socket named '" << name << "' for Task : '" << this->name << "'." << std::endl;
+		return nullptr;
+	}
+};
+
+Buffered_Socket<int64_t>* Block
+::get_buffered_socket_int64_out(std::string name)
+{
+	if (this->buffered_sockets_int64_out.count(name) > 0)
+	{
+		return this->buffered_sockets_int64_out[name]; 
+	}
+	else
+	{
+		std::cout << "No socket named '" << name << "' for Task : '" << this->name << "'." << std::endl;
+		return nullptr;
+	}	
+};
+
+Buffered_Socket<float>* Block
+::get_buffered_socket_float_in(std::string name)
+{
+	if (this->buffered_sockets_float_in.count(name) > 0)
+	{
+		return this->buffered_sockets_float_in[name]; 
+	}
+	else
+	{
+		std::cout << "No socket named '" << name << "' for Task : '" << this->name << "'." << std::endl;
+		return nullptr;
+	}
+};
+
+Buffered_Socket<float>* Block
+::get_buffered_socket_float_out(std::string name)
+{
+	if (this->buffered_sockets_float_out.count(name) > 0)
+	{
+		return this->buffered_sockets_float_out[name]; 
+	}
+	else
+	{
+		std::cout << "No socket named '" << name << "' for Task : '" << this->name << "'." << std::endl;
+		return nullptr;
+	}	
+};
+
+Buffered_Socket<double>* Block
+::get_buffered_socket_double_in(std::string name)
+{
+	if (this->buffered_sockets_double_in.count(name) > 0)
+	{
+		return this->buffered_sockets_double_in[name]; 
+	}
+	else
+	{
+		std::cout << "No socket named '" << name << "' for Task : '" << this->name << "'." << std::endl;
+		return nullptr;
+	}
+};
+
+Buffered_Socket<double>* Block
+::get_buffered_socket_double_out(std::string name)
+{
+	if (this->buffered_sockets_double_out.count(name) > 0)
+	{
+		return this->buffered_sockets_double_out[name]; 
+	}
+	else
+	{
+		std::cout << "No socket named '" << name << "' for Task : '" << this->name << "'." << std::endl;
+		return nullptr;
+	}	
+};	

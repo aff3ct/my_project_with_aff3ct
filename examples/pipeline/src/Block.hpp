@@ -16,26 +16,24 @@ public:
 	virtual ~Block();
 
 	int bind (std::string start_sck_name, Block &dest_block, std::string dest_sck_name);
-	void execute_task();
-	void run();
-	void join();
-	Buffered_Socket<int8_t>* get_buffered_socket_int8_in(std::string name){ return this->buffered_sockets_int8_in[name]; };
-	Buffered_Socket<int8_t>* get_buffered_socket_int8_out(std::string name){ return this->buffered_sockets_int8_out[name]; };
+	int bind_cpy (std::string start_sck_name, Block &dest_block, std::string dest_sck_name);
+	void execute_task(bool const * isDone);
+	void run(bool const * isDone) {this->th = std::thread{&Block::execute_task,this,isDone};};
+	void join() {this->th.join();};
+	void reset();
 	
-	Buffered_Socket<int16_t>* get_buffered_socket_int16_in(std::string name){ return this->buffered_sockets_int16_in[name]; };
-	Buffered_Socket<int16_t>* get_buffered_socket_int16_out(std::string name){ return this->buffered_sockets_int16_out[name]; };
-	
-	Buffered_Socket<int32_t>* get_buffered_socket_int32_in(std::string name){ return this->buffered_sockets_int32_in[name]; };
-	Buffered_Socket<int32_t>* get_buffered_socket_int32_out(std::string name){ return this->buffered_sockets_int32_out[name]; };
-	
-	Buffered_Socket<int64_t>* get_buffered_socket_int64_in(std::string name){ return this->buffered_sockets_int64_in[name]; };
-	Buffered_Socket<int64_t>* get_buffered_socket_int64_out(std::string name){ return this->buffered_sockets_int64_out[name]; };
-	
-	Buffered_Socket<float>* get_buffered_socket_float_in(std::string name){ return this->buffered_sockets_float_in[name]; };
-	Buffered_Socket<float>* get_buffered_socket_float_out(std::string name){ return this->buffered_sockets_float_out[name]; };	
-
-	Buffered_Socket<double>* get_buffered_socket_double_in(std::string name){ return this->buffered_sockets_double_in[name]; };
-	Buffered_Socket<double>* get_buffered_socket_double_out(std::string name){ return this->buffered_sockets_double_out[name]; };		
+	Buffered_Socket<int8_t>* get_buffered_socket_int8_in(std::string name);
+	Buffered_Socket<int8_t>* get_buffered_socket_int8_out(std::string name);
+	Buffered_Socket<int16_t>* get_buffered_socket_int16_in(std::string name);
+	Buffered_Socket<int16_t>* get_buffered_socket_int16_out(std::string name);
+	Buffered_Socket<int32_t>* get_buffered_socket_int32_in(std::string name);
+	Buffered_Socket<int32_t>* get_buffered_socket_int32_out(std::string name);
+	Buffered_Socket<int64_t>* get_buffered_socket_int64_in(std::string name);
+	Buffered_Socket<int64_t>* get_buffered_socket_int64_out(std::string name);
+	Buffered_Socket<float>* get_buffered_socket_float_in(std::string name);
+	Buffered_Socket<float>* get_buffered_socket_float_out(std::string name);
+	Buffered_Socket<double>* get_buffered_socket_double_in(std::string name);
+	Buffered_Socket<double>* get_buffered_socket_double_out(std::string name);
 	
 	protected:
 	aff3ct::module::Task* task;
