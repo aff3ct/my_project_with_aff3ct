@@ -12,19 +12,19 @@ Block
 : name(task->get_name()),
 task(task),
 buffer_size(buffer_size),
-buffered_sockets_int8_out(),
+th(),
 buffered_sockets_int8_in(),
-buffered_sockets_int16_out(),
 buffered_sockets_int16_in(),
-buffered_sockets_int32_out(),
 buffered_sockets_int32_in(),
-buffered_sockets_int64_out(),
 buffered_sockets_int64_in(),
-buffered_sockets_float_out(),
 buffered_sockets_float_in(),
-buffered_sockets_double_out(),
 buffered_sockets_double_in(),
-th()
+buffered_sockets_int8_out(),
+buffered_sockets_int16_out(),
+buffered_sockets_int32_out(),
+buffered_sockets_int64_out(),
+buffered_sockets_float_out(),
+buffered_sockets_double_out()
 {
 	task->set_autoalloc(false);
 	task->set_autoexec (false);
@@ -116,10 +116,31 @@ th()
 Block
 ::~Block()
 {
-	/*for (auto const& it : this->buffered_sockets_out)
-	{
+	for (auto &it : this->buffered_sockets_int8_in)
 		delete it.second;
-	}*/
+	for (auto &it : this->buffered_sockets_int16_in)
+		delete it.second;
+	for (auto &it : this->buffered_sockets_int32_in)
+		delete it.second;
+	for (auto &it : this->buffered_sockets_int64_in)
+		delete it.second;
+	for (auto &it : this->buffered_sockets_float_in)
+		delete it.second;
+	for (auto &it : this->buffered_sockets_double_in)
+		delete it.second;
+
+	for (auto &it : this->buffered_sockets_int8_out)
+		delete it.second;
+	for (auto &it : this->buffered_sockets_int16_out)
+		delete it.second;
+	for (auto &it : this->buffered_sockets_int32_out)
+		delete it.second;
+	for (auto &it : this->buffered_sockets_int64_out)
+		delete it.second;
+	for (auto &it : this->buffered_sockets_float_out)
+		delete it.second;
+	for (auto &it : this->buffered_sockets_double_out)
+		delete it.second;
 }
 
 int Block

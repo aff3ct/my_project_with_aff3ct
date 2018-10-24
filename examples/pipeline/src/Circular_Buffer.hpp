@@ -1,7 +1,3 @@
-//
-// Created by Romain on 23/05/2018.
-//
-
 #ifndef CIRCULAR_BUFFER_HPP
 #define CIRCULAR_BUFFER_HPP
 
@@ -17,18 +13,15 @@ class Circular_Buffer
 protected:
 	size_t max_buffer_nbr;
 	size_t elt_per_buffer;
-
 	size_t head_buffer;
 	size_t tail_buffer;
 	size_t cur_buffer_nbr;
 	bool full_flag;
 	bool empty_flag;
-
 	std::recursive_mutex* lock;
 
 private:
 	std::vector<std::vector<T,A> *> circular_buffer;
-	//TODO std::vector<std::recursive_mutex*> data_locks;
 
 public:
 	Circular_Buffer (size_t max_buffer_nbr = 0, size_t elt_per_buffer = 0);
@@ -38,8 +31,8 @@ public:
 	inline int get_cur_buffer_nbr() const {return (int)this->cur_buffer_nbr;};
 	std::vector<T,A>*  pop(std::vector<T,A>* elt);
 	std::vector<T,A>* push(std::vector<T,A>* elt);
-	bool is_full();
-	bool is_empty();
+	inline bool is_full() const {return this->full_flag;};
+	inline bool is_empty() const {return this->empty_flag;};
 	void print();
 	void reset();
 };

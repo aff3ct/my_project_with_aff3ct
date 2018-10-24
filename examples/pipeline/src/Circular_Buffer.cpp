@@ -8,45 +8,34 @@
 template <typename T, class A>
 Circular_Buffer<T,A>
 ::Circular_Buffer (size_t max_buffer_nbr, size_t elt_per_buffer)
-:max_buffer_nbr(max_buffer_nbr), 
+: max_buffer_nbr(max_buffer_nbr), 
   elt_per_buffer(elt_per_buffer),
   head_buffer(0), 
   tail_buffer(0),
   cur_buffer_nbr(0),
+  full_flag (false),
+  empty_flag(true ),
   lock(nullptr),
-  full_flag(false),
-  empty_flag(true),
   circular_buffer(max_buffer_nbr, nullptr)
 {
 	assert(max_buffer_nbr > 0);
 	assert(elt_per_buffer > 0);
-	if (this->cur_buffer_nbr == this->max_buffer_nbr)
-		this->full_flag = true;
-	else
-		this->full_flag = false;
 	
-	if (this->cur_buffer_nbr == 0)
-		this->empty_flag = true;
-	else
-		this->empty_flag = false;
+	this->full_flag = (this->cur_buffer_nbr == this->max_buffer_nbr);
+	this->empty_flag = (this->cur_buffer_nbr == 0);
 	
 	this->lock = new std::recursive_mutex();
 	for (int i =0; i<this->max_buffer_nbr; i++)
-	{
 		this->circular_buffer[i] = new std::vector<T,A>(elt_per_buffer,T(0));
-	}
 }
 
 template <typename T, class A>
 Circular_Buffer<T,A>
 ::~Circular_Buffer()
 {
-	delete(this->lock);
-	for (int i =0; i<this->max_buffer_nbr; i++)
-	{
-		delete(this->circular_buffer[i]);
-	}
-
+	delete this->lock;
+	for (auto &b:this->circular_buffer)
+		delete b;
 }
 
 template <typename T, class A>
@@ -56,15 +45,8 @@ void Circular_Buffer<T,A>
 	this->head_buffer = 0; 
 	this->tail_buffer = 0;
 	this->cur_buffer_nbr = 0;
-	if (this->cur_buffer_nbr == this->max_buffer_nbr)
-		this->full_flag = true;
-	else
-		this->full_flag = false;
-	
-	if (this->cur_buffer_nbr == 0)
-		this->empty_flag = true;
-	else
-		this->empty_flag = false;
+	this->full_flag = (this->cur_buffer_nbr == this->max_buffer_nbr);
+	this->empty_flag = (this->cur_buffer_nbr == 0);
 		
 }
 
@@ -72,7 +54,7 @@ template <typename T, class A>
 std::vector<T,A>* Circular_Buffer<T,A>
 ::pop( std::vector<T,A>* elt)
 {
-	//assert(elt->size() == this->elt_per_buffer);
+	assert(elt->size() == this->elt_per_buffer);
 
 	if (this->empty_flag)
 		return nullptr;
@@ -80,12 +62,11 @@ std::vector<T,A>* Circular_Buffer<T,A>
 	this->lock->lock();
 	std::vector<T,A>* tmp = this->circular_buffer[this->tail_buffer];
 	this->circular_buffer[this->tail_buffer] = elt;
-
 	this->tail_buffer = (this->tail_buffer + 1)%this->max_buffer_nbr;
 	this->empty_flag  = (--this->cur_buffer_nbr == 0);
 	this->full_flag   = false;
-
 	this->lock->unlock();
+
 	return tmp;
 }
 
@@ -93,7 +74,7 @@ template <typename T, class A>
 std::vector<T,A>* Circular_Buffer<T,A>
 ::push(std::vector<T,A>* elt)
 {
-	//assert(elt->size() == this->elt_per_buffer);
+	assert(elt->size() == this->elt_per_buffer);
 	if (this->full_flag)
 		return nullptr;
 
@@ -106,27 +87,11 @@ std::vector<T,A>* Circular_Buffer<T,A>
 
 	this->head_buffer = (this->head_buffer + 1)%this->max_buffer_nbr;
 	this->cur_buffer_nbr = std::min(this->cur_buffer_nbr + 1, this->max_buffer_nbr);
-
 	this->empty_flag = false;
 	this->full_flag  = (this->cur_buffer_nbr == this->max_buffer_nbr);
-
 	this->lock->unlock();
 
 	return tmp;
-}
-
-template <typename T, class A>
-bool Circular_Buffer<T,A>
-::is_full()
-{
-	return this->full_flag;
-}
-
-template <typename T, class A>
-bool Circular_Buffer<T,A>
-::is_empty()
-{
-	return this->empty_flag;
 }
 
 template <typename T, class A>
@@ -139,9 +104,9 @@ void Circular_Buffer<T,A>
 	std::cout << "Head : "<< this->head_buffer << std::endl;
 	std::cout << "Tail : "<< this->tail_buffer << std::endl;
 	std::cout << "---------------------------------------" << std::endl;
-	for (int it = 0 ; it < this->max_buffer_nbr ; it++ )
+	for (size_t it = 0 ; it < this->max_buffer_nbr ; it++ )
 	{
-		for (int elt = 0 ; elt < this->elt_per_buffer ; elt++ ) 
+		for (size_t elt = 0 ; elt < this->elt_per_buffer ; elt++ ) 
 			std::cout << (T)(this->circular_buffer[it]->at(elt)) << "\t ";
     	if (it == this->head_buffer)
 			std::cout << "<-H";
@@ -152,9 +117,9 @@ void Circular_Buffer<T,A>
 	std::cout << "---------------------------------------" << std::endl;	
 }
 
-template class Circular_Buffer<int8_t>;
+template class Circular_Buffer<int8_t >;
 template class Circular_Buffer<int16_t>;
 template class Circular_Buffer<int32_t>;
 template class Circular_Buffer<int64_t>;
-template class Circular_Buffer<float>;
-template class Circular_Buffer<double>;
+template class Circular_Buffer<float  >;
+template class Circular_Buffer<double >;

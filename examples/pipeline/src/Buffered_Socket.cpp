@@ -2,7 +2,6 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-//#include <mipp.h>
 #include <aff3ct.hpp>
 
 #include "Circular_Buffer.hpp"
@@ -16,9 +15,9 @@ socket_type(socket_type),
 buffer_size(buffer_size), 
 type_name(socket->get_datatype_string()),
 name(socket->get_name()),
-pop_buffer_idx(0),
 socket_data(),
-buffer()
+buffer(),
+pop_buffer_idx(0)
 {
 	int n_elt = socket->get_n_elmts();
 	std::string type_name = socket->get_datatype_string();
@@ -33,18 +32,15 @@ buffer()
 template<typename T>
 Buffered_Socket<T>
 ::~Buffered_Socket(){
-	std::cout << "Start of cleaning allocated Circular Buffer..." << std::endl;
-	int buffer_idx = 0;
-	std::string type_name = this->socket->get_datatype_string();
 
-	if (this->socket_type == aff3ct::module::Socket_type::OUT || this->socket_type == aff3ct::module::Socket_type::IN_OUT)
+	if (this->socket_type == aff3ct::module::Socket_type::OUT || 
+	    this->socket_type == aff3ct::module::Socket_type::IN_OUT)
 	{
-		std::cout << "Cleaning of a circular buffer for socket "<< this->socket->get_name() << std::endl;
-		delete this->buffer[0];
+		for (auto &b:this->buffer)
+			delete b;
 	}
-	delete this->socket_data[0];
-
-	std::cout << "End of cleaning." << std::endl;
+	for (auto &sd:this->socket_data)
+		delete sd;
 };
 
 template<typename T>
@@ -85,16 +81,12 @@ int Buffered_Socket<T>
 	for (int i=0 ; i<this->buffer.size(); i++)
 	{
 		if (this->buffer[i]->is_full())
-		{
 			return 1;
-		}
-			
 	}
 
 	for (int i=0 ; i<this->buffer.size(); i++)
-	{
 		this->socket_data[i] = this->buffer[i]->push(this->socket_data[i]);
-	}
+
 	this->socket->template bind<T>(*this->socket_data[0]);
 	return 0;
 };
@@ -141,18 +133,6 @@ template<typename T>
 void Buffered_Socket<T>
 ::print_socket_data()
 {
-	/*for (int j = 0; j<this->socket_data.size(); j++)
-	{
-		std::cout << this->name << "(" << j << "): [ ";
-		for (int i = 0 ; i < this->socket_data[j]->size() ; i++)
-		{
-			std::cout << this->socket_data[j]->at(i) << "\t ";
-		}
-		std::cout << "]" << "\n";
-		this->buffer[j]->print();
-
-	}*/
-
 	for (int j = 0; j<this->socket_data.size(); j++)
 	{
 		std::cout << this->name << "(" << j << "): Buffer Size : [ " << this->buffer[j]->get_cur_buffer_nbr() 
@@ -160,9 +140,9 @@ void Buffered_Socket<T>
 	}
 }
 
-template class Buffered_Socket<int8_t>;
+template class Buffered_Socket<int8_t >;
 template class Buffered_Socket<int16_t>;
 template class Buffered_Socket<int32_t>;
 template class Buffered_Socket<int64_t>;
-template class Buffered_Socket<float>;
-template class Buffered_Socket<double>;
+template class Buffered_Socket<float  >;
+template class Buffered_Socket<double >;
