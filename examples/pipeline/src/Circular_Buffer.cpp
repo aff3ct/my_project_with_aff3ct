@@ -14,10 +14,22 @@ Circular_Buffer<T,A>
   tail_buffer(0),
   cur_buffer_nbr(0),
   lock(nullptr),
+  full_flag(false),
+  empty_flag(true),
   circular_buffer(max_buffer_nbr, nullptr)
 {
 	assert(max_buffer_nbr > 0);
 	assert(elt_per_buffer > 0);
+	if (this->cur_buffer_nbr == this->max_buffer_nbr)
+		this->full_flag = true;
+	else
+		this->full_flag = false;
+	
+	if (this->cur_buffer_nbr == 0)
+		this->empty_flag = true;
+	else
+		this->empty_flag = false;
+	
 	this->lock = new std::recursive_mutex();
 	for (int i =0; i<this->max_buffer_nbr; i++)
 	{
@@ -44,15 +56,25 @@ void Circular_Buffer<T,A>
 	this->head_buffer = 0; 
 	this->tail_buffer = 0;
 	this->cur_buffer_nbr = 0;
+	if (this->cur_buffer_nbr == this->max_buffer_nbr)
+		this->full_flag = true;
+	else
+		this->full_flag = false;
+	
+	if (this->cur_buffer_nbr == 0)
+		this->empty_flag = true;
+	else
+		this->empty_flag = false;
+		
 }
 
 template <typename T, class A>
 std::vector<T,A>* Circular_Buffer<T,A>
 ::pop( std::vector<T,A>* elt)
 {
-	assert(elt->size() == this->elt_per_buffer);
+	//assert(elt->size() == this->elt_per_buffer);
 
-	if (this->cur_buffer_nbr == 0)
+	if (this->empty_flag)
 		return nullptr;
 
 	this->lock->lock();
@@ -60,7 +82,9 @@ std::vector<T,A>* Circular_Buffer<T,A>
 	this->circular_buffer[this->tail_buffer] = elt;
 
 	this->tail_buffer = (this->tail_buffer + 1)%this->max_buffer_nbr;
-	this->cur_buffer_nbr--;
+	this->empty_flag  = (--this->cur_buffer_nbr == 0);
+	this->full_flag   = false;
+
 	this->lock->unlock();
 	return tmp;
 }
@@ -69,8 +93,8 @@ template <typename T, class A>
 std::vector<T,A>* Circular_Buffer<T,A>
 ::push(std::vector<T,A>* elt)
 {
-	assert(elt->size() == this->elt_per_buffer);
-	if (this->cur_buffer_nbr == this->max_buffer_nbr)
+	//assert(elt->size() == this->elt_per_buffer);
+	if (this->full_flag)
 		return nullptr;
 
 	this->lock->lock();
@@ -82,6 +106,10 @@ std::vector<T,A>* Circular_Buffer<T,A>
 
 	this->head_buffer = (this->head_buffer + 1)%this->max_buffer_nbr;
 	this->cur_buffer_nbr = std::min(this->cur_buffer_nbr + 1, this->max_buffer_nbr);
+
+	this->empty_flag = false;
+	this->full_flag  = (this->cur_buffer_nbr == this->max_buffer_nbr);
+
 	this->lock->unlock();
 
 	return tmp;
@@ -91,20 +119,14 @@ template <typename T, class A>
 bool Circular_Buffer<T,A>
 ::is_full()
 {
-	if (this->cur_buffer_nbr == this->max_buffer_nbr)
-		return true;
-	else
-		return false;
+	return this->full_flag;
 }
 
 template <typename T, class A>
 bool Circular_Buffer<T,A>
 ::is_empty()
 {
-	if (this->cur_buffer_nbr == 0)
-		return true;
-	else
-		return false;
+	return this->empty_flag;
 }
 
 template <typename T, class A>

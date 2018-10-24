@@ -21,6 +21,8 @@ protected:
 	size_t head_buffer;
 	size_t tail_buffer;
 	size_t cur_buffer_nbr;
+	bool full_flag;
+	bool empty_flag;
 
 	std::recursive_mutex* lock;
 
