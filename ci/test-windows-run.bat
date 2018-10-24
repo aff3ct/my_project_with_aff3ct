@@ -27,7 +27,7 @@ goto EndLoop
 set build=%~1%
 cd %build%/bin/
 my_project.exe %params%
-if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
 cd ../..
 goto EndLoop
 
