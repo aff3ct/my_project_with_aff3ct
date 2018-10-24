@@ -21,6 +21,7 @@ int main(int argc, char** argv)
 	const float R        = (float)K / (float)N;
 	const float ebn0_min = 0.00f;
 	const float ebn0_max = 10.1f;
+	const int buf_length = 100000;
 
 	std::cout << "# * Simulation parameters: "           << std::endl;
 	std::cout << "#    ** Frame errors   = " << fe       << std::endl;
@@ -59,14 +60,14 @@ int main(int argc, char** argv)
 
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	using namespace aff3ct::module;
-
-	Block bl_source      (&source      [src::tsk::generate    ] , 10);
-	Block bl_encoder     (&encoder     [enc::tsk::encode      ] , 10);
-	Block bl_modulator   (&modulator   [mdm::tsk::modulate    ] , 10);
-	Block bl_channel     (&channel     [chn::tsk::add_noise   ] , 10);
-	Block bl_demodulator (&demodulator [mdm::tsk::demodulate  ] , 10);
-	Block bl_decoder     (&decoder     [dec::tsk::decode_siho ] , 10);
-	Block bl_monitor     (&monitor     [mnt::tsk::check_errors] , 10);
+	
+	Block bl_source      (&source      [src::tsk::generate    ] , buf_length);
+	Block bl_encoder     (&encoder     [enc::tsk::encode      ] , buf_length);
+	Block bl_modulator   (&modulator   [mdm::tsk::modulate    ] , buf_length);
+	Block bl_channel     (&channel     [chn::tsk::add_noise   ] , buf_length);
+	Block bl_demodulator (&demodulator [mdm::tsk::demodulate  ] , buf_length);
+	Block bl_decoder     (&decoder     [dec::tsk::decode_siho ] , buf_length);
+	Block bl_monitor     (&monitor     [mnt::tsk::check_errors] , buf_length);
 	
 	bl_encoder.bind     ("U_K" , bl_source,    "U_K" );
 	bl_modulator.bind   ("X_N1", bl_encoder,   "X_N" );
