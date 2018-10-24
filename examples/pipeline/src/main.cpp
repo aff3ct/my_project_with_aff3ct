@@ -16,8 +16,8 @@ int main(int argc, char** argv)
 
 	const int   fe       = 100;
 	const int   seed     = argc >= 2 ? std::atoi(argv[1]) : 0;
-	const int   K        = 1024;
-	const int   N        = 2048;
+	const int   K        = 32;
+	const int   N        = 128;
 	const float R        = (float)K / (float)N;
 	const float ebn0_min = 0.00f;
 	const float ebn0_max = 10.1f;
@@ -60,13 +60,13 @@ int main(int argc, char** argv)
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	using namespace aff3ct::module;
 
-	Block bl_source      (&source      [src::tsk::generate    ] , 1000);
-	Block bl_encoder     (&encoder     [enc::tsk::encode      ] , 1000);
-	Block bl_modulator   (&modulator   [mdm::tsk::modulate    ] , 1000);
-	Block bl_channel     (&channel     [chn::tsk::add_noise   ] , 1000);
-	Block bl_demodulator (&demodulator [mdm::tsk::demodulate  ] , 1000);
-	Block bl_decoder     (&decoder     [dec::tsk::decode_siho ] , 1000);
-	Block bl_monitor     (&monitor     [mnt::tsk::check_errors] , 1000);
+	Block bl_source      (&source      [src::tsk::generate    ] , 10);
+	Block bl_encoder     (&encoder     [enc::tsk::encode      ] , 10);
+	Block bl_modulator   (&modulator   [mdm::tsk::modulate    ] , 10);
+	Block bl_channel     (&channel     [chn::tsk::add_noise   ] , 10);
+	Block bl_demodulator (&demodulator [mdm::tsk::demodulate  ] , 10);
+	Block bl_decoder     (&decoder     [dec::tsk::decode_siho ] , 10);
+	Block bl_monitor     (&monitor     [mnt::tsk::check_errors] , 10);
 	
 	bl_encoder.bind     ("U_K" , bl_source,    "U_K" );
 	bl_modulator.bind   ("X_N1", bl_encoder,   "X_N" );

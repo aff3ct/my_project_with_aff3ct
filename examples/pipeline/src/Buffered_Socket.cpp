@@ -26,15 +26,7 @@ buffer()
 	this->socket_data.push_back(new std::vector<T>(n_elt,T(0)));
 	this->socket->template bind<T>(*this->socket_data[0]);
 	if (socket_type == aff3ct::module::Socket_type::OUT || socket_type == aff3ct::module::Socket_type::IN_OUT)
-	{
 		this->buffer.push_back(new Circular_Buffer<T>(buffer_size, n_elt));
-		std::cout << "I Built a "<< this->socket->get_datatype_string() <<" Circular Buffer for socket named " << this->socket->get_name() << std::endl; 
-	}
-	else
-	{
-		std::cout << "No " << this->socket->get_datatype_string() <<" Circular Buffer built for socket named " << this->socket->get_name() << std::endl; 
-	}
-
 }
 
 

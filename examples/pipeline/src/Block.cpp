@@ -32,7 +32,6 @@ th()
 	
 	for (auto &s : task->sockets)
 	{
-		std::cout << this->name << std::endl;
 		if (task->get_socket_type(*s) == aff3ct::module::Socket_type::IN)
 		{
 			if(s->get_datatype_string() == "int8")
