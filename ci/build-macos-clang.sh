@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 
-examples=(bootstrap tasks factory)
+examples=(bootstrap tasks factory pipeline)
 
 build_root=build_macos_clang
 function compile {

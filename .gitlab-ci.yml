@@ -36,6 +36,7 @@ build-linux-gcc:
       - ./examples/factory/build_linux_gcc/bin/
       - ./examples/systemc/build_linux_gcc/bin/
       - ./examples/tasks/build_linux_gcc/bin/
+      - ./examples/pipeline/build_linux_gcc/bin/
   script:
     - source ./ci/tools/threads.sh
     - ./ci/build-linux-gcc.sh
@@ -54,6 +55,7 @@ build-linux-clang:
       - ./examples/factory/build_linux_clang/bin/
       - ./examples/systemc/build_linux_clang/bin/
       - ./examples/tasks/build_linux_clang/bin/
+      - ./examples/pipeline/build_linux_clang/bin/
   script:
     - source ./ci/tools/threads.sh
     - ./ci/build-linux-clang.sh
@@ -71,6 +73,7 @@ build-linux-gcc-4.8:
       - ./examples/factory/build_linux_gcc-4.8/bin/
       - ./examples/systemc/build_linux_gcc-4.8/bin/
       - ./examples/tasks/build_linux_gcc-4.8/bin/
+      - ./examples/pipeline/build_linux_gcc-4.8/bin/
   script:
     - ./ci/build-linux-gcc-4.8.sh
 
@@ -88,6 +91,7 @@ build-linux-icpc:
       - ./examples/factory/build_linux_icpc/bin/
       - ./examples/systemc/build_linux_icpc/bin/
       - ./examples/tasks/build_linux_icpc/bin/
+      - ./examples/pipeline/build_linux_icpc/bin/
   script:
     - source ./ci/tools/threads.sh
     - ./ci/build-linux-icpc.sh
@@ -103,6 +107,7 @@ build-windows-gcc:
       - ./examples/bootstrap/build_windows_gcc/bin/
       - ./examples/factory/build_windows_gcc/bin/
       - ./examples/tasks/build_windows_gcc/bin/
+      - ./examples/pipeline/build_windows_gcc/bin/
   script:
     - call ./ci/tools/threads.bat
     - ./ci/build-windows-gcc.bat
@@ -118,6 +123,7 @@ build-windows-msvc:
       - ./examples/bootstrap/build_windows_msvc/bin/
       - ./examples/factory/build_windows_msvc/bin/
       - ./examples/tasks/build_windows_msvc/bin/
+      - ./examples/pipeline/build_windows_msvc/bin/
   script:
     - call ./ci/tools/threads.bat
     - ./ci/build-windows-msvc.bat
@@ -134,6 +140,7 @@ build-macos-clang:
       - ./examples/bootstrap/build_macos_clang/bin/
       - ./examples/factory/build_macos_clang/bin/
       - ./examples/tasks/build_macos_clang/bin/
+      - ./examples/pipeline/build_macos_clang/bin/
   script:
     - source ./ci/tools/threads.sh
     - ./ci/build-macos-clang.sh
@@ -171,6 +178,14 @@ test-linux-run-factory:
   script:
     - ./ci/test-linux-macos-run.sh factory "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
 
+test-linux-run-pipeline:
+  stage: test
+  tags:
+    - linux
+    - sse4.2
+  script:
+    - ./ci/test-linux-macos-run.sh pipeline " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+
 # test-macos-run-bootstrap:
 #   stage: test
 #   tags:
@@ -195,6 +210,14 @@ test-linux-run-factory:
 #   script:
 #     - ./ci/test-linux-macos-run.sh factory "-K 32 -N 128" build_macos_clang
 
+# test-macos-run-pipeline:
+#   stage: test
+#   tags:
+#    - macos
+#    - sse4.2
+#   script:
+#     - ./ci/test-linux-macos-run.sh pipeline " " build_macos_clang
+
 # test-windows-run-bootstrap:
 #   stage: test
 #   tags:
@@ -218,3 +241,11 @@ test-linux-run-factory:
 #    - avx
 #   script:
 #     - ./ci/test-windows-run.bat factory "-K 32 -N 128" build_windows_gcc build_windows_msvc
+
+# test-windows-run-pipeline:
+#   stage: test
+#   tags:
+#    - windows
+#    - avx
+#   script:
+#     - ./ci/test-windows-run.bat pipeline " " build_windows_gcc build_windows_msvc

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 
-examples=(bootstrap tasks systemc factory)
+examples=(bootstrap tasks systemc factory pipeline)
 
 build_root=build_linux_gcc-4.8
 function compile {

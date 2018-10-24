@@ -1,6 +1,6 @@
 @echo on
 
-set examples=bootstrap tasks factory
+set examples=bootstrap tasks factory pipeline
 
 cd examples
 for %%a in (%examples%) do (

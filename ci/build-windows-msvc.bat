@@ -1,6 +1,6 @@
 @echo on
 
-set examples=bootstrap tasks factory
+set examples=bootstrap tasks factory pipeline
 
 set "VSCMD_START_DIR=%CD%"
 call "%VS_PATH%\VC\Auxiliary\Build\vcvars64.bat"
