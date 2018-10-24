@@ -3,19 +3,14 @@
 #include <vector>
 #include <algorithm>
 #include <aff3ct.hpp>
-
 #include "Circular_Buffer.hpp"
+#include "NT_Buffered_Socket.hpp"
 #include "Buffered_Socket.hpp"
 
 template<typename T>
 Buffered_Socket<T>
 ::Buffered_Socket(aff3ct::module::Socket* socket, aff3ct::module::Socket_type socket_type, int buffer_size)
-:socket(socket), 
-socket_type(socket_type), 
-buffer_size(buffer_size), 
-type_name(socket->get_datatype_string()),
-name(socket->get_name()),
-socket_data(),
+:NT_Buffered_Socket(socket, socket_type, buffer_size),socket_data(),
 buffer(),
 pop_buffer_idx(0)
 {
@@ -103,7 +98,7 @@ void Buffered_Socket<T>
 
 template<typename T>
 int Buffered_Socket<T>
-::bind(Buffered_Socket<T>* s) 
+::bind(Buffered_Socket<T>* s)
 {	
 	if (s->get_last_buffer() == nullptr)
 		return 1;

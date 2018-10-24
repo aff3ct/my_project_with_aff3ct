@@ -20,36 +20,19 @@ public:
 	void run(bool const * isDone) {this->th = std::thread{&Block::execute_task,this,isDone};};
 	void join() {this->th.join();};
 	void reset();
-	Buffered_Socket<int8_t >* get_buffered_socket_int8_in   (std::string name);
-	Buffered_Socket<int8_t >* get_buffered_socket_int8_out  (std::string name);
-	Buffered_Socket<int16_t>* get_buffered_socket_int16_in  (std::string name);
-	Buffered_Socket<int16_t>* get_buffered_socket_int16_out (std::string name);
-	Buffered_Socket<int32_t>* get_buffered_socket_int32_in  (std::string name);
-	Buffered_Socket<int32_t>* get_buffered_socket_int32_out (std::string name);
-	Buffered_Socket<int64_t>* get_buffered_socket_int64_in  (std::string name);
-	Buffered_Socket<int64_t>* get_buffered_socket_int64_out (std::string name);
-	Buffered_Socket<float  >* get_buffered_socket_float_in  (std::string name);
-	Buffered_Socket<float  >* get_buffered_socket_float_out (std::string name);
-	Buffered_Socket<double >* get_buffered_socket_double_in (std::string name);
-	Buffered_Socket<double >* get_buffered_socket_double_out(std::string name);	
+	
+	template <typename T>
+	Buffered_Socket<T>* get_buffered_socket_in   (std::string name);
+	template <typename T>
+	Buffered_Socket<T>* get_buffered_socket_out   (std::string name);
+	
 	
 protected:
 	aff3ct::module::Task* task;
 	unsigned int buffer_size;
 	std::thread th;
 
-	std::map<std::string, Buffered_Socket<int8_t >*> buffered_sockets_int8_in  ;
-	std::map<std::string, Buffered_Socket<int16_t>*> buffered_sockets_int16_in ;
-	std::map<std::string, Buffered_Socket<int32_t>*> buffered_sockets_int32_in ;
-	std::map<std::string, Buffered_Socket<int64_t>*> buffered_sockets_int64_in ;
-	std::map<std::string, Buffered_Socket<float  >*> buffered_sockets_float_in ;
-	std::map<std::string, Buffered_Socket<double >*> buffered_sockets_double_in;
-
-	std::map<std::string, Buffered_Socket<int8_t >*> buffered_sockets_int8_out  ;
-	std::map<std::string, Buffered_Socket<int16_t>*> buffered_sockets_int16_out ;
-	std::map<std::string, Buffered_Socket<int32_t>*> buffered_sockets_int32_out ;
-	std::map<std::string, Buffered_Socket<int64_t>*> buffered_sockets_int64_out ;
-	std::map<std::string, Buffered_Socket<float  >*> buffered_sockets_float_out ;
-	std::map<std::string, Buffered_Socket<double >*> buffered_sockets_double_out;
+	std::map<std::string, NT_Buffered_Socket*> buffered_sockets_in  ;
+	std::map<std::string, NT_Buffered_Socket*> buffered_sockets_out  ;
 };
 #endif /* BLOCK_HPP_ */
