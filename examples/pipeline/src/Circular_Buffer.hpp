@@ -5,7 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <mutex>
-#include <algorithm>
+#include <condition_variable>
 
 template <typename T, class A = std::allocator<T>>
 class Circular_Buffer
@@ -19,8 +19,9 @@ protected:
 private:
 	size_t cb_size;
 	std::vector<std::vector<T,A> *> circular_buffer;
-	std::mutex lock_;
-	std::condition_variable cond_;
+	std::mutex wait_lock;
+	std::vector<std::mutex> lock;
+	std::condition_variable cond;
 	bool stop_signal;
 
 public:

@@ -2,7 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <mutex>
-#include <algorithm>
+#include <condition_variable>
 #include "Circular_Buffer.hpp"
 
 template <typename T, class A>
@@ -14,8 +14,9 @@ Circular_Buffer<T,A>
   tail_buffer(0),
   cb_size(max_buffer_nbr+1),
   circular_buffer(max_buffer_nbr+1, nullptr),
-  lock_(),
-  cond_(),
+  wait_lock(),
+  lock(max_buffer_nbr+1),
+  cond(),
   stop_signal(false)
 {
 	assert(max_buffer_nbr > 0);
@@ -28,10 +29,7 @@ Circular_Buffer<T,A>
 template <typename T, class A>
 Circular_Buffer<T,A>
 ::~Circular_Buffer()
-{
-
-	//delete this->lock;
-	
+{	
 	for (auto &b:this->circular_buffer)
 		delete b;
 }
@@ -49,10 +47,10 @@ template <typename T, class A>
 void Circular_Buffer<T,A>
 ::stop()
 {
-	std::unique_lock<std::mutex> mlock(this->lock_);
+	std::unique_lock<std::mutex> mlock(this->wait_lock);
 	this->stop_signal = true;
 	mlock.unlock();
-	this->cond_.notify_all();
+	this->cond.notify_all();
 }
 
 template <typename T, class A>
@@ -64,14 +62,17 @@ int Circular_Buffer<T,A>
 	if (this->is_empty())
 		return 1;
 
-	std::unique_lock<std::mutex> mlock(this->lock_);
-
+	std::unique_lock<std::mutex> mlock(this->wait_lock);
+	
+	this->lock[this->tail_buffer].lock();
 	std::vector<T,A>* tmp = this->circular_buffer[this->tail_buffer];
 	this->circular_buffer[this->tail_buffer] = *elt;
+	this->lock[this->tail_buffer].unlock();
+
 	*elt = tmp;
 	this->tail_buffer = (this->tail_buffer + 1)%this->cb_size;
 	mlock.unlock();
-	this->cond_.notify_one();
+	this->cond.notify_one();
 	return 0;
 }
 
@@ -83,14 +84,14 @@ int Circular_Buffer<T,A>
 	if (this->is_full())
 		return 1;
 
-	std::unique_lock<std::mutex> mlock(this->lock_);
-
+	this->lock[this->head_buffer].lock();
 	std::vector<T,A>* tmp=this->circular_buffer[this->head_buffer];
 	this->circular_buffer[this->head_buffer] = *elt;
+	this->lock[this->head_buffer].unlock();
+
 	*elt = tmp;
 	this->head_buffer = (this->head_buffer + 1)%this->cb_size;
-	mlock.unlock();
-	this->cond_.notify_one();
+	this->cond.notify_one();
 	return 0;
 }
 
@@ -100,20 +101,22 @@ void Circular_Buffer<T,A>
 {
 	assert(elt[0]->size() == this->elt_per_buffer);
 
-	std::unique_lock<std::mutex> mlock(this->lock_);
+	std::unique_lock<std::mutex> mlock(this->wait_lock);
 	while (this->is_empty() && !this->stop_signal)
 	{
-		this->cond_.wait(mlock);
+		this->cond.wait(mlock);
 	}
 	if (this->stop_signal)
 		return;
-	
+	this->lock[this->tail_buffer].lock();
 	std::vector<T,A>* tmp = this->circular_buffer[this->tail_buffer];
 	this->circular_buffer[this->tail_buffer] = *elt;
+	this->lock[this->tail_buffer].unlock();
 	*elt = tmp;
+
 	this->tail_buffer = (this->tail_buffer + 1)%this->cb_size;
 	mlock.unlock();
-	this->cond_.notify_one();
+	this->cond.notify_all();
 }
 
 template <typename T, class A>
@@ -121,21 +124,22 @@ void Circular_Buffer<T,A>
 ::wait_push(std::vector<T,A>** elt)
 {
 	assert(elt[0]->size() == this->elt_per_buffer);
-	std::unique_lock<std::mutex> mlock(this->lock_);
+	std::unique_lock<std::mutex> mlock(this->wait_lock);
 	while (this->is_full() && !this->stop_signal)
 	{
-		this->cond_.wait(mlock);
+		this->cond.wait(mlock);
 	}
 	
 	if (this->stop_signal)
 		return;
-
+	this->lock[this->head_buffer].lock();
 	std::vector<T,A>* tmp=this->circular_buffer[this->head_buffer];
 	this->circular_buffer[this->head_buffer] = *elt;
 	*elt = tmp;
+	this->lock[this->head_buffer].unlock();
 	this->head_buffer = (this->head_buffer + 1)%this->cb_size;
 	mlock.unlock();
-	this->cond_.notify_one();
+	this->cond.notify_all();
 }
 
 template <typename T, class A>
