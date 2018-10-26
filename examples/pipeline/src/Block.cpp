@@ -178,15 +178,20 @@ int Block
 void Block
 ::execute_task(bool const * isDone)
 {
+	static std::mutex print_mx;
 	while(!(*isDone))
 	{
-		for (auto const& it : this->buffered_sockets_in  ) { while(!(*isDone) && it.second->pop()){}; }
-		if (!(*isDone))
-			this->task->exec();	
 		
-		for (auto const& it : this->buffered_sockets_out  ) { while(!(*isDone) && it.second->push()){}; }		
-	}
-	this->reset();
+		for (auto const& it : this->buffered_sockets_in  ) {it.second->wait_pop();}
+		if (*isDone)
+			break;
+						
+		this->task->exec();
+		for (auto const& it : this->buffered_sockets_out  ) {it.second->wait_push();}
+	}	
+
+	for (auto const& it : this->buffered_sockets_out ) { it.second->stop();}
+	for (auto const& it : this->buffered_sockets_in ) { it.second->stop();}
 }
 
 void Block

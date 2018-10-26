@@ -8,6 +8,7 @@
 #include <cassert>
 #include <iostream>
 #include <vector>
+#include <atomic>
 //#include <mipp.h>
 #include <aff3ct.hpp>
 #include "NT_Buffered_Socket.hpp"
@@ -20,9 +21,13 @@ public:
 	Buffered_Socket(aff3ct::module::Socket* socket, aff3ct::module::Socket_type socket_type, int buffer_size);
 	virtual ~Buffered_Socket();
 
+	void stop();
 	void reset();
 	int  pop  ();
 	int  push ();
+	void  wait_pop  ();
+	void  wait_push ();
+
 	int  bind    (Buffered_Socket<T>* s);
 	int  bind_cpy(Buffered_Socket<T>* s);
 	void print_socket_data();

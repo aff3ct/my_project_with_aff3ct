@@ -1,5 +1,5 @@
-#ifndef BLOCK_HPP_
-#define BLOCK_HPP_
+#ifndef BLOCK_HPP
+#define BLOCK_HPP
 
 #include <map>
 #include <thread>
@@ -35,4 +35,4 @@ protected:
 	std::map<std::string, NT_Buffered_Socket*> buffered_sockets_in  ;
 	std::map<std::string, NT_Buffered_Socket*> buffered_sockets_out  ;
 };
-#endif /* BLOCK_HPP_ */
+#endif /* BLOCK_HPP */

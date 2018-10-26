@@ -47,21 +47,33 @@ void Buffered_Socket<T>
 };
 
 template<typename T>
+void Buffered_Socket<T>
+:: stop()
+{
+	for (auto const & buff:this->buffer)
+		buff->stop();
+};
+
+template<typename T>
 int Buffered_Socket<T>
 :: pop()
 {
-	std::vector<T>* new_buffer = this->buffer[0]->pop(this->socket_data[0]);
-	if (new_buffer == nullptr)
+	if (this->buffer[0]->pop(&this->socket_data[0]) == 1)
 		return 1;
 	else
 	{
-		this->socket_data[0] = new_buffer;
 		this->socket->template bind<T>(*this->socket_data[0]);
-		//pop_buffer_idx = (pop_buffer_idx+1) % this->buffer.size();
 		return 0;
 	}
 };
 
+template<typename T>
+void Buffered_Socket<T>
+:: wait_pop()
+{
+	this->buffer[0]->wait_pop(&this->socket_data[0]);
+	this->socket->template bind<T>(*this->socket_data[0]);
+};
 
 template<typename T>
 int Buffered_Socket<T>
@@ -74,17 +86,28 @@ int Buffered_Socket<T>
 	}
 
 	for (int i=0 ; i<this->buffer.size(); i++)
-	{
-		if (this->buffer[i]->is_full())
-			return 1;
-	}
-
-	for (int i=0 ; i<this->buffer.size(); i++)
-		this->socket_data[i] = this->buffer[i]->push(this->socket_data[i]);
+		while(this->buffer[i]->push(&this->socket_data[i])==1){};
 
 	this->socket->template bind<T>(*this->socket_data[0]);
 	return 0;
 };
+
+template<typename T>
+void Buffered_Socket<T>
+:: wait_push()
+{
+	for (int i=1 ; i < this->socket_data.size(); i++)
+	{
+		for (int j = 0 ; j < this->socket_data[0]->size() ; j++)
+			this->socket_data[i]->at(j) = this->socket_data[0]->at(j);
+	}
+
+	for (int i=0 ; i<this->buffer.size(); i++)
+		this->buffer[i]->wait_push(&this->socket_data[i]);
+
+	this->socket->template bind<T>(*this->socket_data[0]);
+};
+
 
 template<typename T>
 void Buffered_Socket<T>

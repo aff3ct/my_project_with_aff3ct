@@ -1,10 +1,14 @@
  #include <vector>
  #include <iostream>
  #include <thread>
+ #include <mutex>
+ #include <algorithm>
  #include <aff3ct.hpp>
  
  #include "Block.hpp"
+ #include "Circular_Buffer.hpp"
 
+#define TEST 0
 
 int main(int argc, char** argv)
 {
@@ -61,6 +65,58 @@ int main(int argc, char** argv)
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	using namespace aff3ct::module;
 	
+	#if TEST == 1  
+	Circular_Buffer<int32_t> cb(4,10);
+
+	std::mutex print_lock;
+
+	std::thread t1([&cb, &print_lock]() {
+		int32_t a = 0;
+		std::vector<int32_t>* v = new std::vector<int32_t>(10,a);
+
+		while(true)
+		{
+			
+			for (auto &elt : *v)
+				elt = a++%100;
+						
+			print_lock.lock();
+			
+			std::cout << "Thread 1 push : ";
+			std::cout << "[ ";
+			for (auto const &elt : *v)
+				std::cout << std::setw(2) << elt << " ";
+			std::cout << "]" << std::endl;	
+			
+			print_lock.unlock();
+			cb.wait_push(&v);
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
+	});
+
+	std::thread t2([&cb, &print_lock]() {
+		std::vector<int32_t>* v = new std::vector<int32_t>(10,0);
+
+		while(true)
+		{
+			cb.wait_pop(&v);
+			print_lock.lock();
+			std::cout << "Thread 2 pop :                                      ";
+			std::cout << "[ ";
+			for (auto const &elt : *v)
+				std::cout << std::setw(2) << elt << " ";
+			std::cout << "]" << std::endl;	
+			print_lock.unlock();
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
+	});
+
+	t1.join();
+	t2.join();
+	
+	
+	#else
+
 	Block bl_source      (&source      [src::tsk::generate    ] , buf_length);
 	Block bl_encoder     (&encoder     [enc::tsk::encode      ] , buf_length);
 	Block bl_modulator   (&modulator   [mdm::tsk::modulate    ] , buf_length);
@@ -126,6 +182,14 @@ int main(int argc, char** argv)
 		bl_decoder    .join();
 		bl_monitor    .join();
 
+		bl_source     .reset();
+		bl_encoder    .reset();
+		bl_modulator  .reset();
+		bl_channel    .reset();
+		bl_demodulator.reset();
+		bl_decoder    .reset();
+		bl_monitor    .reset();
+
 		// display the performance (BER and FER) in the terminal
 		terminal.final_report();
 
@@ -137,6 +201,8 @@ int main(int argc, char** argv)
 	// display the statistics of the tasks (if enabled)
 	auto ordered = true;
 	aff3ct::tools::Stats::show(modules, ordered);
+	
+	#endif
 
 	std::cout << "# End of the simulation" << std::endl;
 

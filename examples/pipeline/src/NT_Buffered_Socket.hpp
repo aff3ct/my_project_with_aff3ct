@@ -20,9 +20,12 @@ public:
 	}
 	virtual ~NT_Buffered_Socket(){};
 
+	virtual void stop() = 0;
 	virtual void reset() = 0;
 	virtual int  pop  () = 0;
 	virtual int  push () = 0;
+	virtual void  wait_pop  () = 0;
+	virtual void  wait_push () = 0;	
 	virtual void print_socket_data() = 0;
 	
 	inline std::string             get_name       () const { return this->name;           }

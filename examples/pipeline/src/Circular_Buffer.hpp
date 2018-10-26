@@ -15,25 +15,32 @@ protected:
 	size_t elt_per_buffer;
 	size_t head_buffer;
 	size_t tail_buffer;
-	size_t cur_buffer_nbr;
-	bool full_flag;
-	bool empty_flag;
-	std::recursive_mutex* lock;
 
 private:
+	size_t cb_size;
 	std::vector<std::vector<T,A> *> circular_buffer;
+	std::mutex lock_;
+	std::condition_variable cond_;
+	bool stop_signal;
 
 public:
 	Circular_Buffer (size_t max_buffer_nbr = 0, size_t elt_per_buffer = 0);
 	virtual ~Circular_Buffer();
 
 	inline int get_max_buffer_nbr() const {return (int)this->max_buffer_nbr;};
-	inline int get_cur_buffer_nbr() const {return (int)this->cur_buffer_nbr;};
-	std::vector<T,A>*  pop(std::vector<T,A>* elt);
-	std::vector<T,A>* push(std::vector<T,A>* elt);
-	inline bool is_full() const {return this->full_flag;};
-	inline bool is_empty() const {return this->empty_flag;};
-	void print();
+	inline int get_cur_buffer_nbr() const 
+	{
+		return (int)this->head_buffer - (int)this->tail_buffer + ((this->tail_buffer > this->head_buffer)?(int)this->cb_size:0);
+	};
+
+	void stop();
+	int pop (std::vector<T,A>** elt);
+	int push(std::vector<T,A>** elt);
+	void wait_pop (std::vector<T,A>** elt);
+	void wait_push(std::vector<T,A>** elt);	
+	inline bool is_full()  const {return this->get_cur_buffer_nbr() == this->max_buffer_nbr;};
+	inline bool is_empty() const {return this->get_cur_buffer_nbr() == 0; };
+	void print() const;
 	void reset();
 };
 
