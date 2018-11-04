@@ -48,7 +48,7 @@ build-linux-clang:
   stage: build
   tags:
     - linux
-    - gcc
+    - clang
     - cmake
     - x86
     - systemc
