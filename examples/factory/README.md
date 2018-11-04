@@ -1,8 +1,11 @@
 # How to compile this example
 
-Get the AFF3CT library:
+Make sure to have done the instructions from the `README.md` file at the root of this repository before doing this.
 
-    $ git submodule update --init --recursive
+Copy the cmake configuration files from the AFF3CT build
+
+    $ mkdir cmake-config
+    $ cp ../../lib/aff3ct/build/lib/cmake/* cmake-config
 
 Compile the code on Linux/MacOS/MinGW:
 
@@ -15,7 +18,7 @@ Create the project on Windows (Visual Studio, MSVC)
 
     $ mkdir build
     $ cd build
-    $ cmake .. -G"Visual Studio 14 2015 Win64" -DCMAKE_CXX_FLAGS="-DMULTI_PREC -D_SCL_SECURE_NO_WARNINGS /EHsc /arch:AVX2" -DCMAKE_BUILD_TYPE=Release
+    $ cmake .. -G"Visual Studio 14 2015 Win64" -DCMAKE_CXX_FLAGS="-D_SCL_SECURE_NO_WARNINGS /EHsc /arch:AVX2" -DCMAKE_BUILD_TYPE=Release
 
 The source code of this mini project is in `src/main.cpp`.
 The compiled binary is in `build/bin/my_project`.

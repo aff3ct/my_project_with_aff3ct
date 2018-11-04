@@ -1,27 +1,31 @@
 @echo on
 
-set examples=bootstrap tasks factory
-
 set "VSCMD_START_DIR=%CD%"
 call "%VS_PATH%\VC\Auxiliary\Build\vcvars64.bat"
 
-cd examples
-for %%a in (%examples%) do (
-	cd %%a
-	call :compile
+rem Compile the AFF3CT library
+cd lib\aff3ct
+mkdir %BUILD%
+cd %BUILD%
+cmake .. -G"Visual Studio 15 2017 Win64" -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="%CFLAGS% /MP%THREADS%" -DAFF3CT_COMPILE_EXE="OFF" -DAFF3CT_COMPILE_STATIC_LIB="ON" -DCMAKE_INSTALL_PREFIX="install"
+if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
+devenv /build Release aff3ct.sln
+if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
+devenv /install Release aff3ct.sln
+if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
+cd ..
+
+rem Compile all the projects using AFF3CT
+cd ..\..\examples
+for %%a in (%EXAMPLES%) do (
+	cd %%a$
+	mkdir cmake-config
+	xcopy ..\..\lib\aff3ct\%BUILD%\lib\cmake\* cmake-config\ /s /e
+	mkdir %BUILD%
+	cd %BUILD%
+	cmake .. -G"Visual Studio 15 2017 Win64" -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="%CFLAGS% /MP%THREADS%"
+	if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
+	devenv /build Release my_project.sln
 	if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
 	cd ..
 )
-
-exit /B %ERRORLEVEL%
-
-:compile
-mkdir build_windows_msvc
-cd build_windows_msvc
-cmake .. -G"Visual Studio 15 2017 Win64" -DCMAKE_CXX_FLAGS="-D_CRT_SECURE_NO_DEPRECATE /EHsc /MP%THREADS% /arch:AVX"
-if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
-devenv /build Release my_project.sln
-rem msbuild my_project.sln /t:Build /p:Configuration=Release
-if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
-cd ..
-exit /B 0

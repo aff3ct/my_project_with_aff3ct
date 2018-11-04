@@ -1,23 +1,28 @@
 @echo on
 
-set examples=bootstrap tasks factory
-
-cd examples
-for %%a in (%examples%) do (
-	cd %%a
-	call :compile
-	if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
-	cd ..
-)
-
-exit /B %ERRORLEVEL%
-
-:compile
-mkdir build_windows_gcc
-cd build_windows_gcc
-cmake .. -G"MinGW Makefiles" -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Wall -Wno-misleading-indentation -Wno-deprecated-declarations -funroll-loops -mavx"
+rem Compile the AFF3CT library
+cd lib\aff3ct
+mkdir %BUILD%
+cd %BUILD%
+cmake .. -G"MinGW Makefiles" -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="%CFLAGS%" -DAFF3CT_COMPILE_EXE="OFF" -DAFF3CT_COMPILE_STATIC_LIB="ON" -DCMAKE_INSTALL_PREFIX="install"
 if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
 mingw32-make -j %THREADS%
 if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
+mingw32-make install
+if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
 cd ..
-exit /B 0
+
+rem Compile all the projects using AFF3CT
+cd ..\..\examples
+for %%a in (%EXAMPLES%) do (
+	cd %%a$
+	mkdir cmake-config
+	xcopy ..\..\lib\aff3ct\%BUILD%\lib\cmake\* cmake-config\ /s /e
+	mkdir %BUILD%
+	cd %BUILD%
+	cmake .. -G"MinGW Makefiles" -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="%CFLAGS%"
+	if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
+	mingw32-make -j %THREADS%
+	if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
+	cd ..
+)

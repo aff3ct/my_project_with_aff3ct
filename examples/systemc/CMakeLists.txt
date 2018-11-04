@@ -4,10 +4,6 @@ cmake_policy(SET CMP0054 NEW)
 
 project (my_project)
 
-# Set the path to the CMake modules
-set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
-set (CMAKE_MACOSX_RPATH 1)
-
 # Enable C++11
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
     set (CMAKE_CXX_STANDARD 14)
@@ -21,87 +17,31 @@ set (EXECUTABLE_OUTPUT_PATH bin/)
 # Generate the source files list
 file (GLOB_RECURSE source_files src/*)
 
-# Compiler definitions
-if (WIN32) # for Windows operating system in general
-    set (WINDOWS_VISTA 0x0600)
-    add_definitions (-D_WIN32_WINNT=${WINDOWS_VISTA})
-    add_definitions (-DNOMINMAX)
-endif()
+set (AFF3CT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cmake-config/")
+find_package (AFF3CT CONFIG REQUIRED)
+if (AFF3CT_FOUND)
+    if (AFF3CT_SYSTEMC_MODULE AND (AFF3CT_PREC STREQUAL "MULTI" OR AFF3CT_PREC STREQUAL "32"))
+        message(STATUS "AFF3CT - Library found")
 
-# Object
-add_library (my_project-obj OBJECT ${source_files})
+        # Add the compile option from AFF3CT
+        add_compile_options(${AFF3CT_COMPILE_OPTIONS})
 
-# Binary
-add_executable        (my_project-bin $<TARGET_OBJECTS:my_project-obj>)
-set_target_properties (my_project-bin PROPERTIES OUTPUT_NAME my_project)
+        # Add the definitions of AFF3CT
+        add_definitions(${AFF3CT_DEFINITIONS})
 
-# Add includes and link with SystemC
-find_package (SystemC REQUIRED)
-if (SystemC_FOUND)
-    include_directories (${SystemC_INCLUDE_DIRS})
-    target_link_libraries (my_project-bin "${SystemC_LIBRARIES}")
-endif (SystemC_FOUND)
+        # Add the include directories from AFF3CT
+        include_directories(${AFF3CT_INCLUDE_DIRS})
 
-# Add TLM includes
-find_package (TLM REQUIRED)
-if (TLM_FOUND)
-    include_directories (${TLM_INCLUDE_DIRS})
-endif (TLM_FOUND)
+        # Define the objects from the source files
+        add_library (my_project-obj OBJECT ${source_files})
 
-# Add AFF3CT as a library
-add_definitions ("-DMULTI_PREC")
-add_definitions ("-DSYSTEMC_MODULE")
-set(ENABLE_SYSTEMC_MODULE ON  CACHE BOOL "Enable SystemC support (only for the modules)" FORCE)
-set(ENABLE_STATIC_LIB     ON  CACHE BOOL "Enable to compile AFF3CT static library"       FORCE)
-set(ENABLE_EXEC           OFF CACHE BOOL "Enable to compile AFF3CT executable"           FORCE)
+        # Declare the binary
+        add_executable        (my_project-bin $<TARGET_OBJECTS:my_project-obj>)
+        set_target_properties (my_project-bin PROPERTIES OUTPUT_NAME my_project)
 
-if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/CMakeLists.txt")
-    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/")
-    target_link_libraries (my_project-bin aff3ct-static-lib)
-    include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/src/")
-    message(STATUS "AFF3CT found")
-else ()
-    message(FATAL_ERROR "AFF3CT can't be found, try to init the submodules with the following cmd:\n"
-                        "$ git submodule update --init --recursive")
-endif ()
-
-# 'MIPP' includes
-if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/lib/MIPP/src/mipp.h")
-    include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/lib/MIPP/src/")
-else ()
-    message(FATAL_ERROR "'MIPP' can't be found, try to init the submodules with the following cmd:\n"
-                        "$ git submodule update --init --recursive")
-endif ()
-
-# 'date' includes
-if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/lib/date/include/date/date.h")
-    include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/lib/date/include/")
-else ()
-    message(FATAL_ERROR "'date' can't be found, try to init the submodules with the following cmd:\n"
-                        "$ git submodule update --init --recursive")
-endif ()
-
-# 'rang' includes
-if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/lib/rang/include/rang.hpp")
-    include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/lib/rang/include/")
-else ()
-    message(FATAL_ERROR "'rang' can't be found, try to init the submodules with the following cmd:\n"
-                        "$ git submodule update --init --recursive")
-endif ()
-
-# 'dirent.h' include (only if MSVC compiler)
-if (MSVC)
-    include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/lib/aff3ct/lib/MSVC/include/")
-endif()
-
-# Enable pthread
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
-    add_definitions (-Wno-overloaded-virtual)
-    target_link_libraries (my_project-bin -lpthread)
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    add_definitions (-pthread)
-    target_link_libraries (my_project-bin -lpthread)
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-    add_definitions (-pthread)
-    target_link_libraries (my_project-bin -pthread)
-endif()
+        # Link with AFF3CT
+        target_link_libraries(my_project-bin ${AFF3CT_LIBRARIES})
+    else()
+        message(FATAL_ERROR "Incompatible AFF3CT library build.")
+    endif()
+endif (AFF3CT_FOUND)

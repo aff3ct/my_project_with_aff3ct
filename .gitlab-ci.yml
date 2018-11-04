@@ -37,8 +37,12 @@ build-linux-gcc:
       - ./examples/systemc/build_linux_gcc/bin/
       - ./examples/tasks/build_linux_gcc/bin/
   script:
+    - export EXAMPLES="bootstrap tasks systemc factory"
+    - export CXX="g++"
+    - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations"
+    - export BUILD="build_linux_gcc"
     - source ./ci/tools/threads.sh
-    - ./ci/build-linux-gcc.sh
+    - ./ci/build-linux-macos.sh
 
 build-linux-clang:
   stage: build
@@ -55,8 +59,12 @@ build-linux-clang:
       - ./examples/systemc/build_linux_clang/bin/
       - ./examples/tasks/build_linux_clang/bin/
   script:
+    - export EXAMPLES="bootstrap tasks systemc factory"
+    - export CXX="clang++"
+    - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations"
+    - export BUILD="build_linux_clang"
     - source ./ci/tools/threads.sh
-    - ./ci/build-linux-clang.sh
+    - ./ci/build-linux-macos.sh
 
 build-linux-gcc-4.8:
   stage: build
@@ -72,7 +80,12 @@ build-linux-gcc-4.8:
       - ./examples/systemc/build_linux_gcc-4.8/bin/
       - ./examples/tasks/build_linux_gcc-4.8/bin/
   script:
-    - ./ci/build-linux-gcc-4.8.sh
+    - export EXAMPLES="bootstrap tasks systemc factory"
+    - export CXX="g++-4.8"
+    - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations"
+    - export BUILD="build_linux_gcc-4.8"
+    - source ./ci/tools/threads.sh
+    - ./ci/build-linux-macos.sh
 
 build-linux-icpc:
   stage: build
@@ -89,8 +102,12 @@ build-linux-icpc:
       - ./examples/systemc/build_linux_icpc/bin/
       - ./examples/tasks/build_linux_icpc/bin/
   script:
+    - export EXAMPLES="bootstrap tasks systemc factory"
+    - export CXX="icpc"
+    - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations -std=c++11"
+    - export BUILD="build_linux_icpc"
     - source ./ci/tools/threads.sh
-    - ./ci/build-linux-icpc.sh
+    - ./ci/build-linux-macos.sh
 
 build-windows-gcc:
   stage: build
@@ -104,6 +121,9 @@ build-windows-gcc:
       - ./examples/factory/build_windows_gcc/bin/
       - ./examples/tasks/build_windows_gcc/bin/
   script:
+    - set "EXAMPLES=bootstrap tasks factory"
+    - set "CFLAGS=-Wall -Wno-misleading-indentation -Wno-deprecated-declarations -funroll-loops -mavx"
+    - set "BUILD=build_windows_gcc"
     - call ./ci/tools/threads.bat
     - ./ci/build-windows-gcc.bat
 
@@ -119,6 +139,9 @@ build-windows-msvc:
       - ./examples/factory/build_windows_msvc/bin/
       - ./examples/tasks/build_windows_msvc/bin/
   script:
+    - set "EXAMPLES=bootstrap tasks factory"
+    - set "CFLAGS=-D_CRT_SECURE_NO_DEPRECATE /EHsc /arch:AVX"
+    - set "BUILD=build_windows_msvc"
     - call ./ci/tools/threads.bat
     - ./ci/build-windows-msvc.bat
 
@@ -135,8 +158,12 @@ build-macos-clang:
       - ./examples/factory/build_macos_clang/bin/
       - ./examples/tasks/build_macos_clang/bin/
   script:
+    - export EXAMPLES="bootstrap tasks factory"
+    - export CXX="clang++"
+    - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations -std=c++11"
+    - export BUILD="build_linux_icpc"
     - source ./ci/tools/threads.sh
-    - ./ci/build-macos-clang.sh
+    - ./ci/build-linux-macos.sh
 
 test-linux-run-bootstrap:
   stage: test
