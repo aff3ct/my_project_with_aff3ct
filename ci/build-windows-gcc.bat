@@ -15,7 +15,7 @@ cd ..
 rem Compile all the projects using AFF3CT
 cd ..\..\examples
 for %%a in (%EXAMPLES%) do (
-	cd %%a$
+	cd %%a
 	mkdir cmake-config
 	xcopy ..\..\lib\aff3ct\%BUILD%\lib\cmake\* cmake-config\ /s /e
 	mkdir %BUILD%

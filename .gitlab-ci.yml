@@ -160,8 +160,8 @@ build-macos-clang:
   script:
     - export EXAMPLES="bootstrap tasks factory"
     - export CXX="clang++"
-    - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations -std=c++11"
-    - export BUILD="build_linux_icpc"
+    - export CFLAGS="-Wall -funroll-loops -msse4.2"
+    - export BUILD="build_macos_clang"
     - source ./ci/tools/threads.sh
     - ./ci/build-linux-macos.sh
 

@@ -7,7 +7,7 @@ rem Compile the AFF3CT library
 cd lib\aff3ct
 mkdir %BUILD%
 cd %BUILD%
-cmake .. -G"Visual Studio 15 2017 Win64" -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="%CFLAGS% /MP%THREADS%" -DAFF3CT_COMPILE_EXE="OFF" -DAFF3CT_COMPILE_STATIC_LIB="ON" -DCMAKE_INSTALL_PREFIX="install"
+cmake .. -G"Visual Studio 15 2017 Win64" -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_CXX_FLAGS="%CFLAGS% /MP%THREADS%" -DAFF3CT_COMPILE_EXE="OFF" -DAFF3CT_COMPILE_STATIC_LIB="ON" -DCMAKE_INSTALL_PREFIX="install"
 if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
 devenv /build Release aff3ct.sln
 if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
@@ -18,12 +18,12 @@ cd ..
 rem Compile all the projects using AFF3CT
 cd ..\..\examples
 for %%a in (%EXAMPLES%) do (
-	cd %%a$
+	cd %%a
 	mkdir cmake-config
 	xcopy ..\..\lib\aff3ct\%BUILD%\lib\cmake\* cmake-config\ /s /e
 	mkdir %BUILD%
 	cd %BUILD%
-	cmake .. -G"Visual Studio 15 2017 Win64" -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="%CFLAGS% /MP%THREADS%"
+	cmake .. -G"Visual Studio 15 2017 Win64" -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_CXX_FLAGS="%CFLAGS% /MP%THREADS%"
 	if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
 	devenv /build Release my_project.sln
 	if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
