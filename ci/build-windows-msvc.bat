@@ -19,13 +19,19 @@ rem Compile all the projects using AFF3CT
 cd ..\..\examples
 for %%a in (%EXAMPLES%) do (
 	cd %%a
-	mkdir cmake-config
-	xcopy ..\..\lib\aff3ct\%BUILD%\lib\cmake\* cmake-config\ /s /e
-	mkdir %BUILD%
-	cd %BUILD%
-	cmake .. -G"Visual Studio 15 2017 Win64" -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_CXX_FLAGS="%CFLAGS% /MP%THREADS%"
-	if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
-	devenv /build Release my_project.sln
+	call :compile_my_project
 	if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
 	cd ..
 )
+
+:compile_my_project
+mkdir cmake-config
+xcopy ..\..\lib\aff3ct\%BUILD%\lib\cmake\* cmake-config\ /s /e
+mkdir %BUILD%
+cd %BUILD%
+cmake .. -G"Visual Studio 15 2017 Win64" -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_CXX_FLAGS="%CFLAGS% /MP%THREADS%"
+if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
+devenv /build Release my_project.sln
+if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
+cd ..
+exit /B 0

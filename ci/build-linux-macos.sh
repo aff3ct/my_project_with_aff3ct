@@ -34,8 +34,11 @@ cd lib/aff3ct
 mkdir $BUILD
 cd $BUILD
 cmake .. -G"Unix Makefiles" -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="$CFLAGS" -DAFF3CT_COMPILE_EXE="OFF" -DAFF3CT_COMPILE_STATIC_LIB="ON" -DCMAKE_INSTALL_PREFIX="../install"
+rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
 make -j $THREADS
+rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
 make install > /dev/null
+rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
 cd ..
 
 is_systemc=NO
@@ -55,8 +58,11 @@ if [[ $is_systemc == YES ]]; then
 	mkdir ${BUILD}_systemc
 	cd ${BUILD}_systemc
 	cmake .. -G"Unix Makefiles" -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="$CFLAGS" -DAFF3CT_COMPILE_EXE="OFF" -DAFF3CT_COMPILE_STATIC_LIB="ON" -DAFF3CT_SYSTEMC_MODULE="ON" -DCMAKE_INSTALL_PREFIX="../install"
+	rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
 	make -j $THREADS
+	rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
 	make install > /dev/null
+	rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
 	cd ..
 fi
 

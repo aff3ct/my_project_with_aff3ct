@@ -16,13 +16,19 @@ rem Compile all the projects using AFF3CT
 cd ..\..\examples
 for %%a in (%EXAMPLES%) do (
 	cd %%a
-	mkdir cmake-config
-	xcopy ..\..\lib\aff3ct\%BUILD%\lib\cmake\* cmake-config\ /s /e
-	mkdir %BUILD%
-	cd %BUILD%
-	cmake .. -G"MinGW Makefiles" -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="%CFLAGS%"
-	if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
-	mingw32-make -j %THREADS%
+	call :compile_my_project
 	if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
 	cd ..
 )
+
+:compile_my_project
+mkdir cmake-config
+xcopy ..\..\lib\aff3ct\%BUILD%\lib\cmake\* cmake-config\ /s /e
+mkdir %BUILD%
+cd %BUILD%
+cmake .. -G"MinGW Makefiles" -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="%CFLAGS%"
+if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
+mingw32-make -j %THREADS%
+if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
+cd ..
+exit /B 0
