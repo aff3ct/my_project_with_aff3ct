@@ -11,7 +11,7 @@ cmake .. -G"Visual Studio 15 2017 Win64" -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_CX
 if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
 devenv /build Release aff3ct.sln
 if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
-devenv /install Release aff3ct.sln
+msbuild /t:INSTALL /p:Configuration=Release aff3ct.sln
 if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
 cd ..
 
