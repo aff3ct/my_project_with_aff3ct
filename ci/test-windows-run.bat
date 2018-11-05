@@ -32,3 +32,4 @@ cd ../..
 goto EndLoop
 
 :End
+exit /B %ERRORLEVEL%
