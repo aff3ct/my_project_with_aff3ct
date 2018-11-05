@@ -35,5 +35,7 @@ cmake .. -G"Visual Studio 15 2017 Win64" -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_CX
 if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
 devenv /build Release my_project.sln
 if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
+copy bin\Release\my_project.exe bin\
+rd /s /q "bin\Release\"
 cd ..
 exit /B 0

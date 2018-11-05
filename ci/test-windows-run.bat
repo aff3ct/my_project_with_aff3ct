@@ -1,5 +1,7 @@
 @echo off
 
+cd examples
+
 set i=1
 
 :Loop
