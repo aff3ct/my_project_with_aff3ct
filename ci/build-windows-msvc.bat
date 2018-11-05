@@ -24,6 +24,8 @@ for %%a in (%EXAMPLES%) do (
 	cd ..
 )
 
+exit /B %ERRORLEVEL%
+
 :compile_my_project
 mkdir cmake-config
 xcopy ..\..\lib\aff3ct\%BUILD%\lib\cmake\* cmake-config\ /s /e
