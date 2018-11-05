@@ -222,26 +222,26 @@ test-macos-run-factory:
   script:
     - ./ci/test-linux-macos-run.sh factory "-K 32 -N 128" build_macos_clang
 
-test-windows-run-bootstrap:
-  stage: test
-  tags:
-   - windows
-   - avx
-  script:
-    - ./ci/test-windows-run.bat bootstrap " " build_windows_gcc build_windows_msvc
+# test-windows-run-bootstrap:
+#   stage: test
+#   tags:
+#    - windows
+#    - avx
+#   script:
+#     - ./ci/test-windows-run.bat bootstrap " " build_windows_gcc build_windows_msvc
 
-test-windows-run-tasks:
-  stage: test
-  tags:
-   - windows
-   - avx
-  script:
-    - ./ci/test-windows-run.bat tasks " " build_windows_gcc build_windows_msvc
+# test-windows-run-tasks:
+#   stage: test
+#   tags:
+#    - windows
+#    - avx
+#   script:
+#     - ./ci/test-windows-run.bat tasks " " build_windows_gcc build_windows_msvc
 
-test-windows-run-factory:
-  stage: test
-  tags:
-   - windows
-   - avx
-  script:
-    - ./ci/test-windows-run.bat factory "-K 32 -N 128" build_windows_gcc build_windows_msvc
+# test-windows-run-factory:
+#   stage: test
+#   tags:
+#    - windows
+#    - avx
+#   script:
+#     - ./ci/test-windows-run.bat factory "-K 32 -N 128" build_windows_gcc build_windows_msvc
