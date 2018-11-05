@@ -33,9 +33,9 @@ fi
 cd lib/aff3ct
 mkdir $BUILD
 cd $BUILD
-cmake .. -G"Unix Makefiles" -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="$CFLAGS" -DAFF3CT_COMPILE_EXE="OFF" -DAFF3CT_COMPILE_STATIC_LIB="ON" -DCMAKE_INSTALL_PREFIX="install"
+cmake .. -G"Unix Makefiles" -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="$CFLAGS" -DAFF3CT_COMPILE_EXE="OFF" -DAFF3CT_COMPILE_STATIC_LIB="ON" -DCMAKE_INSTALL_PREFIX="../install"
 make -j $THREADS
-make install
+make install > /dev/null
 cd ..
 
 is_systemc=NO
@@ -54,9 +54,9 @@ if [[ $is_systemc == YES ]]; then
 	# Compile the AFF3CT library with SystemC
 	mkdir ${BUILD}_systemc
 	cd ${BUILD}_systemc
-	cmake .. -G"Unix Makefiles" -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="$CFLAGS" -DAFF3CT_COMPILE_EXE="OFF" -DAFF3CT_COMPILE_STATIC_LIB="ON" -DAFF3CT_SYSTEMC_MODULE="ON" -DCMAKE_INSTALL_PREFIX="install"
+	cmake .. -G"Unix Makefiles" -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="$CFLAGS" -DAFF3CT_COMPILE_EXE="OFF" -DAFF3CT_COMPILE_STATIC_LIB="ON" -DAFF3CT_SYSTEMC_MODULE="ON" -DCMAKE_INSTALL_PREFIX="../install"
 	make -j $THREADS
-	make install
+	make install > /dev/null
 	cd ..
 fi
 
