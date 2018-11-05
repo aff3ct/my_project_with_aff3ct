@@ -1,4 +1,4 @@
-@echo off
+@echo on
 
 cd examples
 
@@ -34,4 +34,4 @@ cd ../..
 goto EndLoop
 
 :End
-exit /B %ERRORLEVEL%
+exit /B 0
