@@ -13,6 +13,12 @@ then
 	exit 1
 fi
 
+if [ -z "$AFF3CT_GIT_VERSION" ]
+then
+	echo "Please define the 'AFF3CT_GIT_VERSION' environment variable."
+	exit 1
+fi
+
 if [ -z "$BUILD" ]
 then
 	echo "The 'BUILD' environment variable is not set, default value = 'build_linux_macos'."
@@ -72,9 +78,9 @@ for example in ${EXAMPLES[*]}; do
 	cd $example
 	mkdir cmake-config
 	if [[ $example == systemc ]]; then
-		cp ../../lib/aff3ct/${BUILD}_systemc/lib/cmake/* cmake-config
+		cp ../../lib/aff3ct/${BUILD}_systemc/lib/cmake/aff3ct-$AFF3CT_GIT_VERSION/* cmake-config
 	else
-		cp ../../lib/aff3ct/${BUILD}/lib/cmake/* cmake-config
+		cp ../../lib/aff3ct/${BUILD}/lib/cmake/aff3ct-$AFF3CT_GIT_VERSION/* cmake-config
 	fi
 	mkdir $BUILD
 	cd $BUILD

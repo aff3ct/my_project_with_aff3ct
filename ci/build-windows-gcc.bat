@@ -25,7 +25,7 @@ exit /B %ERRORLEVEL%
 
 :compile_my_project
 mkdir cmake-config
-xcopy ..\..\lib\aff3ct\%BUILD%\lib\cmake\* cmake-config\ /s /e
+xcopy ..\..\lib\aff3ct\%BUILD%\lib\cmake\aff3ct-%AFF3CT_GIT_VERSION%\* cmake-config\ /s /e
 mkdir %BUILD%
 cd %BUILD%
 cmake .. -G"MinGW Makefiles" -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="%CFLAGS%"
