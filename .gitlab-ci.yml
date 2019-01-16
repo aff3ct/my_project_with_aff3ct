@@ -42,6 +42,7 @@ build-linux-gcc:
     - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations"
     - export BUILD="build_linux_gcc"
     - source ./ci/tools/threads.sh
+    - source ./ci/tools/aff3ct-git-version.sh
     - ./ci/build-linux-macos.sh
 
 build-linux-clang:
@@ -64,6 +65,7 @@ build-linux-clang:
     - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations"
     - export BUILD="build_linux_clang"
     - source ./ci/tools/threads.sh
+    - source ./ci/tools/aff3ct-git-version.sh
     - ./ci/build-linux-macos.sh
 
 build-linux-gcc-4.8:
@@ -85,6 +87,7 @@ build-linux-gcc-4.8:
     - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations"
     - export BUILD="build_linux_gcc-4.8"
     - source ./ci/tools/threads.sh
+    - source ./ci/tools/aff3ct-git-version.sh
     - ./ci/build-linux-macos.sh
 
 build-linux-icpc:
@@ -107,6 +110,7 @@ build-linux-icpc:
     - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations -std=c++11"
     - export BUILD="build_linux_icpc"
     - source ./ci/tools/threads.sh
+    - source ./ci/tools/aff3ct-git-version.sh
     - ./ci/build-linux-macos.sh
 
 build-windows-gcc:
@@ -125,6 +129,7 @@ build-windows-gcc:
     - set "CFLAGS=-Wall -Wno-misleading-indentation -Wno-deprecated-declarations -funroll-loops -mavx"
     - set "BUILD=build_windows_gcc"
     - call ./ci/tools/threads.bat
+    - call ./ci/tools/aff3ct-git-version.bat
     - ./ci/build-windows-gcc.bat
 
 build-windows-msvc:
@@ -143,6 +148,7 @@ build-windows-msvc:
     - set "CFLAGS=-D_CRT_SECURE_NO_DEPRECATE /EHsc /arch:AVX"
     - set "BUILD=build_windows_msvc"
     - call ./ci/tools/threads.bat
+    - call ./ci/tools/aff3ct-git-version.bat
     - ./ci/build-windows-msvc.bat
 
 build-macos-clang:
@@ -163,6 +169,7 @@ build-macos-clang:
     - export CFLAGS="-Wall -funroll-loops -msse4.2"
     - export BUILD="build_macos_clang"
     - source ./ci/tools/threads.sh
+    - source ./ci/tools/aff3ct-git-version.sh
     - ./ci/build-linux-macos.sh
 
 test-linux-run-bootstrap:

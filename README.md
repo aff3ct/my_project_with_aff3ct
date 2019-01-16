@@ -1,5 +1,7 @@
 # Using AFF3CT as a library for your codes
 
+[![pipeline status](https://gitlab.com/aff3ct/my_project_with_aff3ct/badges/master/pipeline.svg)](https://gitlab.com/aff3ct/my_project_with_aff3ct/pipelines)
+
 This repository contains some simple code examples. It helps to understand how to use the AFF3CT library in your code.
 The first step is to compile AFF3CT into a library.
 

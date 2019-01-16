@@ -5,7 +5,7 @@ Make sure to have done the instructions from the `README.md` file at the root of
 Copy the cmake configuration files from the AFF3CT build
 
 	$ mkdir cmake-config
-	$ cp ../../lib/aff3ct/build/lib/cmake/* cmake-config
+	$ cp ../../lib/aff3ct/build/lib/cmake/aff3ct-*/* cmake-config
 
 Compile the code on Linux/MacOS/MinGW:
 
