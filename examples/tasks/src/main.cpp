@@ -1,15 +1,22 @@
- #include <vector>
- #include <memory>
- #include <iostream>
- #include <aff3ct.hpp>
+#include <vector>
+#include <memory>
+#include <iostream>
+
+#include <aff3ct.hpp>
+using namespace aff3ct;
 
 int main(int argc, char** argv)
 {
-	std::cout << "#-------------------------------------------------------" << std::endl;
-	std::cout << "# This is a basic program using the AFF3CT library."      << std::endl;
-	std::cout << "# Feel free to improve it as you want to fit your needs." << std::endl;
-	std::cout << "#-------------------------------------------------------" << std::endl;
-	std::cout << "#"                                                        << std::endl;
+	// get the AFF3CT version
+	const std::string v = "v" + std::to_string(version_major()) + "." +
+	                            std::to_string(version_minor()) + "." +
+	                            std::to_string(version_release());
+
+	std::cout << "#----------------------------------------------------------"      << std::endl;
+	std::cout << "# This is a basic program using the AFF3CT library (" << v << ")" << std::endl;
+	std::cout << "# Feel free to improve it as you want to fit your needs."         << std::endl;
+	std::cout << "#----------------------------------------------------------"      << std::endl;
+	std::cout << "#"                                                                << std::endl;
 
 	const int   fe       = 100;
 	const int   seed     = argc >= 2 ? std::atoi(argv[1]) : 0;
@@ -29,8 +36,6 @@ int main(int argc, char** argv)
 	std::cout << "#    ** SNR max   (dB) = " << ebn0_max << std::endl;
 	std::cout << "#"                                     << std::endl;
 
-	using namespace aff3ct;
-
 	// create the AFF3CT modules
 	module::Source_random<>          source (K      );
 	module::Encoder_repetition_sys<> encoder(K, N   );
@@ -39,18 +44,24 @@ int main(int argc, char** argv)
 	module::Decoder_repetition_std<> decoder(K, N   );
 	module::Monitor_BFER<>           monitor(K, fe  );
 
-	// create reporters to display results in terminal
-	tools::Sigma<float>                   noise;
+	// create reporters to collect data
+	tools::Sigma<> noise;
 	std::vector<std::unique_ptr<tools::Reporter>> reporters;
+	// reporter of the noise value
+	auto reporter_noise = new tools::Reporter_noise<>(noise);
+	reporters.push_back(std::unique_ptr<tools::Reporter_noise<>>(reporter_noise));
+	// reporter of the bit/frame error rate
+	auto reporter_BFER = new tools::Reporter_BFER<>(monitor);
+	reporters.push_back(std::unique_ptr<tools::Reporter_BFER<>>(reporter_BFER));
+	// reporter of the throughput of the simulation
+	auto reporter_thr = new tools::Reporter_throughput<>(monitor);
+	reporters.push_back(std::unique_ptr<tools::Reporter_throughput<>>(reporter_thr));
 
-	reporters.push_back(std::unique_ptr<tools::Reporter_noise<float>        >(new tools::Reporter_noise<float>        (noise  ))); // reporter of the noise value
-	reporters.push_back(std::unique_ptr<tools::Reporter_BFER <int>          >(new tools::Reporter_BFER <int>          (monitor))); // reporter of the bit/frame error rate
-	reporters.push_back(std::unique_ptr<tools::Reporter_throughput<uint64_t>>(new tools::Reporter_throughput<uint64_t>(monitor))); // reporter of the throughput of the simulation
+	// create a terminal that will display the collected data from the reporters
+	tools::Terminal_std terminal(reporters);
 
-	tools::Terminal_std terminal(reporters); // the terminal that display all the legend associated with the
-	                                                 // reporters and the trace
+	// display the legend in the terminal
 	terminal.legend();
-
 
 	// configuration of the module tasks
 	std::vector<const module::Module*> modules = {&source, &encoder, &modem, &channel, &decoder, &monitor};
@@ -77,7 +88,6 @@ int main(int argc, char** argv)
 	decoder[dec::sck::decode_siho ::Y_N ].bind(modem  [mdm::sck::demodulate ::Y_N2]);
 	monitor[mnt::sck::check_errors::U   ].bind(encoder[enc::sck::encode     ::U_K ]);
 	monitor[mnt::sck::check_errors::V   ].bind(decoder[dec::sck::decode_siho::V_K ]);
-
 
 	// a loop over the various SNRs
 	for (auto ebn0 = ebn0_min; ebn0 < ebn0_max; ebn0 += 1.f)

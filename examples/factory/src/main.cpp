@@ -1,16 +1,16 @@
 #include <vector>
 #include <memory>
 #include <cassert>
-#include <memory>
 #include <iostream>
+
 #include <aff3ct.hpp>
+using namespace aff3ct;
 
 constexpr float ebn0_min =  0.0f;
 constexpr float ebn0_max = 10.1f;
 
 int main(int argc, char** argv)
 {
-	using namespace aff3ct;
 	// declare the parameters objects
 	factory::Source          ::parameters p_src;
 	factory::Codec_repetition::parameters p_cdc;
@@ -33,12 +33,18 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
+	// get the AFF3CT version
+	const std::string v = "v" + std::to_string(version_major()) + "." +
+	                            std::to_string(version_minor()) + "." +
+	                            std::to_string(version_release());
+
+	std::cout << "#----------------------------------------------------------"      << std::endl;
+	std::cout << "# This is a basic program using the AFF3CT library (" << v << ")" << std::endl;
+	std::cout << "# Feel free to improve it as you want to fit your needs."         << std::endl;
+	std::cout << "#----------------------------------------------------------"      << std::endl;
+	std::cout << "#"                                                                << std::endl;
+	std::cout << "# Simulation parameters: "                                        << std::endl;
 	// display the headers (= print the AFF3CT parameters on the screen)
-	std::cout << "#-------------------------------------------------------" << std::endl;
-	std::cout << "# This is a basic program using the AFF3CT library."      << std::endl;
-	std::cout << "# Feel free to improve it as you want to fit your needs." << std::endl;
-	std::cout << "#-------------------------------------------------------" << std::endl;
-	std::cout << "#"                                                        << std::endl;
 	factory::Header::print_parameters(params);
 	std::cout << "#" << std::endl;
 
@@ -54,15 +60,23 @@ int main(int argc, char** argv)
 	auto& decoder = codec->get_decoder_siho();
 
 	// create reporters to display results in terminal
-	tools::Sigma<float>                  noise;
+	tools::Sigma<> noise;
 	std::vector<std::unique_ptr<tools::Reporter>> reporters;
 
-	reporters.push_back(std::unique_ptr<tools::Reporter_noise<float>        >(new tools::Reporter_noise<float>        ( noise  ))); // reporter of the noise value
-	reporters.push_back(std::unique_ptr<tools::Reporter_BFER <int>          >(new tools::Reporter_BFER <int>          (*monitor))); // reporter of the bit/frame error rate
-	reporters.push_back(std::unique_ptr<tools::Reporter_throughput<uint64_t>>(new tools::Reporter_throughput<uint64_t>(*monitor))); // reporter of the throughput of the simulation
+	// reporter of the noise value
+	auto reporter_noise = new tools::Reporter_noise<>(noise);
+	reporters.push_back(std::unique_ptr<tools::Reporter_noise<>>(reporter_noise));
+	// reporter of the bit/frame error rate
+	auto reporter_BFER = new tools::Reporter_BFER<>(*monitor);
+	reporters.push_back(std::unique_ptr<tools::Reporter_BFER<>>(reporter_BFER));
+	// reporter of the throughput of the simulation
+	auto reporter_thr = new tools::Reporter_throughput<>(*monitor);
+	reporters.push_back(std::unique_ptr<tools::Reporter_throughput<>>(reporter_thr));
 
-	// create a Terminal and display the legend
+	// create a terminal that will display the collected data from the reporters
 	std::unique_ptr<tools::Terminal> terminal(p_ter.build(reporters));
+
+	// display the legend in the terminal
 	terminal->legend();
 
 	// configuration of the module tasks
@@ -74,7 +88,7 @@ int main(int argc, char** argv)
 			t->set_autoexec   (false); // disable the auto execution mode of the tasks
 			t->set_debug      (false); // disable the debug mode
 			t->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
-			t->set_stats      (false); // enable the statistics
+			t->set_stats      (true ); // enable the statistics
 
 			// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
 			t->set_fast(!t->is_debug() && !t->is_stats());
@@ -89,7 +103,6 @@ int main(int argc, char** argv)
 	(*decoder)[dec::sck::decode_siho ::Y_N ].bind((*modem  )[mdm::sck::demodulate ::Y_N2]);
 	(*monitor)[mnt::sck::check_errors::U   ].bind((*encoder)[enc::sck::encode     ::U_K ]);
 	(*monitor)[mnt::sck::check_errors::V   ].bind((*decoder)[dec::sck::decode_siho::V_K ]);
-
 
 	// reset the memory of the decoder after the end of each communication
 	monitor->add_handler_check(std::bind(&module::Decoder::reset, decoder));
