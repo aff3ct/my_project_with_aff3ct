@@ -3,7 +3,7 @@
 
 cd lib/aff3ct/
 
-AFF3CT_GIT_VERSION=$(git describe)
+AFF3CT_GIT_VERSION=$(git describe --abbrev=7)
 
 if [ ! -z "$AFF3CT_GIT_VERSION" ]
 then
