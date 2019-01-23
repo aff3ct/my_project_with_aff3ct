@@ -44,21 +44,22 @@ int main(int argc, char** argv)
 	module::Decoder_repetition_std<> decoder(K, N   );
 	module::Monitor_BFER<>           monitor(K, fe  );
 
-	// create reporters to collect data
+	// create a sigma noise type
 	tools::Sigma<> noise;
-	std::vector<std::unique_ptr<tools::Reporter>> reporters;
-	// reporter of the noise value
-	auto reporter_noise = new tools::Reporter_noise<>(noise);
-	reporters.push_back(std::unique_ptr<tools::Reporter_noise<>>(reporter_noise));
-	// reporter of the bit/frame error rate
-	auto reporter_BFER = new tools::Reporter_BFER<>(monitor);
-	reporters.push_back(std::unique_ptr<tools::Reporter_BFER<>>(reporter_BFER));
-	// reporter of the throughput of the simulation
-	auto reporter_thr = new tools::Reporter_throughput<>(monitor);
-	reporters.push_back(std::unique_ptr<tools::Reporter_throughput<>>(reporter_thr));
+
+	// create reporters to display results in the terminal
+	std::vector<tools::Reporter*> reporters =
+	{
+		new tools::Reporter_noise     <>(noise  ), // report the noise values (Es/N0 and Eb/N0)
+		new tools::Reporter_BFER      <>(monitor), // report the bit/frame error rates
+		new tools::Reporter_throughput<>(monitor)  // report the simulation throughputs
+	};
+	// convert the vector of reporter pointers into a vector of smart pointers
+	std::vector<std::unique_ptr<tools::Reporter>> reporters_uptr;
+	for (auto rep : reporters) reporters_uptr.push_back(std::unique_ptr<tools::Reporter>(rep));
 
 	// create a terminal that will display the collected data from the reporters
-	tools::Terminal_std terminal(reporters);
+	tools::Terminal_std terminal(reporters_uptr);
 
 	// display the legend in the terminal
 	terminal.legend();

@@ -20,7 +20,6 @@ int main(int argc, char** argv)
 	factory::Terminal        ::parameters p_ter;
 
 	std::vector<factory::Factory::parameters*> params = {&p_src, &p_cdc, &p_mdm, &p_chn, &p_mnt, &p_ter};
-
 	factory::Command_parser cp(argc, argv, params, true);
 
 	// parse the command for the given parameters and fill them
@@ -29,7 +28,6 @@ int main(int argc, char** argv)
 		cp.print_help    ();
 		cp.print_warnings();
 		cp.print_errors  ();
-
 		return EXIT_FAILURE;
 	}
 
@@ -44,43 +42,43 @@ int main(int argc, char** argv)
 	std::cout << "#----------------------------------------------------------"      << std::endl;
 	std::cout << "#"                                                                << std::endl;
 	std::cout << "# Simulation parameters: "                                        << std::endl;
-	// display the headers (= print the AFF3CT parameters on the screen)
-	factory::Header::print_parameters(params);
+	factory::Header::print_parameters(params); // display the headers (= print the AFF3CT parameters on the screen)
 	std::cout << "#" << std::endl;
-
 	cp.print_warnings();
 
+	// create a sigma noise type
+	tools::Sigma<> noise;
+
 	// create the AFF3CT modules
-	std::unique_ptr<module::Source<>>           source (p_src.build());
-	std::unique_ptr<module::Modem<>>            modem  (p_mdm.build());
-	std::unique_ptr<module::Channel<>>          channel(p_chn.build());
-	std::unique_ptr<module::Monitor_BFER<>>     monitor(p_mnt.build());
+	std::unique_ptr<module::Source          <>> source (p_src.build());
 	std::unique_ptr<module::Codec_repetition<>> codec  (p_cdc.build());
+	std::unique_ptr<module::Modem           <>> modem  (p_mdm.build());
+	std::unique_ptr<module::Channel         <>> channel(p_chn.build());
+	std::unique_ptr<module::Monitor_BFER    <>> monitor(p_mnt.build());
+	// get the encoder and decoder modules from the codec module
 	auto& encoder = codec->get_encoder();
 	auto& decoder = codec->get_decoder_siho();
 
-	// create reporters to display results in terminal
-	tools::Sigma<> noise;
-	std::vector<std::unique_ptr<tools::Reporter>> reporters;
-
-	// reporter of the noise value
-	auto reporter_noise = new tools::Reporter_noise<>(noise);
-	reporters.push_back(std::unique_ptr<tools::Reporter_noise<>>(reporter_noise));
-	// reporter of the bit/frame error rate
-	auto reporter_BFER = new tools::Reporter_BFER<>(*monitor);
-	reporters.push_back(std::unique_ptr<tools::Reporter_BFER<>>(reporter_BFER));
-	// reporter of the throughput of the simulation
-	auto reporter_thr = new tools::Reporter_throughput<>(*monitor);
-	reporters.push_back(std::unique_ptr<tools::Reporter_throughput<>>(reporter_thr));
+	// create reporters to display results in the terminal
+	std::vector<tools::Reporter*> reporters =
+	{
+		new tools::Reporter_noise     <>(noise   ), // report the noise values (Es/N0 and Eb/N0)
+		new tools::Reporter_BFER      <>(*monitor), // report the bit/frame error rates
+		new tools::Reporter_throughput<>(*monitor)  // report the simulation throughputs
+	};
+	// convert the vector of reporter pointers into a vector of smart pointers
+	std::vector<std::unique_ptr<tools::Reporter>> reporters_uptr;
+	for (auto rep : reporters) reporters_uptr.push_back(std::unique_ptr<tools::Reporter>(rep));
 
 	// create a terminal that will display the collected data from the reporters
-	std::unique_ptr<tools::Terminal> terminal(p_ter.build(reporters));
+	std::unique_ptr<tools::Terminal> terminal(p_ter.build(reporters_uptr));
 
 	// display the legend in the terminal
 	terminal->legend();
 
 	// configuration of the module tasks
-	std::vector<const module::Module*> modules{source.get(), encoder.get(), modem.get(), channel.get(), decoder.get(), monitor.get()};
+	std::vector<const module::Module*> modules = {source.get(), encoder.get(), modem.get(), channel.get(),
+	                                              decoder.get(), monitor.get()};
 	for (auto& m : modules)
 		for (auto& t : m->tasks)
 		{
@@ -134,7 +132,7 @@ int main(int argc, char** argv)
 		terminal->start_temp_report(p_ter.frequency);
 
 		// run the simulation chain
-		while (!monitor->fe_limit_achieved() && !tools::Terminal::is_interrupt())
+		while (!monitor->fe_limit_achieved() && !terminal->is_interrupt())
 		{
 			(*source )[src::tsk::generate    ].exec();
 			(*encoder)[enc::tsk::encode      ].exec();
@@ -153,7 +151,7 @@ int main(int argc, char** argv)
 
 		// reset the monitor and the terminal for the next SNR
 		monitor->reset();
-		tools::Terminal::reset();
+		terminal->reset();
 	}
 	std::cout << "#" << std::endl;
 
@@ -161,7 +159,6 @@ int main(int argc, char** argv)
 	auto ordered = true;
 	tools::Stats::show(modules, ordered);
 
-	// delete the aff3ct objects
 	std::cout << "# End of the simulation" << std::endl;
 
 	return EXIT_SUCCESS;
