@@ -18,7 +18,7 @@ set (EXECUTABLE_OUTPUT_PATH bin/)
 file (GLOB_RECURSE source_files src/*)
 
 set (AFF3CT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cmake-config/")
-find_package (AFF3CT CONFIG REQUIRED)
+find_package (AFF3CT CONFIG 2.2.2 REQUIRED)
 if (AFF3CT_FOUND)
     if (NOT AFF3CT_SYSTEMC_MODULE AND (AFF3CT_PREC STREQUAL "MULTI" OR AFF3CT_PREC STREQUAL "32"))
         message(STATUS "AFF3CT - Library found")
