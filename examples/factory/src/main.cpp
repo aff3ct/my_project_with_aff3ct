@@ -146,8 +146,8 @@ int main(int argc, char** argv)
 		// display the performance (BER and FER) in the terminal
 		terminal->final_report();
 
-		if (tools::Terminal::is_over())
-			break;
+		// if user used pressed Ctrl+c twice, exit the SNRs loop
+		if (terminal->is_over()) break;
 
 		// reset the monitor and the terminal for the next SNR
 		monitor->reset();

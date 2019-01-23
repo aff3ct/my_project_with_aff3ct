@@ -74,9 +74,9 @@ int sc_main(int argc, char** argv)
 		}
 
 	// add a callback to the monitor to call the "sc_core::sc_stop()" function
-	monitor.add_handler_check([&]() -> void
+	monitor.add_handler_check([&monitor, &terminal]() -> void
 	{
-		if (monitor.fe_limit_achieved() || tools::Terminal::is_interrupt())
+		if (monitor.fe_limit_achieved() || terminal.is_interrupt())
 			sc_core::sc_stop();
 	});
 
@@ -126,12 +126,12 @@ int sc_main(int argc, char** argv)
 		// display the performance (BER and FER) in the terminal
 		terminal.final_report();
 
-		if (tools::Terminal::is_over())
-			break;
+		// if user used pressed Ctrl+c twice, exit the SNRs loop
+		if (terminal.is_over()) break;
 
 		// reset the monitor for the next SNR
 		monitor.reset();
-		tools::Terminal::reset();
+		terminal.reset();
 
 		// dirty way to create a new SystemC simulation context
 		sc_core::sc_curr_simcontext = new sc_core::sc_simcontext();

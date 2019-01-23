@@ -107,7 +107,7 @@ int main(int argc, char** argv)
 		terminal.start_temp_report();
 
 		// run the simulation chain
-		while (!monitor.fe_limit_achieved() && !tools::Terminal::is_interrupt())
+		while (!monitor.fe_limit_achieved() && !terminal.is_interrupt())
 		{
 			source [src::tsk::generate    ].exec();
 			encoder[enc::tsk::encode      ].exec();
@@ -121,12 +121,12 @@ int main(int argc, char** argv)
 		// display the performance (BER and FER) in the terminal
 		terminal.final_report();
 
-		if (tools::Terminal::is_over())
-			break;
+		// if user used pressed Ctrl+c twice, exit the SNRs loop
+		if (terminal.is_over()) break;
 
 		// reset the monitor for the next SNR
 		monitor.reset();
-		tools::Terminal::reset();
+		terminal.reset();
 	}
 	std::cout << "#" << std::endl;
 
