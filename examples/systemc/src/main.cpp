@@ -126,7 +126,7 @@ int sc_main(int argc, char** argv)
 		// display the performance (BER and FER) in the terminal
 		terminal.final_report();
 
-		// if user used pressed Ctrl+c twice, exit the SNRs loop
+		// if user pressed Ctrl+c twice, exit the SNRs loop
 		if (terminal.is_over()) break;
 
 		// reset the monitor for the next SNR
