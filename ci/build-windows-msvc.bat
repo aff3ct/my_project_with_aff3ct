@@ -11,8 +11,8 @@ cmake .. -G"Visual Studio 15 2017 Win64" -DCMAKE_CXX_FLAGS="%CFLAGS% /MP%THREADS
 if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
 devenv /build Release aff3ct.sln
 if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
-devenv /build Release aff3ct.sln /project INSTALL > nul
-if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
+rem devenv /build Release aff3ct.sln /project INSTALL > nul
+rem if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
 cd ..
 
 rem Compile all the projects using AFF3CT
@@ -27,8 +27,8 @@ for %%a in (%EXAMPLES%) do (
 exit /B %ERRORLEVEL%
 
 :compile_my_project
-mkdir cmake-config
-xcopy ..\..\lib\aff3ct\%BUILD%\lib\cmake\aff3ct-%AFF3CT_GIT_VERSION%\* cmake-config\ /s /e
+mkdir cmake && mkdir cmake/Modules
+xcopy ..\..\lib\aff3ct\%BUILD%\lib\cmake\aff3ct-%AFF3CT_GIT_VERSION%\* cmake\Modules\ /s /e
 mkdir %BUILD%
 cd %BUILD%
 cmake .. -G"Visual Studio 15 2017 Win64" -DCMAKE_CXX_FLAGS="%CFLAGS% /MP%THREADS%"

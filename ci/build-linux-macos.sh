@@ -43,8 +43,8 @@ cmake .. -G"Unix Makefiles" -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release
 rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
 make -j $THREADS
 rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
-make install > /dev/null
-rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
+# make install > /dev/null
+# rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
 cd ..
 
 is_systemc=NO
@@ -67,8 +67,8 @@ if [[ $is_systemc == YES ]]; then
 	rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
 	make -j $THREADS
 	rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
-	make install > /dev/null
-	rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
+	# make install > /dev/null
+	# rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
 	cd ..
 fi
 
@@ -76,11 +76,13 @@ fi
 cd ../../examples
 for example in ${EXAMPLES[*]}; do
 	cd $example
-	mkdir cmake-config
+	mkdir cmake && mkdir cmake/Modules
 	if [[ $example == systemc ]]; then
-		cp ../../lib/aff3ct/${BUILD}_systemc/lib/cmake/aff3ct-$AFF3CT_GIT_VERSION/* cmake-config
+		cp ../../lib/aff3ct/${BUILD}_systemc/lib/cmake/aff3ct-$AFF3CT_GIT_VERSION/* cmake/Modules
+		cp $SYSTEMC_HOME/FindSystemC.cmake cmake/Modules/
+		cp $SYSTEMC_HOME/FindTLM.cmake cmake/Modules/
 	else
-		cp ../../lib/aff3ct/${BUILD}/lib/cmake/aff3ct-$AFF3CT_GIT_VERSION/* cmake-config
+		cp ../../lib/aff3ct/${BUILD}/lib/cmake/aff3ct-$AFF3CT_GIT_VERSION/* cmake/Modules
 	fi
 	mkdir $BUILD
 	cd $BUILD
