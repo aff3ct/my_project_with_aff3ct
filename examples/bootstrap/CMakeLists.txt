@@ -21,5 +21,5 @@ find_package(Threads REQUIRED)
 
 # Link with AFF3CT
 set (AFF3CT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
-find_package(AFF3CT CONFIG 2.3.0 REQUIRED)
+find_package(AFF3CT CONFIG 2.3.1 REQUIRED)
 target_link_libraries(my_project PRIVATE aff3ct::aff3ct-static-lib)
