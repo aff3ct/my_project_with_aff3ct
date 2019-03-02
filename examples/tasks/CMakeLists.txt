@@ -10,9 +10,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Specify bin path
 set (EXECUTABLE_OUTPUT_PATH bin/)
 
-set(MY_PROJECT_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
-
-add_executable(my_project ${MY_PROJECT_SOURCES})
+# Create the executable from sources
+add_executable(my_project ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
 
 # Link with the "Threads library (required to link with AFF3CT after)
 set(CMAKE_THREAD_PREFER_PTHREAD ON)
