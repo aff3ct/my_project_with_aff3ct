@@ -126,7 +126,7 @@ build-windows-gcc:
       - ./examples/tasks/build_windows_gcc/bin/
   script:
     - set "EXAMPLES=bootstrap tasks factory"
-    - set "CFLAGS=-Wall -Wno-misleading-indentation -Wno-deprecated-declarations -funroll-loops -mavx"
+    - set "CFLAGS=-Wall -Wno-deprecated-declarations -funroll-loops -mavx"
     - set "BUILD=build_windows_gcc"
     - call ./ci/tools/threads.bat
     - call ./ci/tools/aff3ct-git-version.bat
