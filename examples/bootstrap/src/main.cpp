@@ -1,8 +1,48 @@
-#include <vector>
-#include <iostream>
-
 #include <aff3ct.hpp>
 using namespace aff3ct;
+
+struct params
+{
+	int   K         =  32;     // the number of information bits
+	int   N         = 128;     // the codeword size
+	int   fe        = 100;     // the number of frame errors
+	int   seed      =   0;     // the PRNG seed for the AWGN channel
+	float ebn0_min  =   0.00f; // the minimum SNR value
+	float ebn0_max  =  10.01f; // the maximum SNR value
+	float ebn0_step =   1.00f; // the SNR step
+	float R;                   // the code rate (R=K/N)
+};
+void init_params(params &p);
+
+struct modules
+{
+	std::unique_ptr<module::Source_random<>>          source;
+	std::unique_ptr<module::Encoder_repetition_sys<>> encoder;
+	std::unique_ptr<module::Modem_BPSK<>>             modem;
+	std::unique_ptr<module::Channel_AWGN_LLR<>>       channel;
+	std::unique_ptr<module::Decoder_repetition_std<>> decoder;
+	std::unique_ptr<module::Monitor_BFER<>>           monitor;
+};
+void init_modules(const params &p, modules &m);
+
+struct buffers
+{
+	std::vector<int  > ref_bits;
+	std::vector<int  > enc_bits;
+	std::vector<float> symbols;
+	std::vector<float> noisy_symbols;
+	std::vector<float> LLRs;
+	std::vector<int  > dec_bits;
+};
+void init_buffers(const params &p, buffers &b);
+
+struct utils
+{
+	std::unique_ptr<tools::Sigma<>>               noise;     // a sigma noise type
+	std::vector<std::unique_ptr<tools::Reporter>> reporters; // list of reporters dispayed in the terminal
+	std::unique_ptr<tools::Terminal_std>          terminal;  // manage the output text in the terminal
+};
+void init_utils(const modules &m, utils &u);
 
 int main(int argc, char** argv)
 {
@@ -17,100 +57,103 @@ int main(int argc, char** argv)
 	std::cout << "#----------------------------------------------------------"      << std::endl;
 	std::cout << "#"                                                                << std::endl;
 
-	const int   fe       = 100;
-	const int   seed     = argc >= 2 ? std::atoi(argv[1]) : 0;
-	const int   K        = 32;
-	const int   N        = 128;
-	const float R        = (float)K / (float)N;
-	const float ebn0_min = 0.00f;
-	const float ebn0_max = 10.1f;
-
-	std::cout << "# * Simulation parameters: "           << std::endl;
-	std::cout << "#    ** Frame errors   = " << fe       << std::endl;
-	std::cout << "#    ** Noise seed     = " << seed     << std::endl;
-	std::cout << "#    ** Info. bits (K) = " << K        << std::endl;
-	std::cout << "#    ** Frame size (N) = " << N        << std::endl;
-	std::cout << "#    ** Code rate  (R) = " << R        << std::endl;
-	std::cout << "#    ** SNR min   (dB) = " << ebn0_min << std::endl;
-	std::cout << "#    ** SNR max   (dB) = " << ebn0_max << std::endl;
-	std::cout << "#"                                     << std::endl;
-
-	// buffers to store the data
-	std::vector<int  > ref_bits     (K);
-	std::vector<int  > enc_bits     (N);
-	std::vector<float> symbols      (N);
-	std::vector<float> noisy_symbols(N);
-	std::vector<float> LLRs         (N);
-	std::vector<int  > dec_bits     (K);
-
-	// create the AFF3CT objects
-	module::Source_random<>          source (K      );
-	module::Encoder_repetition_sys<> encoder(K, N   );
-	module::Modem_BPSK<>             modem  (N      );
-	module::Channel_AWGN_LLR<>       channel(N, seed);
-	module::Decoder_repetition_std<> decoder(K, N   );
-	module::Monitor_BFER<>           monitor(K, fe  );
-
-	// create a sigma noise type
-	tools::Sigma<> noise;
-
-	// create reporters to display results in the terminal
-	std::vector<tools::Reporter*> reporters =
-	{
-		new tools::Reporter_noise     <>(noise  ), // report the noise values (Es/N0 and Eb/N0)
-		new tools::Reporter_BFER      <>(monitor), // report the bit/frame error rates
-		new tools::Reporter_throughput<>(monitor)  // report the simulation throughputs
-	};
-	// convert the vector of reporter pointers into a vector of smart pointers
-	std::vector<std::unique_ptr<tools::Reporter>> reporters_uptr;
-	for (auto rep : reporters) reporters_uptr.push_back(std::unique_ptr<tools::Reporter>(rep));
-
-	// create a terminal that will display the collected data from the reporters
-	tools::Terminal_std terminal(reporters_uptr);
+	params p;  init_params (p   ); // create and initialize parameters defined by the user
+	modules m; init_modules(p, m); // create and initialize the modules
+	buffers b; init_buffers(p, b); // create and initialize the buffers required by the modules
+	utils u;   init_utils  (m, u); // create and initialize the utils
 
 	// display the legend in the terminal
-	terminal.legend();
+	u.terminal->legend();
 
 	// a loop over the various SNRs
-	for (auto ebn0 = ebn0_min; ebn0 < ebn0_max; ebn0 += 1.f)
+	for (auto ebn0 = p.ebn0_min; ebn0 < p.ebn0_max; ebn0 += p.ebn0_step)
 	{
 		// compute the current sigma for the channel noise
-		const auto esn0  = tools::ebn0_to_esn0 (ebn0, R);
-		const auto sigma = tools::esn0_to_sigma(esn0   );
+		const auto esn0  = tools::ebn0_to_esn0 (ebn0, p.R);
+		const auto sigma = tools::esn0_to_sigma(esn0     );
 
-		noise.set_noise(sigma, ebn0, esn0);
+		u.noise->set_noise(sigma, ebn0, esn0);
 
 		// update the sigma of the modem and the channel
-		modem  .set_noise(noise);
-		channel.set_noise(noise);
+		m.modem  ->set_noise(*u.noise);
+		m.channel->set_noise(*u.noise);
 
 		// display the performance (BER and FER) in real time (in a separate thread)
-		terminal.start_temp_report();
+		u.terminal->start_temp_report();
 
-		// run a small simulation chain
-		while (!monitor.fe_limit_achieved() && !terminal.is_interrupt())
+		// run the simulation chain
+		while (!m.monitor->fe_limit_achieved() && !u.terminal->is_interrupt())
 		{
-			source .generate    (               ref_bits     );
-			encoder.encode      (ref_bits,      enc_bits     );
-			modem  .modulate    (enc_bits,      symbols      );
-			channel.add_noise   (symbols,       noisy_symbols);
-			modem  .demodulate  (noisy_symbols, LLRs         );
-			decoder.decode_siho (LLRs,          dec_bits     );
-			monitor.check_errors(dec_bits,      ref_bits     );
+			m.source ->generate    (                 b.ref_bits     );
+			m.encoder->encode      (b.ref_bits,      b.enc_bits     );
+			m.modem  ->modulate    (b.enc_bits,      b.symbols      );
+			m.channel->add_noise   (b.symbols,       b.noisy_symbols);
+			m.modem  ->demodulate  (b.noisy_symbols, b.LLRs         );
+			m.decoder->decode_siho (b.LLRs,          b.dec_bits     );
+			m.monitor->check_errors(b.dec_bits,      b.ref_bits     );
 		}
 
 		// display the performance (BER and FER) in the terminal
-		terminal.final_report();
+		u.terminal->final_report();
+
+		// reset the monitor for the next SNR
+		m.monitor->reset();
+		u.terminal->reset();
 
 		// if user pressed Ctrl+c twice, exit the SNRs loop
-		if (terminal.is_over()) break;
-
-		// reset the monitor and the terminal for the next SNR
-		monitor.reset();
-		terminal.reset();
+		if (u.terminal->is_over()) break;
 	}
 
 	std::cout << "# End of the simulation" << std::endl;
 
 	return 0;
+}
+
+void init_params(params &p)
+{
+	p.R = (float)p.K / (float)p.N;
+	std::cout << "# * Simulation parameters: "              << std::endl;
+	std::cout << "#    ** Frame errors   = " << p.fe        << std::endl;
+	std::cout << "#    ** Noise seed     = " << p.seed      << std::endl;
+	std::cout << "#    ** Info. bits (K) = " << p.K         << std::endl;
+	std::cout << "#    ** Frame size (N) = " << p.N         << std::endl;
+	std::cout << "#    ** Code rate  (R) = " << p.R         << std::endl;
+	std::cout << "#    ** SNR min   (dB) = " << p.ebn0_min  << std::endl;
+	std::cout << "#    ** SNR max   (dB) = " << p.ebn0_max  << std::endl;
+	std::cout << "#    ** SNR step  (dB) = " << p.ebn0_step << std::endl;
+	std::cout << "#"                                        << std::endl;
+}
+
+void init_modules(const params &p, modules &m)
+{
+	m.source  = std::unique_ptr<module::Source_random         <>>(new module::Source_random         <>(p.K        ));
+	m.encoder = std::unique_ptr<module::Encoder_repetition_sys<>>(new module::Encoder_repetition_sys<>(p.K, p.N   ));
+	m.modem   = std::unique_ptr<module::Modem_BPSK            <>>(new module::Modem_BPSK            <>(p.N        ));
+	m.channel = std::unique_ptr<module::Channel_AWGN_LLR      <>>(new module::Channel_AWGN_LLR      <>(p.N, p.seed));
+	m.decoder = std::unique_ptr<module::Decoder_repetition_std<>>(new module::Decoder_repetition_std<>(p.K, p.N   ));
+	m.monitor = std::unique_ptr<module::Monitor_BFER          <>>(new module::Monitor_BFER          <>(p.K, p.fe  ));
+};
+
+void init_buffers(const params &p, buffers &b)
+{
+	b.ref_bits      = std::vector<int  >(p.K);
+	b.enc_bits      = std::vector<int  >(p.N);
+	b.symbols       = std::vector<float>(p.N);
+	b.noisy_symbols = std::vector<float>(p.N);
+	b.LLRs          = std::vector<float>(p.N);
+	b.dec_bits      = std::vector<int  >(p.K);
+}
+
+void init_utils(const modules &m, utils &u)
+{
+	// create a sigma noise type
+	u.noise = std::unique_ptr<tools::Sigma<>>(new tools::Sigma<>());
+	// report the noise values (Es/N0 and Eb/N0)
+	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_noise<>(*u.noise)));
+	// report the bit/frame error rates
+	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_BFER<>(*m.monitor)));
+	// report the simulation throughputs
+	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_throughput<>(*m.monitor)));
+	// create a terminal that will display the collected data from the reporters
+	u.terminal = std::unique_ptr<tools::Terminal_std>(new tools::Terminal_std(u.reporters));
 }
