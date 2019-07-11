@@ -34,7 +34,7 @@ struct utils
 {
 	std::unique_ptr<tools::Sigma<>>               noise;     // a sigma noise type
 	std::vector<std::unique_ptr<tools::Reporter>> reporters; // list of reporters dispayed in the terminal
-    std::unique_ptr<tools::Terminal>              terminal;  // manage the output text in the terminal
+	std::unique_ptr<tools::Terminal>              terminal;  // manage the output text in the terminal
 };
 void init_utils(const params &p, const modules &m, utils &u);
 
@@ -51,7 +51,7 @@ int main(int argc, char** argv)
 	std::cout << "#----------------------------------------------------------"      << std::endl;
 	std::cout << "#"                                                                << std::endl;
 
-	params  p; init_params (argc, argv, p); // create and initialize the params from the command line with factories
+	params  p; init_params (argc, argv, p); // create and initialize the parameters from the command line with factories
 	modules m; init_modules(p, m         ); // create and initialize the modules
 	utils   u; init_utils  (p, m, u      ); // create and initialize the utils
 

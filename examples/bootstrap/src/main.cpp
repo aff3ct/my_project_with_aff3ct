@@ -57,7 +57,7 @@ int main(int argc, char** argv)
 	std::cout << "#----------------------------------------------------------"      << std::endl;
 	std::cout << "#"                                                                << std::endl;
 
-	params p;  init_params (p   ); // create and initialize parameters defined by the user
+	params p;  init_params (p   ); // create and initialize the parameters defined by the user
 	modules m; init_modules(p, m); // create and initialize the modules
 	buffers b; init_buffers(p, b); // create and initialize the buffers required by the modules
 	utils u;   init_utils  (m, u); // create and initialize the utils

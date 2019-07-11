@@ -66,7 +66,7 @@ int main(int argc, char** argv)
 	std::cout << "#----------------------------------------------------------"      << std::endl;
 	std::cout << "#"                                                                << std::endl;
 
-	params p; init_params(argc, argv, p); // create and initialize the params from the command line with factories
+	params p; init_params(argc, argv, p); // create and initialize the parameters from the command line with factories
 	utils u; // create an 'utils' structure
 
 #pragma omp parallel

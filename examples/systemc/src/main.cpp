@@ -112,7 +112,7 @@ int sc_main(int argc, char** argv)
 		u.terminal->reset();
 
 		// if user pressed Ctrl+c twice, exit the SNRs loop
-		if (terminal.is_over()) break;
+		if (u.terminal->is_over()) break;
 
 		// dirty way to create a new SystemC simulation context
 		sc_core::sc_curr_simcontext = new sc_core::sc_simcontext();
