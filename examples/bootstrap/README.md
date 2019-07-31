@@ -24,4 +24,4 @@ Compile the code on Windows (Visual Studio project)
 The source code of this mini project is in `src/main.cpp`.
 The compiled binary is in `build/bin/my_project`.
 
-Have fun :-)!
+The documentation of this example is available [here](https://aff3ct.readthedocs.io/en/latest/user/library/library.html#bootstrap).

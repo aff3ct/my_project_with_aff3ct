@@ -29,3 +29,5 @@ Now the AFF3CT library has been built in the `lib/aff3ct/build` folder.
 
 The source codes of the examples are in the `examples/` folder.
 You can go in this folder to see the next steps.
+
+Note that those examples are documented [here](https://aff3ct.readthedocs.io/en/latest/user/library/library.html).

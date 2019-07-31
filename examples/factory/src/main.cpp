@@ -3,10 +3,10 @@ using namespace aff3ct;
 
 struct params
 {
-	float ebn0_min  =  0.00f; // the minimum SNR value
-	float ebn0_max  = 10.01f; // the maximum SNR value
-	float ebn0_step =  1.00f; // the SNR step
-	float R;                  // the code rate (R=K/N)
+	float ebn0_min  =  0.00f; // minimum SNR value
+	float ebn0_max  = 10.01f; // maximum SNR value
+	float ebn0_step =  1.00f; // SNR step
+	float R;                  // code rate (R=K/N)
 
 	std::unique_ptr<factory::Source          ::parameters> source;
 	std::unique_ptr<factory::Codec_repetition::parameters> codec;
@@ -26,7 +26,7 @@ struct modules
 	std::unique_ptr<module::Monitor_BFER<>> monitor;
 	                module::Encoder<>*      encoder;
 	                module::Decoder_SIHO<>* decoder;
-	std::vector<const module::Module*>      list; // the list of module pointers declared in this structure
+	std::vector<const module::Module*>      list; // list of module pointers declared in this structure
 };
 void init_modules(const params &p, modules &m);
 
@@ -68,7 +68,7 @@ int main(int argc, char** argv)
 	(*m.monitor)[mnt::sck::check_errors::U   ].bind((*m.encoder)[enc::sck::encode     ::U_K ]);
 	(*m.monitor)[mnt::sck::check_errors::V   ].bind((*m.decoder)[dec::sck::decode_siho::V_K ]);
 
-	// a loop over the various SNRs
+	// loop over the various SNRs
 	for (auto ebn0 = p.ebn0_min; ebn0 < p.ebn0_max; ebn0 += p.ebn0_step)
 	{
 		// compute the current sigma for the channel noise

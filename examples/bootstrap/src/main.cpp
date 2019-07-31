@@ -3,14 +3,14 @@ using namespace aff3ct;
 
 struct params
 {
-	int   K         =  32;     // the number of information bits
-	int   N         = 128;     // the codeword size
-	int   fe        = 100;     // the number of frame errors
-	int   seed      =   0;     // the PRNG seed for the AWGN channel
-	float ebn0_min  =   0.00f; // the minimum SNR value
-	float ebn0_max  =  10.01f; // the maximum SNR value
-	float ebn0_step =   1.00f; // the SNR step
-	float R;                   // the code rate (R=K/N)
+	int   K         =  32;     // number of information bits
+	int   N         = 128;     // codeword size
+	int   fe        = 100;     // number of frame errors
+	int   seed      =   0;     // PRNG seed for the AWGN channel
+	float ebn0_min  =   0.00f; // minimum SNR value
+	float ebn0_max  =  10.01f; // maximum SNR value
+	float ebn0_step =   1.00f; // SNR step
+	float R;                   // code rate (R=K/N)
 };
 void init_params(params &p);
 
@@ -65,7 +65,7 @@ int main(int argc, char** argv)
 	// display the legend in the terminal
 	u.terminal->legend();
 
-	// a loop over the various SNRs
+	// loop over the various SNRs
 	for (auto ebn0 = p.ebn0_min; ebn0 < p.ebn0_max; ebn0 += p.ebn0_step)
 	{
 		// compute the current sigma for the channel noise
