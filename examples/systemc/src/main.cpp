@@ -1,3 +1,10 @@
+#include <iostream>
+#include <memory>
+#include <vector>
+#include <string>
+
+#include <systemc>
+
 #include <aff3ct.hpp>
 using namespace aff3ct;
 
@@ -37,9 +44,9 @@ void init_utils(const modules &m, utils &u);
 int sc_main(int argc, char** argv)
 {
 	// get the AFF3CT version
-	const std::string v = "v" + std::to_string(version_major()) + "." +
-	                            std::to_string(version_minor()) + "." +
-	                            std::to_string(version_release());
+	const std::string v = "v" + std::to_string(tools::version_major()) + "." +
+	                            std::to_string(tools::version_minor()) + "." +
+	                            std::to_string(tools::version_release());
 
 	std::cout << "#----------------------------------------------------------"      << std::endl;
 	std::cout << "# This is a basic program using the AFF3CT library (" << v << ")" << std::endl;
