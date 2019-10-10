@@ -80,8 +80,8 @@ int main(int argc, char** argv)
 	for (auto ebn0 = p.ebn0_min; ebn0 < p.ebn0_max; ebn0 += p.ebn0_step)
 	{
 		// compute the current sigma for the channel noise
-		const auto esn0  = tools::ebn0_to_esn0 (ebn0, p.R);
-		const auto sigma = tools::esn0_to_sigma(esn0     );
+		const auto esn0  = tools::ebn0_to_esn0 (ebn0, p.R, p.modem->bps);
+		const auto sigma = tools::esn0_to_sigma(esn0, p.modem->cpm_upf );
 
 		u.noise->set_noise(sigma, ebn0, esn0);
 
@@ -183,14 +183,6 @@ void init_modules(const params &p, modules &m)
 
 	// reset the memory of the decoder after the end of each communication
 	m.monitor->add_handler_check(std::bind(&module::Decoder::reset, m.decoder));
-
-	// initialize the interleaver if this code use an interleaver
-	try
-	{
-		auto& interleaver = m.codec->get_interleaver();
-		interleaver->init();
-	}
-	catch (const std::exception&) { /* do nothing if there is no interleaver */ }
 }
 
 void init_utils(const params &p, const modules &m, utils &u)
