@@ -36,8 +36,9 @@ build-linux-gcc:
       - ./examples/factory/build_linux_gcc/bin/
       - ./examples/systemc/build_linux_gcc/bin/
       - ./examples/tasks/build_linux_gcc/bin/
+      - ./examples/openmp/build_linux_gcc/bin/
   script:
-    - export EXAMPLES="bootstrap tasks systemc factory"
+    - export EXAMPLES="bootstrap tasks systemc factory openmp"
     - export CXX="g++"
     - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations"
     - export BUILD="build_linux_gcc"
@@ -59,8 +60,9 @@ build-linux-clang:
       - ./examples/factory/build_linux_clang/bin/
       - ./examples/systemc/build_linux_clang/bin/
       - ./examples/tasks/build_linux_clang/bin/
+      - ./examples/openmp/build_linux_clang/bin/
   script:
-    - export EXAMPLES="bootstrap tasks systemc factory"
+    - export EXAMPLES="bootstrap tasks systemc factory openmp"
     - export CXX="clang++"
     - export CFLAGS="-Wall -Wno-overloaded-virtual -funroll-loops -msse4.2 -Wno-deprecated-declarations"
     - export BUILD="build_linux_clang"
@@ -81,8 +83,9 @@ build-linux-gcc-4.8:
       - ./examples/factory/build_linux_gcc-4.8/bin/
       - ./examples/systemc/build_linux_gcc-4.8/bin/
       - ./examples/tasks/build_linux_gcc-4.8/bin/
+      - ./examples/openmp/build_linux_gcc-4.8/bin/
   script:
-    - export EXAMPLES="bootstrap tasks systemc factory"
+    - export EXAMPLES="bootstrap tasks systemc factory openmp"
     - export CXX="g++-4.8"
     - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations"
     - export BUILD="build_linux_gcc-4.8"
@@ -104,8 +107,9 @@ build-linux-icpc:
       - ./examples/factory/build_linux_icpc/bin/
       - ./examples/systemc/build_linux_icpc/bin/
       - ./examples/tasks/build_linux_icpc/bin/
+      - ./examples/openmp/build_linux_icpc/bin/
   script:
-    - export EXAMPLES="bootstrap tasks systemc factory"
+    - export EXAMPLES="bootstrap tasks systemc factory openmp"
     - export CXX="icpc"
     - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations -std=c++11"
     - export BUILD="build_linux_icpc"
@@ -124,8 +128,9 @@ build-windows-gcc:
       - ./examples/bootstrap/build_windows_gcc/bin/
       - ./examples/factory/build_windows_gcc/bin/
       - ./examples/tasks/build_windows_gcc/bin/
+      - ./examples/openmp/build_windows_gcc/bin/
   script:
-    - set "EXAMPLES=bootstrap tasks factory"
+    - set "EXAMPLES=bootstrap tasks factory openmp"
     - set "CFLAGS=-Wall -Wno-deprecated-declarations -funroll-loops -mavx"
     - set "BUILD=build_windows_gcc"
     - call ./ci/tools/threads.bat
@@ -143,8 +148,9 @@ build-windows-msvc:
       - ./examples/bootstrap/build_windows_msvc/bin/
       - ./examples/factory/build_windows_msvc/bin/
       - ./examples/tasks/build_windows_msvc/bin/
+      - ./examples/openmp/build_windows_msvc/bin/
   script:
-    - set "EXAMPLES=bootstrap tasks factory"
+    - set "EXAMPLES=bootstrap tasks factory openmp"
     - set "CFLAGS=-D_CRT_SECURE_NO_DEPRECATE /EHsc /arch:AVX"
     - set "BUILD=build_windows_msvc"
     - call ./ci/tools/threads.bat
@@ -163,8 +169,9 @@ build-macos-clang:
       - ./examples/bootstrap/build_macos_clang/bin/
       - ./examples/factory/build_macos_clang/bin/
       - ./examples/tasks/build_macos_clang/bin/
+      - ./examples/openmp/build_macos_clang/bin/
   script:
-    - export EXAMPLES="bootstrap tasks factory"
+    - export EXAMPLES="bootstrap tasks factory openmp"
     - export CXX="clang++"
     - export CFLAGS="-Wall -Wno-overloaded-virtual -funroll-loops -msse4.2"
     - export BUILD="build_macos_clang"
@@ -205,6 +212,14 @@ test-linux-run-factory:
   script:
     - ./ci/test-linux-macos-run.sh factory "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
 
+test-linux-run-openmp:
+  stage: test
+  tags:
+    - linux
+    - sse4.2
+  script:
+    - ./ci/test-linux-macos-run.sh openmp "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+
 test-macos-run-bootstrap:
   stage: test
   tags:
@@ -229,6 +244,14 @@ test-macos-run-factory:
   script:
     - ./ci/test-linux-macos-run.sh factory "-K 32 -N 128" build_macos_clang
 
+test-macos-run-openmp:
+  stage: test
+  tags:
+   - macos
+   - sse4.2
+  script:
+    - ./ci/test-linux-macos-run.sh openmp "-K 32 -N 128" build_macos_clang
+
 # test-windows-run-bootstrap:
 #   stage: test
 #   tags:
@@ -252,3 +275,11 @@ test-macos-run-factory:
 #    - avx
 #   script:
 #     - ./ci/test-windows-run.bat factory "-K 32 -N 128" build_windows_gcc build_windows_msvc
+
+# test-windows-run-openmp:
+#   stage: test
+#   tags:
+#    - windows
+#    - avx
+#   script:
+#     - ./ci/test-windows-run.bat openmp "-K 32 -N 128" build_windows_gcc build_windows_msvc
