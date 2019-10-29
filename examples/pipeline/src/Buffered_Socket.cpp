@@ -9,18 +9,26 @@
 
 template<typename T>
 Buffered_Socket<T>
-::Buffered_Socket(aff3ct::module::Socket* socket, aff3ct::module::Socket_type socket_type, int buffer_size)
-:NT_Buffered_Socket(socket, socket_type, buffer_size),socket_data(),
+::Buffered_Socket(std::vector<aff3ct::module::Socket* > sockets, aff3ct::module::Socket_type sockets_type, int buffer_size)
+:NT_Buffered_Socket(sockets, sockets_type, buffer_size),
+sockets_data(),
 buffer(),
-pop_buffer_idx(0)
+pop_buffer_idx(0),
+push_buffer_idx(0)
 {
-	int n_elt = socket->get_n_elmts();
-	std::string type_name = socket->get_datatype_string();
-	
-	this->socket_data.push_back(new std::vector<T>(n_elt,T(0)));
-	this->socket->template bind<T>(*this->socket_data[0]);
-	if (socket_type == aff3ct::module::Socket_type::OUT || socket_type == aff3ct::module::Socket_type::IN_OUT)
-		this->buffer.push_back(new Circular_Buffer<T>(buffer_size, n_elt));
+	std::cout << "ee3" << std::endl;
+	std::cout << "Il y a " << sockets.size() << " sockets dans le vecteur." << std::endl;
+	int         n_elt     = sockets[0]->get_n_elmts();
+	std::cout << "ee4" << std::endl;
+	std::string type_name = sockets[0]->get_datatype_string();
+	std::cout << "ee5" << std::endl;
+	for (size_t i = 0; i < this->sockets_nbr ; i++)
+	{
+		this->sockets_data.push_back(new std::vector<T>(n_elt,T(0)));
+		this->sockets[i]->template bind<T>(*this->sockets_data[i]);
+		if (sockets_type == aff3ct::module::Socket_type::OUT || sockets_type == aff3ct::module::Socket_type::IN_OUT)
+			this->buffer = new Circular_Buffer<T>(buffer_size, n_elt);
+	}
 }
 
 
@@ -28,13 +36,12 @@ template<typename T>
 Buffered_Socket<T>
 ::~Buffered_Socket(){
 
-	if (this->socket_type == aff3ct::module::Socket_type::OUT || 
-	    this->socket_type == aff3ct::module::Socket_type::IN_OUT)
+	if (this->sockets_type == aff3ct::module::Socket_type::OUT || 
+	    this->sockets_type == aff3ct::module::Socket_type::IN_OUT)
 	{
-		for (auto &b:this->buffer)
-			delete b;
+		delete this->buffer;
 	}
-	for (auto &sd:this->socket_data)
+	for (auto &sd:this->sockets_data)
 		delete sd;
 };
 
@@ -42,61 +49,56 @@ template<typename T>
 void Buffered_Socket<T>
 :: reset()
 {
-	for (auto const & buff:this->buffer)
-		buff->reset();
+	this->buffer->reset();
+	this->pop_buffer_idx  = 0;
+	this->push_buffer_idx = 0;
 };
 
 template<typename T>
 void Buffered_Socket<T>
 :: stop()
 {
-	for (auto const & buff:this->buffer)
-		buff->stop();
+	this->buffer->stop();
 };
 
 template<typename T>
 int Buffered_Socket<T>
-:: pop()
+:: push(int sck_idx)
 {
-	if (this->buffer[0]->pop(&this->socket_data[0]) == 1)
+	size_t the_push_idx = this->push_buffer_idx;
+	if (sck_idx != (the_push_idx % this->sockets_nbr))
 		return 1;
-	else
-	{
-		this->socket->template bind<T>(*this->socket_data[0]);
-		return 0;
-	}
-};
-
-template<typename T>
-void Buffered_Socket<T>
-:: wait_pop()
-{
-	this->buffer[0]->wait_pop(&this->socket_data[0]);
-	this->socket->template bind<T>(*this->socket_data[0]);
+	
+	if(this->buffer->push(&this->sockets_data[sck_idx]) == 1)
+		return 1;
+			
+	this->sockets[sck_idx]->template bind<T>(*this->sockets_data[sck_idx]);
+	this->push_buffer_idx++;
+	return 0;		
 };
 
 template<typename T>
 int Buffered_Socket<T>
-:: push()
+:: pop(int sck_idx)
 {
-	for (int i=1 ; i < this->socket_data.size(); i++)
-	{
-		for (int j = 0 ; j < this->socket_data[0]->size() ; j++)
-			this->socket_data[i]->at(j) = this->socket_data[0]->at(j);
-	}
-
-	for (int i=0 ; i<this->buffer.size(); i++)
-		while(this->buffer[i]->push(&this->socket_data[i])==1){};
-
-	this->socket->template bind<T>(*this->socket_data[0]);
+	size_t the_pop_idx = this->pop_buffer_idx;
+	if (sck_idx != (the_pop_idx % this->sockets_nbr))
+		return 1;
+	
+	if(this->buffer->pop(&this->sockets_data[sck_idx]) == 1)
+		return 1;
+		
+	this->sockets[sck_idx]->template bind<T>(*this->sockets_data[sck_idx]);
+	this->pop_buffer_idx++;
 	return 0;
 };
 
+
 template<typename T>
 void Buffered_Socket<T>
-:: wait_push()
+:: wait_push(int sck_idx)
 {
-	for (int i=1 ; i < this->socket_data.size(); i++)
+	/*for (int i=1 ; i < this->socket_data.size(); i++)
 	{
 		for (int j = 0 ; j < this->socket_data[0]->size() ; j++)
 			this->socket_data[i]->at(j) = this->socket_data[0]->at(j);
@@ -106,43 +108,30 @@ void Buffered_Socket<T>
 		this->buffer[i]->wait_push(&this->socket_data[i]);
 
 	this->socket->template bind<T>(*this->socket_data[0]);
+	
+	this->buffers[sck_idx]->wait_push(&this->sockets_data[sck_idx]);
+	this->sockets[sck_idx]->template   bind<T>(*this->sockets_data[sck_idx]);
+	*/
 };
 
 
 template<typename T>
 void Buffered_Socket<T>
-::create_new_out_buffer() 
-{	
-	assert(this->socket_type != aff3ct::module::Socket_type::IN);
-	int n_elt = this->socket->get_n_elmts();
-	this->socket_data.push_back(new std::vector    <T>(n_elt,        T(0)));
-	this->buffer     .push_back(new Circular_Buffer<T>(this->buffer_size, n_elt));
+:: wait_pop(int sck_idx)
+{
+//	this->buffers[sck_idx]         ->wait_pop(&this->sockets_data[sck_idx]);
+//	this->sockets[sck_idx]->template bind<T> (*this->sockets_data[sck_idx]);
 };
 
 template<typename T>
 int Buffered_Socket<T>
 ::bind(Buffered_Socket<T>* s)
 {	
-	if (s->get_last_buffer() == nullptr)
+	if (s->get_buffer() == nullptr)
 		return 1;
 	else
 	{
-		this->buffer.push_back(s->get_last_buffer());
-		return 0;
-	}
-};
-
-template<typename T>
-int Buffered_Socket<T>
-::bind_cpy(Buffered_Socket<T>* s) 
-{	
-	assert(this->socket_type == aff3ct::module::Socket_type::IN);
-	if (s->get_last_buffer() == nullptr)
-		return 1;
-	else
-	{
-		s->create_new_out_buffer();
-		this->buffer.push_back(s->get_last_buffer());
+		this->buffer = s->get_buffer();
 		return 0;
 	}
 };
@@ -151,11 +140,11 @@ template<typename T>
 void Buffered_Socket<T>
 ::print_socket_data()
 {
-	for (int j = 0; j<this->socket_data.size(); j++)
-	{
-		std::cout << this->name << "(" << j << "): Buffer Size : [ " << this->buffer[j]->get_cur_buffer_nbr() 
-		<< "]" << "\n";
-	}
+//	for (int j = 0; j<this->socket_data.size(); j++)
+//	{
+//		std::cout << this->name << "(" << j << "): Buffer Size : [ " << this->buffer[j]->get_cur_buffer_nbr() 
+//		<< "]" << "\n";
+//	}
 }
 
 template class Buffered_Socket<int8_t >;

@@ -21,7 +21,7 @@ Circular_Buffer<T,A>
 {
 	assert(max_buffer_nbr > 0);
 	assert(elt_per_buffer > 0);
-	for (auto &b:this->circular_buffer)
+	for (auto &b : this->circular_buffer)
 		b = new std::vector<T,A>(elt_per_buffer,T(0));
 	
 }
