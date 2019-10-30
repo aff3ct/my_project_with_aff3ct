@@ -16,12 +16,12 @@ struct params
 	float ebn0_step =  1.00f; // SNR step
 	float R;                  // code rate (R=K/N)
 
-	std::unique_ptr<factory::Source          ::parameters> source;
-	std::unique_ptr<factory::Codec_repetition::parameters> codec;
-	std::unique_ptr<factory::Modem           ::parameters> modem;
-	std::unique_ptr<factory::Channel         ::parameters> channel;
-	std::unique_ptr<factory::Monitor_BFER    ::parameters> monitor;
-	std::unique_ptr<factory::Terminal        ::parameters> terminal;
+	std::unique_ptr<factory::Source          > source;
+	std::unique_ptr<factory::Codec_repetition> codec;
+	std::unique_ptr<factory::Modem           > modem;
+	std::unique_ptr<factory::Channel         > channel;
+	std::unique_ptr<factory::Monitor_BFER    > monitor;
+	std::unique_ptr<factory::Terminal        > terminal;
 };
 void init_params(int argc, char** argv, params &p);
 
@@ -126,18 +126,18 @@ int main(int argc, char** argv)
 
 void init_params(int argc, char** argv, params &p)
 {
-	p.source   = std::unique_ptr<factory::Source          ::parameters>(new factory::Source          ::parameters());
-	p.codec    = std::unique_ptr<factory::Codec_repetition::parameters>(new factory::Codec_repetition::parameters());
-	p.modem    = std::unique_ptr<factory::Modem           ::parameters>(new factory::Modem           ::parameters());
-	p.channel  = std::unique_ptr<factory::Channel         ::parameters>(new factory::Channel         ::parameters());
-	p.monitor  = std::unique_ptr<factory::Monitor_BFER    ::parameters>(new factory::Monitor_BFER    ::parameters());
-	p.terminal = std::unique_ptr<factory::Terminal        ::parameters>(new factory::Terminal        ::parameters());
+	p.source   = std::unique_ptr<factory::Source          >(new factory::Source          ());
+	p.codec    = std::unique_ptr<factory::Codec_repetition>(new factory::Codec_repetition());
+	p.modem    = std::unique_ptr<factory::Modem           >(new factory::Modem           ());
+	p.channel  = std::unique_ptr<factory::Channel         >(new factory::Channel         ());
+	p.monitor  = std::unique_ptr<factory::Monitor_BFER    >(new factory::Monitor_BFER    ());
+	p.terminal = std::unique_ptr<factory::Terminal        >(new factory::Terminal        ());
 
-	std::vector<factory::Factory::parameters*> params_list = { p.source .get(), p.codec  .get(), p.modem   .get(),
-	                                                           p.channel.get(), p.monitor.get(), p.terminal.get() };
+	std::vector<factory::Factory*> params_list = { p.source .get(), p.codec  .get(), p.modem   .get(),
+	                                               p.channel.get(), p.monitor.get(), p.terminal.get() };
 
 	// parse the command for the given parameters and fill them
-	factory::Command_parser cp(argc, argv, params_list, true);
+	tools::Command_parser cp(argc, argv, params_list, true);
 	if (cp.parsing_failed())
 	{
 		cp.print_help    ();
@@ -147,7 +147,7 @@ void init_params(int argc, char** argv, params &p)
 	}
 
 	std::cout << "# Simulation parameters: " << std::endl;
-	factory::Header::print_parameters(params_list); // display the headers (= print the AFF3CT parameters on the screen)
+	tools::Header::print_parameters(params_list); // display the headers (= print the AFF3CT parameters on the screen)
 	std::cout << "#" << std::endl;
 	cp.print_warnings();
 
