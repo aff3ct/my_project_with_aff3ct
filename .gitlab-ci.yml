@@ -212,13 +212,13 @@ test-linux-run-factory:
   script:
     - ./ci/test-linux-macos-run.sh factory "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
 
-test-linux-run-openmp:
-  stage: test
-  tags:
-    - linux
-    - sse4.2
-  script:
-    - ./ci/test-linux-macos-run.sh openmp "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+# test-linux-run-openmp:
+#   stage: test
+#   tags:
+#     - linux
+#     - sse4.2
+#   script:
+#     - ./ci/test-linux-macos-run.sh openmp "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
 
 test-macos-run-bootstrap:
   stage: test
@@ -244,13 +244,13 @@ test-macos-run-factory:
   script:
     - ./ci/test-linux-macos-run.sh factory "-K 32 -N 128" build_macos_clang
 
-test-macos-run-openmp:
-  stage: test
-  tags:
-   - macos
-   - sse4.2
-  script:
-    - ./ci/test-linux-macos-run.sh openmp "-K 32 -N 128" build_macos_clang
+# test-macos-run-openmp:
+#   stage: test
+#   tags:
+#    - macos
+#    - sse4.2
+#   script:
+#     - ./ci/test-linux-macos-run.sh openmp "-K 32 -N 128" build_macos_clang
 
 # test-windows-run-bootstrap:
 #   stage: test
