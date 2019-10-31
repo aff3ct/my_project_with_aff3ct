@@ -92,10 +92,10 @@ int Block
 }
 
 void Block
-::run(bool const * is_done)
+::run(bool const &is_done)
 {
 	for (int i = 0; i < this->n_threads; i++)
-		this->threads[i] = std::thread{ &Block::execute_task, this, i, is_done };
+		this->threads[i] = std::thread{ &Block::execute_task, this, i, &is_done };
 };
 
 void Block

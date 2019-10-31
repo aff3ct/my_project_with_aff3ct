@@ -177,14 +177,14 @@ int main(int argc, char** argv)
 		});
 
 		// run the simulation chain
-		bl_source     .run(&is_done);
-		bl_splitter   .run(&is_done);
-		bl_encoder    .run(&is_done);
-		bl_modulator  .run(&is_done);
-		bl_channel    .run(&is_done);
-		bl_demodulator.run(&is_done);
-		bl_decoder    .run(&is_done);
-		bl_monitor    .run(&is_done);
+		bl_source     .run(is_done);
+		bl_splitter   .run(is_done);
+		bl_encoder    .run(is_done);
+		bl_modulator  .run(is_done);
+		bl_channel    .run(is_done);
+		bl_demodulator.run(is_done);
+		bl_decoder    .run(is_done);
+		bl_monitor    .run(is_done);
 
 		th_done_verif .join();
 		bl_source     .join();

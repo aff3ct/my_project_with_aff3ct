@@ -15,8 +15,8 @@ public:
 	Block(aff3ct::module::Task* task, int buffered_socket_size, int n_threads = 1);
 	virtual ~Block() = default;
 	int bind(const std::string &start_sck_name, Block &dest_block, const std::string &dest_sck_name);
-	void execute_task(const int task_id, const bool * is_done);
-	void run(const bool * is_done);
+	void execute_task(const int task_id, const bool *is_done);
+	void run(const bool &is_done);
 	void join();
 	void reset();
 
