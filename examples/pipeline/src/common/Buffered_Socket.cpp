@@ -2,7 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include <aff3ct.hpp>
+#include "aff3ct.hpp"
 #include "Circular_Buffer.hpp"
 #include "NT_Buffered_Socket.hpp"
 #include "Buffered_Socket.hpp"
@@ -27,13 +27,6 @@ push_buffer_idx(0)
 	
 	if (sockets_type == aff3ct::module::socket_t::SOUT || sockets_type == aff3ct::module::socket_t::SIN_SOUT)
 			this->buffer = new Circular_Buffer<T>(buffer_size, n_elt);
-	for (size_t i = 0; i < this->sockets_nbr ; i++)
-	{
-		std::cout << this->sockets[i]->get_dataptr() << std::endl;
-		std::cout << this->sockets_data[i] << std::endl;
-	}
-
-	
 }
 
 

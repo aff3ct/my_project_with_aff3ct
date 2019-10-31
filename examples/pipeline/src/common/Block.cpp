@@ -22,113 +22,79 @@ Block
 	task->set_autoexec (false);
 	task->set_fast     (false);
 
-	//tasks.push_back(task);
-	std::cout << "a" << std::endl;
 	for (int i = 0 ; i < n_threads; i++)
 		tasks.push_back(std::shared_ptr<aff3ct::module::Task>(task->clone()));
-		
-	std::cout << "b" << std::endl;
 	
 	int socket_nbr = task->sockets.size();
 	for (auto s_idx = 0 ; s_idx < socket_nbr ; s_idx++)
 	{
 		std::vector<std::shared_ptr<aff3ct::module::Socket> > s_vec;
 		for (int i = 0 ; i < n_threads; i++)
-		{
 			s_vec.push_back(tasks[i]->sockets[s_idx]);
-			std::cout << "c" << tasks[i]->sockets[s_idx]->get_n_elmts() << std::endl;
-		}
-			
-
 		
 		std::shared_ptr<aff3ct::module::Socket> s = task->sockets[s_idx];
-		std::cout << "d" << std::endl;
 		if (task->get_socket_type(*s) == aff3ct::module::socket_t::SIN)
 		{
 			if(s->get_datatype_string() == "int8")
-			{
 				this->buffered_sockets_in.emplace(s->get_name(),
-				                                  new Buffered_Socket<int8_t>(s_vec, 
-				                                                              task->get_socket_type(*s), 
-				                                                              buffer_size));
-			}
+				                                  new Buffered_Socket<int8_t>(s_vec, task->get_socket_type(*s), buffer_size));
+
 			else if(s->get_datatype_string() == "int16")
-			{
 				this->buffered_sockets_in.emplace(s->get_name(),
 				                                  new Buffered_Socket<int16_t>(s_vec, task->get_socket_type(*s), 
 				                                  buffer_size));
-			}
+
 			else if(s->get_datatype_string() == "int32")
-			{
 				this->buffered_sockets_in.emplace(s->get_name(),
 				                                  new Buffered_Socket<int32_t>(s_vec, task->get_socket_type(*s), 
 				                                  buffer_size));
-			}
+
 			else if(s->get_datatype_string() == "int64")
-			{
 				this->buffered_sockets_in.emplace(s->get_name(),
 				                                  new Buffered_Socket<int64_t>(s_vec, task->get_socket_type(*s), 
 				                                  buffer_size));
-			}
+
 			else if(s->get_datatype_string() == "float32")
-			{
 				this->buffered_sockets_in.emplace(s->get_name(),
 				                                  new Buffered_Socket<float>(s_vec, task->get_socket_type(*s), 
 				                                  buffer_size));
-			}
+
 			else if(s->get_datatype_string() == "float64")
-			{
 				this->buffered_sockets_in.emplace(s->get_name(),
 				                                  new Buffered_Socket<double>(s_vec, task->get_socket_type(*s), 
 				                                  buffer_size));
-			}
 		}
 		else
 		{
-			std::cout << "e" << std::endl;
 			if(s->get_datatype_string() == "int8")
-			{
-				std::cout << "e1" << std::endl;
 				this->buffered_sockets_out.emplace(s->get_name(),
 				                                   new Buffered_Socket<int8_t>(s_vec, task->get_socket_type(*s), 
 				                                   buffer_size));
-			}
+
 			else if(s->get_datatype_string() == "int16")
-			{
-				std::cout << "e2" << std::endl;
 				this->buffered_sockets_out.emplace(s->get_name(),
 				                                   new Buffered_Socket<int16_t>(s_vec, task->get_socket_type(*s), 
 				                                   buffer_size));
-			}
+
 			else if(s->get_datatype_string() == "int32")
-			{
-				std::cout << "e3" << std::endl;
 				this->buffered_sockets_out.emplace(s->get_name(),
 				                                   new Buffered_Socket<int32_t>(s_vec, task->get_socket_type(*s), 
 				                                   buffer_size));
-				std::cout << "f3" << std::endl;
-			}
+
 			else if(s->get_datatype_string() == "int64")
-			{
-				std::cout << "e4" << std::endl;
 				this->buffered_sockets_out.emplace(s->get_name(),
 				                                   new Buffered_Socket<int64_t>(s_vec, task->get_socket_type(*s), 
 				                                   buffer_size));
-			}
+
 			else if(s->get_datatype_string() == "float32")
-			{
-				std::cout << "e5" << std::endl;
 				this->buffered_sockets_out.emplace(s->get_name(),
 				                                   new Buffered_Socket<float>(s_vec, task->get_socket_type(*s), 
 				                                   buffer_size));
-			}
+
 			else if(s->get_datatype_string() == "float64")
-			{
-				std::cout << "e6" << std::endl;
 				this->buffered_sockets_out.emplace(s->get_name(),
 				                                   new Buffered_Socket<double>(s_vec, task->get_socket_type(*s), 
 				                                   buffer_size));
-			}
 		}
 	}
 }
@@ -194,35 +160,16 @@ void Block
 	static std::mutex print_mx;
 	while(!(*isDone))
 	{	
-		print_mx.lock();
-		std::cout << this->name << " pop start" << std::endl;
-		print_mx.unlock();
-		
 		for (auto const& it : this->buffered_sockets_in  )
 			while(!(*isDone) && it.second->pop(task_id)){};
-		
-		print_mx.lock();
-		std::cout << this->name << " pop finished" << std::endl;
-		print_mx.unlock();
 		
 		if (*isDone)
 			break;
 		
-		print_mx.lock();
-		std::cout << this->name << " exec start" << std::endl;
-		print_mx.unlock();
-		
 		this->tasks[task_id]->exec();
-		print_mx.lock();
-		std::cout << this->name << " exec finished" << std::endl;
-		std::cout << this->name << " push start" << std::endl;
-		print_mx.unlock();
 
 		for (auto const& it : this->buffered_sockets_out  )
 			while(!(*isDone) && it.second->push(task_id)){};
-		print_mx.lock();
-		std::cout << this->name << " push finished" << std::endl;
-		print_mx.unlock();
 	}	
 
 	for (auto const& it : this->buffered_sockets_out ) { it.second->stop();}

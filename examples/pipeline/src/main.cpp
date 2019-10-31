@@ -8,7 +8,7 @@
  #include "Block.hpp"
  #include "Circular_Buffer.hpp"
  #include "Destination/NO/Destination_NO.hpp"
- #include "Splitter/Splitter.hpp"
+ #include "Copier/Copier.hpp"
 
 #define TEST 0
 
@@ -30,8 +30,8 @@ int main(int argc, char** argv)
 	const int   K        = 32;
 	const int   N        = 128;
 	const float R        = (float)K / (float)N;
-	const float ebn0_min = 30.00f;
-	const float ebn0_max = 30.1f;
+	const float ebn0_min = 0.00f;
+	const float ebn0_max = 10.1f;
 	const int buf_length = 100000;
 
 	std::cout << "# * Simulation parameters: "           << std::endl;
@@ -51,11 +51,11 @@ int main(int argc, char** argv)
 	aff3ct::module::Modem_BPSK<>             demodulator (N      );
 	aff3ct::module::Channel_AWGN_LLR<>       channel     (N, seed);
 	aff3ct::module::Decoder_repetition_std<> decoder     (K, N   );
-	aff3ct::module::Splitter<>               splitter    (K      );
+	aff3ct::module::Copier<>                 copier      (K      );
 	aff3ct::module::Monitor_BFER<>           monitor     (K, fe  );
 	
 	// configuration of the module tasks
-	std::vector<const aff3ct::module::Module*> modules = {&source, &encoder, &modulator, &channel, &demodulator, &decoder, &splitter, &monitor};
+	std::vector<const aff3ct::module::Module*> modules = {&source, &encoder, &modulator, &channel, &demodulator, &decoder, &copier, &monitor};
 	for (auto *m : modules)
 		for (auto pt : m->tasks)
 		{
@@ -125,23 +125,24 @@ int main(int argc, char** argv)
 	
 	
 	#else
-	Block bl_source      (&source      [src::tsk::generate    ] , buf_length, 1);
-	Block bl_encoder     (&encoder     [enc::tsk::encode      ] , buf_length, 1);
-	Block bl_modulator   (&modulator   [mdm::tsk::modulate    ] , buf_length, 1);
-	Block bl_channel     (&channel     [chn::tsk::add_noise   ] , buf_length, 2);
-	Block bl_demodulator (&demodulator [mdm::tsk::demodulate  ] , buf_length, 1);
-	Block bl_decoder     (&decoder     [dec::tsk::decode_siho ] , buf_length, 1);
-	Block bl_splitter    (&splitter    [spl::tsk::split       ] , buf_length, 1);
-	Block bl_monitor     (&monitor     [mnt::tsk::check_errors] , buf_length, 1);
+	std::cout << "Hi" << std::endl;
+	Block bl_source      (&source      [src::tsk::generate    ] , buf_length, 4);
+	Block bl_encoder     (&encoder     [enc::tsk::encode      ] , buf_length, 4);
+	Block bl_modulator   (&modulator   [mdm::tsk::modulate    ] , buf_length, 4);
+	Block bl_channel     (&channel     [chn::tsk::add_noise   ] , buf_length, 4);
+	Block bl_demodulator (&demodulator [mdm::tsk::demodulate  ] , buf_length, 4);
+	Block bl_decoder     (&decoder     [dec::tsk::decode_siho ] , buf_length, 4);
+	Block bl_copier      (&copier      [spl::tsk::copy        ] , buf_length, 4);
+	Block bl_monitor     (&monitor     [mnt::tsk::check_errors] , buf_length, 4);
 	
-	bl_splitter   .bind ("U_K" , bl_source     , "U_K" );
-	bl_encoder    .bind ("U_K" , bl_splitter   , "V_K1");
+	bl_copier   .bind ("U_K" , bl_source     , "U_K" );
+	bl_encoder    .bind ("U_K" , bl_copier   , "V_K1");
 	bl_modulator  .bind ("X_N1", bl_encoder    , "X_N" );
 	bl_channel    .bind ("X_N" , bl_modulator  , "X_N2");
 	bl_demodulator.bind ("Y_N1", bl_channel    , "Y_N" );
 	bl_decoder    .bind ("Y_N" , bl_demodulator, "Y_N2");
 	
-	bl_monitor    .bind ("U" , bl_splitter,  "V_K2" );
+	bl_monitor    .bind ("U" , bl_copier,  "V_K2" );
 	bl_monitor    .bind ("V" , bl_decoder,   "V_K"  );
 	
 	reporters.push_back(std::unique_ptr<aff3ct::tools::Reporter>(new aff3ct::tools::Reporter_noise     <>(noise       ))); // report the noise values (Es/N0 and Eb/N0)
@@ -180,7 +181,7 @@ int main(int argc, char** argv)
 
 		// run the simulation chain
 		bl_source     .run(&isDone);
-		bl_splitter   .run(&isDone);
+		bl_copier   .run(&isDone);
 		bl_encoder    .run(&isDone);
 		bl_modulator  .run(&isDone);
 		bl_channel    .run(&isDone);
@@ -190,7 +191,7 @@ int main(int argc, char** argv)
 
 		th_done_verif .join();
 		bl_source     .join();
-		bl_splitter   .join();
+		bl_copier   .join();
 		bl_encoder    .join();
 		bl_modulator  .join();
 		bl_channel    .join();
@@ -199,7 +200,7 @@ int main(int argc, char** argv)
 		bl_monitor    .join();
 
 		bl_source     .reset();
-		bl_splitter   .reset();
+		bl_copier   .reset();
 		bl_encoder    .reset();
 		bl_modulator  .reset();
 		bl_channel    .reset();
