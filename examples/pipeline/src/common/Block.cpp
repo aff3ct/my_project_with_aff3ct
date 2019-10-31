@@ -62,40 +62,40 @@ template <typename T>
 int Block
 ::bind_by_type(const std::string &start_sck_name, Block &dest_block, const std::string &dest_sck_name)
 {
-	auto socket = this->get_buffered_socket_in<T>(start_sck_name);
-	if (socket != nullptr)
-		return socket->bind(dest_block.get_buffered_socket_out<T>(dest_sck_name));
-	else
-		return -1;
+	auto sin = this->get_buffered_socket_in<T>(start_sck_name);
+	auto sout = dest_block.get_buffered_socket_out<T>(dest_sck_name);
+	return sin->bind(sout);
 }
 
 int Block
 ::bind(const std::string &start_sck_name, Block &dest_block, const std::string &dest_sck_name)
 {
-	int rval = -1;
-	auto sin_datatype = this->buffered_sockets_in[start_sck_name]->get_datatype();
-	     if (sin_datatype == typeid(int8_t )) rval = bind_by_type<int8_t >(start_sck_name, dest_block, dest_sck_name);
-	else if (sin_datatype == typeid(int16_t)) rval = bind_by_type<int16_t>(start_sck_name, dest_block, dest_sck_name);
-	else if (sin_datatype == typeid(int32_t)) rval = bind_by_type<int32_t>(start_sck_name, dest_block, dest_sck_name);
-	else if (sin_datatype == typeid(int64_t)) rval = bind_by_type<int64_t>(start_sck_name, dest_block, dest_sck_name);
-	else if (sin_datatype == typeid(float  )) rval = bind_by_type<float  >(start_sck_name, dest_block, dest_sck_name);
-	else if (sin_datatype == typeid(double )) rval = bind_by_type<double >(start_sck_name, dest_block, dest_sck_name);
-
-	if (rval == -1)
+	if (!this->buffered_sockets_in.count(start_sck_name))
 	{
 		std::stringstream message;
-		message << "No 'socket' named '" << start_sck_name << "' for 'task': '" << this->name << "'.";
+		message << "This sould not happen :-(.";
 		throw aff3ct::tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
 	}
-	else
-		return rval;
+
+	int rval = -1;
+	auto sin_datatype = this->buffered_sockets_in[start_sck_name]->get_datatype();
+	     if (sin_datatype == typeid(int8_t )) return bind_by_type<int8_t >(start_sck_name, dest_block, dest_sck_name);
+	else if (sin_datatype == typeid(int16_t)) return bind_by_type<int16_t>(start_sck_name, dest_block, dest_sck_name);
+	else if (sin_datatype == typeid(int32_t)) return bind_by_type<int32_t>(start_sck_name, dest_block, dest_sck_name);
+	else if (sin_datatype == typeid(int64_t)) return bind_by_type<int64_t>(start_sck_name, dest_block, dest_sck_name);
+	else if (sin_datatype == typeid(float  )) return bind_by_type<float  >(start_sck_name, dest_block, dest_sck_name);
+	else if (sin_datatype == typeid(double )) return bind_by_type<double >(start_sck_name, dest_block, dest_sck_name);
+
+	std::stringstream message;
+	message << "This sould not happen :-(.";
+	throw aff3ct::tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
 }
 
 void Block
 ::run(bool const * is_done)
 {
 	for (int i = 0; i < this->n_threads; i++)
-		this->threads[i] = std::thread{&Block::execute_task,this,i,is_done};
+		this->threads[i] = std::thread{ &Block::execute_task, this, i, is_done };
 };
 
 void Block
@@ -108,7 +108,7 @@ void Block
 void Block
 ::execute_task(const int task_id, const bool *is_done)
 {
-	while(!(*is_done))
+	while (!(*is_done))
 	{
 		for (auto const& it : this->buffered_sockets_in)
 			while (!(*is_done) && it.second->pop(task_id)){};
@@ -141,8 +141,11 @@ Buffered_Socket<T>* Block
 		if (aff3ct::module::type_to_string[this->buffered_sockets_in[name]->get_socket()->get_datatype()] ==
 		    aff3ct::module::type_to_string[typeid(T)])
 			return static_cast<Buffered_Socket<T>*>(this->buffered_sockets_in[name].get());
-	return nullptr;
-};
+
+	std::stringstream message;
+	message << "This sould not happen :-(.";
+	throw aff3ct::tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
+}
 
 template <typename T>
 Buffered_Socket<T>* Block
@@ -152,6 +155,8 @@ Buffered_Socket<T>* Block
 		if (aff3ct::module::type_to_string[this->buffered_sockets_out[name]->get_socket()->get_datatype()] ==
 		    aff3ct::module::type_to_string[typeid(T)])
 			return static_cast<Buffered_Socket<T>*>(this->buffered_sockets_out[name].get());
-	return nullptr;
 
-};
+	std::stringstream message;
+	message << "This sould not happen :-(.";
+	throw aff3ct::tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
+}
