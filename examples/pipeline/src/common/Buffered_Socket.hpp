@@ -11,6 +11,7 @@
 #include <atomic>
 //#include <mipp.h>
 #include <aff3ct.hpp>
+
 #include "NT_Buffered_Socket.hpp"
 #include "Circular_Buffer.hpp"
 
@@ -29,7 +30,7 @@ public:
 	void  wait_push (int sck_idx);
 
 	int  bind       (Buffered_Socket<T>* s);
-	
+
 	void print_socket_data();
 
 	inline Circular_Buffer<T>* get_buffer     () const { return this->buffer; };

@@ -2,7 +2,10 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <typeindex>
+#include <typeinfo>
 #include <aff3ct.hpp>
+
 #include "Circular_Buffer.hpp"
 #include "NT_Buffered_Socket.hpp"
 #include "Buffered_Socket.hpp"
@@ -10,7 +13,7 @@
 template<typename T>
 Buffered_Socket<T>
 ::Buffered_Socket(std::vector<std::shared_ptr<aff3ct::module::Socket> > sockets, aff3ct::module::socket_t sockets_type, int buffer_size)
-:NT_Buffered_Socket(sockets, sockets_type, buffer_size),
+:NT_Buffered_Socket(sockets, sockets_type, buffer_size, std::type_index(typeid(T))),
 sockets_data(),
 buffer(nullptr),
 pop_buffer_idx(0),

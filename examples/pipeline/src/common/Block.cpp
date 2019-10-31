@@ -4,6 +4,9 @@
 #include <thread>
 #include <mutex>
 #include <vector>
+#include <functional>
+#include <sstream>
+#include <aff3ct.hpp>
 
 #include "Block.hpp"
 #include "Buffered_Socket.hpp"
@@ -22,122 +25,70 @@ Block
 	task->set_autoexec (false);
 	task->set_fast     (false);
 
-	for (int i = 0 ; i < n_threads; i++)
+	for (int i = 0; i < n_threads; i++)
 		tasks.push_back(std::shared_ptr<aff3ct::module::Task>(task->clone()));
 
-	int socket_nbr = task->sockets.size();
-	for (auto s_idx = 0 ; s_idx < socket_nbr ; s_idx++)
+	for (size_t s_idx = 0; s_idx < task->sockets.size(); s_idx++)
 	{
-		std::vector<std::shared_ptr<aff3ct::module::Socket> > s_vec;
+		std::vector<std::shared_ptr<aff3ct::module::Socket>> s_vec;
 		for (int i = 0 ; i < n_threads; i++)
 			s_vec.push_back(tasks[i]->sockets[s_idx]);
 
 		std::shared_ptr<aff3ct::module::Socket> s = task->sockets[s_idx];
-		if (task->get_socket_type(*s) == aff3ct::module::socket_t::SIN)
-		{
-			if(s->get_datatype_string() == "int8")
-				this->buffered_sockets_in.emplace(s->get_name(),
-				                                  new Buffered_Socket<int8_t>(s_vec, task->get_socket_type(*s), buffer_size));
+		const auto sdatatype = s->get_datatype_string();
+		const auto sname = s->get_name();
+		const auto stype = task->get_socket_type(*s);
 
-			else if(s->get_datatype_string() == "int16")
-				this->buffered_sockets_in.emplace(s->get_name(),
-				                                  new Buffered_Socket<int16_t>(s_vec, task->get_socket_type(*s),
-				                                  buffer_size));
-
-			else if(s->get_datatype_string() == "int32")
-				this->buffered_sockets_in.emplace(s->get_name(),
-				                                  new Buffered_Socket<int32_t>(s_vec, task->get_socket_type(*s),
-				                                  buffer_size));
-
-			else if(s->get_datatype_string() == "int64")
-				this->buffered_sockets_in.emplace(s->get_name(),
-				                                  new Buffered_Socket<int64_t>(s_vec, task->get_socket_type(*s),
-				                                  buffer_size));
-
-			else if(s->get_datatype_string() == "float32")
-				this->buffered_sockets_in.emplace(s->get_name(),
-				                                  new Buffered_Socket<float>(s_vec, task->get_socket_type(*s),
-				                                  buffer_size));
-
-			else if(s->get_datatype_string() == "float64")
-				this->buffered_sockets_in.emplace(s->get_name(),
-				                                  new Buffered_Socket<double>(s_vec, task->get_socket_type(*s),
-				                                  buffer_size));
-		}
+		std::function<void(NT_Buffered_Socket*)> add_socket;
+		if (stype == aff3ct::module::socket_t::SIN)
+			add_socket = [this, sname](NT_Buffered_Socket* socket) {
+				this->buffered_sockets_in[sname] = std::unique_ptr<NT_Buffered_Socket>(socket);
+			};
 		else
-		{
-			if(s->get_datatype_string() == "int8")
-				this->buffered_sockets_out.emplace(s->get_name(),
-				                                   new Buffered_Socket<int8_t>(s_vec, task->get_socket_type(*s),
-				                                   buffer_size));
+			add_socket = [this, sname](NT_Buffered_Socket* socket) {
+				this->buffered_sockets_out[sname] = std::unique_ptr<NT_Buffered_Socket>(socket);
+			};
 
-			else if(s->get_datatype_string() == "int16")
-				this->buffered_sockets_out.emplace(s->get_name(),
-				                                   new Buffered_Socket<int16_t>(s_vec, task->get_socket_type(*s),
-				                                   buffer_size));
-
-			else if(s->get_datatype_string() == "int32")
-				this->buffered_sockets_out.emplace(s->get_name(),
-				                                   new Buffered_Socket<int32_t>(s_vec, task->get_socket_type(*s),
-				                                   buffer_size));
-
-			else if(s->get_datatype_string() == "int64")
-				this->buffered_sockets_out.emplace(s->get_name(),
-				                                   new Buffered_Socket<int64_t>(s_vec, task->get_socket_type(*s),
-				                                   buffer_size));
-
-			else if(s->get_datatype_string() == "float32")
-				this->buffered_sockets_out.emplace(s->get_name(),
-				                                   new Buffered_Socket<float>(s_vec, task->get_socket_type(*s),
-				                                   buffer_size));
-
-			else if(s->get_datatype_string() == "float64")
-				this->buffered_sockets_out.emplace(s->get_name(),
-				                                   new Buffered_Socket<double>(s_vec, task->get_socket_type(*s),
-				                                   buffer_size));
-		}
+		     if (sdatatype == "int8"   ) add_socket(new Buffered_Socket<int8_t >(s_vec, stype, buffer_size));
+		else if (sdatatype == "int16"  ) add_socket(new Buffered_Socket<int16_t>(s_vec, stype, buffer_size));
+		else if (sdatatype == "int32"  ) add_socket(new Buffered_Socket<int32_t>(s_vec, stype, buffer_size));
+		else if (sdatatype == "int64"  ) add_socket(new Buffered_Socket<int64_t>(s_vec, stype, buffer_size));
+		else if (sdatatype == "float32") add_socket(new Buffered_Socket<float  >(s_vec, stype, buffer_size));
+		else if (sdatatype == "float64") add_socket(new Buffered_Socket<double >(s_vec, stype, buffer_size));
 	}
 }
 
-Block
-::~Block()
+template <typename T>
+int Block
+::bind_by_type(const std::string &start_sck_name, Block &dest_block, const std::string &dest_sck_name)
 {
-	for (auto &it : this->buffered_sockets_in)
-		delete it.second;
-
-	for (auto &it : this->buffered_sockets_out)
-		delete it.second;
+	auto socket = this->get_buffered_socket_in<T>(start_sck_name);
+	if (socket != nullptr)
+		return socket->bind(dest_block.get_buffered_socket_out<T>(dest_sck_name));
+	else
+		return -1;
 }
 
 int Block
-::bind(std::string start_sck_name, Block &dest_block, std::string dest_sck_name)
+::bind(const std::string &start_sck_name, Block &dest_block, const std::string &dest_sck_name)
 {
-	Buffered_Socket<int8_t>* socket_int8 = this->get_buffered_socket_in<int8_t>(start_sck_name);
-	if 	(socket_int8 != nullptr)
-		return socket_int8->bind(dest_block.get_buffered_socket_out<int8_t>(dest_sck_name));
+	int rval = -1;
+	auto sin_datatype = this->buffered_sockets_in[start_sck_name]->get_datatype();
+	     if (sin_datatype == typeid(int8_t )) rval = bind_by_type<int8_t >(start_sck_name, dest_block, dest_sck_name);
+	else if (sin_datatype == typeid(int16_t)) rval = bind_by_type<int16_t>(start_sck_name, dest_block, dest_sck_name);
+	else if (sin_datatype == typeid(int32_t)) rval = bind_by_type<int32_t>(start_sck_name, dest_block, dest_sck_name);
+	else if (sin_datatype == typeid(int64_t)) rval = bind_by_type<int64_t>(start_sck_name, dest_block, dest_sck_name);
+	else if (sin_datatype == typeid(float  )) rval = bind_by_type<float  >(start_sck_name, dest_block, dest_sck_name);
+	else if (sin_datatype == typeid(double )) rval = bind_by_type<double >(start_sck_name, dest_block, dest_sck_name);
 
-	Buffered_Socket<int16_t>* socket_int16 = this->get_buffered_socket_in<int16_t>(start_sck_name);
-	if 	(socket_int16 != nullptr)
-		return socket_int16->bind(dest_block.get_buffered_socket_out<int16_t>(dest_sck_name));
-
-	Buffered_Socket<int32_t>* socket_int32 = this->get_buffered_socket_in<int32_t>(start_sck_name);
-	if 	(socket_int32 != nullptr)
-		return socket_int32->bind(dest_block.get_buffered_socket_out<int32_t>(dest_sck_name));
-
-	Buffered_Socket<int64_t>* socket_int64 = this->get_buffered_socket_in<int64_t>(start_sck_name);
-	if 	(socket_int64 != nullptr)
-		return socket_int64->bind(dest_block.get_buffered_socket_out<int64_t>(dest_sck_name));
-
-	Buffered_Socket<float>* socket_float = this->get_buffered_socket_in<float>(start_sck_name);
-	if 	(socket_float != nullptr)
-		return socket_float->bind(dest_block.get_buffered_socket_out<float>(dest_sck_name));
-
-	Buffered_Socket<double>* socket_double = this->get_buffered_socket_in<double>(start_sck_name);
-	if 	(socket_double != nullptr)
-		return socket_double->bind(dest_block.get_buffered_socket_out<double>(dest_sck_name));
-
-	std::cout << "No socket named '" << start_sck_name << "' for Task : '" << this->name << "'." << std::endl;
-	return 1;
+	if (rval == -1)
+	{
+		std::stringstream message;
+		message << "No 'socket' named '" << start_sck_name << "' for 'task': '" << this->name << "'.";
+		throw aff3ct::tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
+	}
+	else
+		return rval;
 }
 
 void Block
@@ -147,40 +98,39 @@ void Block
 		this->threads[i] = std::thread{&Block::execute_task,this,i,is_done};
 };
 
-void Block::
-join()
+void Block
+::join()
 {
-	for (auto &th:this->threads)
+	for (auto &th : this->threads)
 		th.join();
 };
 
 void Block
 ::execute_task(const int task_id, const bool *is_done)
 {
-	static std::mutex print_mx;
 	while(!(*is_done))
 	{
-		for (auto const& it : this->buffered_sockets_in  )
-			while(!(*is_done) && it.second->pop(task_id)){};
+		for (auto const& it : this->buffered_sockets_in)
+			while (!(*is_done) && it.second->pop(task_id)){};
 
 		if (*is_done)
 			break;
 
 		this->tasks[task_id]->exec();
 
-		for (auto const& it : this->buffered_sockets_out  )
-			while(!(*is_done) && it.second->push(task_id)){};
+		for (auto const& it : this->buffered_sockets_out)
+			while (!(*is_done) && it.second->push(task_id)){};
 	}
 
-	for (auto const& it : this->buffered_sockets_out ) { it.second->stop();}
-	for (auto const& it : this->buffered_sockets_in )  { it.second->stop();}
+	for (auto const& it : this->buffered_sockets_out) { it.second->stop(); }
+	for (auto const& it : this->buffered_sockets_in ) { it.second->stop(); }
 }
 
 void Block
 ::reset()
 {
-		for (auto const& it : this->buffered_sockets_in  )  { it.second->reset(); }
-		for (auto const& it : this->buffered_sockets_out )  { it.second->reset(); }
+	for (auto const& it : this->buffered_sockets_in ) { it.second->reset(); }
+	for (auto const& it : this->buffered_sockets_out) { it.second->reset(); }
 }
 
 template <typename T>
@@ -188,9 +138,9 @@ Buffered_Socket<T>* Block
 ::get_buffered_socket_in(std::string name)
 {
 	if (this->buffered_sockets_in.count(name) > 0)
-	{	if (aff3ct::module::type_to_string[this->buffered_sockets_in[name]->get_socket()->get_datatype()] == aff3ct::module::type_to_string[typeid(T)])
-			return static_cast<Buffered_Socket<T>*>(this->buffered_sockets_in[name]);
-	}
+		if (aff3ct::module::type_to_string[this->buffered_sockets_in[name]->get_socket()->get_datatype()] ==
+		    aff3ct::module::type_to_string[typeid(T)])
+			return static_cast<Buffered_Socket<T>*>(this->buffered_sockets_in[name].get());
 	return nullptr;
 };
 
@@ -199,10 +149,9 @@ Buffered_Socket<T>* Block
 ::get_buffered_socket_out(std::string name)
 {
 	if (this->buffered_sockets_out.count(name) > 0)
-	{
-		if (aff3ct::module::type_to_string[this->buffered_sockets_out[name]->get_socket()->get_datatype()] == aff3ct::module::type_to_string[typeid(T)])
-			return static_cast<Buffered_Socket<T>*>(this->buffered_sockets_out[name]);
-	}
+		if (aff3ct::module::type_to_string[this->buffered_sockets_out[name]->get_socket()->get_datatype()] ==
+		    aff3ct::module::type_to_string[typeid(T)])
+			return static_cast<Buffered_Socket<T>*>(this->buffered_sockets_out[name].get());
 	return nullptr;
 
 };
