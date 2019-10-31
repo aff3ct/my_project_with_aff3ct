@@ -4,11 +4,11 @@
  #include <mutex>
  #include <algorithm>
  #include <aff3ct.hpp>
- 
+
  #include "Block.hpp"
  #include "Circular_Buffer.hpp"
  #include "Destination/NO/Destination_NO.hpp"
- #include "Copier/Copier.hpp"
+ #include "Splitter/Splitter.hpp"
 
 #define TEST 0
 
@@ -20,10 +20,9 @@ int main(int argc, char** argv)
 	std::cout << "#-------------------------------------------------------" << std::endl;
 	std::cout << "#"                                                        << std::endl;
 
-	std::vector<std::unique_ptr<aff3ct::tools ::Reporter>>              reporters;
-	            std::unique_ptr<aff3ct::tools ::Terminal>               terminal;
-	                            aff3ct::tools ::Sigma<>                 noise;
-
+	std::vector<std::unique_ptr<aff3ct::tools::Reporter>> reporters;
+	            std::unique_ptr<aff3ct::tools::Terminal>  terminal;
+	                            aff3ct::tools::Sigma<>    noise;
 
 	const int   fe       = 100;
 	const int   seed     = argc >= 2 ? std::atoi(argv[1]) : 0;
@@ -45,17 +44,18 @@ int main(int argc, char** argv)
 	std::cout << "#"                                     << std::endl;
 
 	// create the AFF3CT modules
-	aff3ct::module::Source_random<>          source      (K      );
-	aff3ct::module::Encoder_repetition_sys<> encoder     (K, N   );
-	aff3ct::module::Modem_BPSK<>             modulator   (N      );
-	aff3ct::module::Modem_BPSK<>             demodulator (N      );
-	aff3ct::module::Channel_AWGN_LLR<>       channel     (N, seed);
-	aff3ct::module::Decoder_repetition_std<> decoder     (K, N   );
-	aff3ct::module::Copier<>                 copier      (K      );
-	aff3ct::module::Monitor_BFER<>           monitor     (K, fe  );
-	
+	aff3ct::module::Source_random<>          source     (K      );
+	aff3ct::module::Encoder_repetition_sys<> encoder    (K, N   );
+	aff3ct::module::Modem_BPSK<>             modulator  (N      );
+	aff3ct::module::Modem_BPSK<>             demodulator(N      );
+	aff3ct::module::Channel_AWGN_LLR<>       channel    (N, seed);
+	aff3ct::module::Decoder_repetition_std<> decoder    (K, N   );
+	aff3ct::module::Splitter<>               splitter   (K      );
+	aff3ct::module::Monitor_BFER<>           monitor    (K, fe  );
+
 	// configuration of the module tasks
-	std::vector<const aff3ct::module::Module*> modules = {&source, &encoder, &modulator, &channel, &demodulator, &decoder, &copier, &monitor};
+	std::vector<const aff3ct::module::Module*> modules = { &source, &encoder, &modulator, &channel, &demodulator,
+	                                                       &decoder, &splitter, &monitor };
 	for (auto *m : modules)
 		for (auto pt : m->tasks)
 		{
@@ -71,10 +71,10 @@ int main(int argc, char** argv)
 				t->set_fast(true);
 		}
 
-	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	using namespace aff3ct::module;
-	
-	#if TEST == 1  
+
+#if TEST == 1
+
 	Circular_Buffer<int32_t> cb(4,10);
 
 	std::mutex print_lock;
@@ -85,18 +85,18 @@ int main(int argc, char** argv)
 
 		while(true)
 		{
-			
+
 			for (auto &elt : *v)
 				elt = a++%100;
-						
+
 			print_lock.lock();
-			
+
 			std::cout << "Thread 1 push : ";
 			std::cout << "[ ";
 			for (auto const &elt : *v)
 				std::cout << std::setw(2) << elt << " ";
-			std::cout << "]" << std::endl;	
-			
+			std::cout << "]" << std::endl;
+
 			print_lock.unlock();
 			cb.wait_push(&v);
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -114,7 +114,7 @@ int main(int argc, char** argv)
 			std::cout << "[ ";
 			for (auto const &elt : *v)
 				std::cout << std::setw(2) << elt << " ";
-			std::cout << "]" << std::endl;	
+			std::cout << "]" << std::endl;
 			print_lock.unlock();
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		}
@@ -122,30 +122,29 @@ int main(int argc, char** argv)
 
 	t1.join();
 	t2.join();
-	
-	
-	#else
-	std::cout << "Hi" << std::endl;
-	Block bl_source      (&source      [src::tsk::generate    ] , buf_length, 4);
-	Block bl_encoder     (&encoder     [enc::tsk::encode      ] , buf_length, 4);
-	Block bl_modulator   (&modulator   [mdm::tsk::modulate    ] , buf_length, 4);
-	Block bl_channel     (&channel     [chn::tsk::add_noise   ] , buf_length, 4);
-	Block bl_demodulator (&demodulator [mdm::tsk::demodulate  ] , buf_length, 4);
-	Block bl_decoder     (&decoder     [dec::tsk::decode_siho ] , buf_length, 4);
-	Block bl_copier      (&copier      [spl::tsk::copy        ] , buf_length, 4);
-	Block bl_monitor     (&monitor     [mnt::tsk::check_errors] , buf_length, 4);
-	
-	bl_copier   .bind ("U_K" , bl_source     , "U_K" );
-	bl_encoder    .bind ("U_K" , bl_copier   , "V_K1");
-	bl_modulator  .bind ("X_N1", bl_encoder    , "X_N" );
-	bl_channel    .bind ("X_N" , bl_modulator  , "X_N2");
-	bl_demodulator.bind ("Y_N1", bl_channel    , "Y_N" );
-	bl_decoder    .bind ("Y_N" , bl_demodulator, "Y_N2");
-	
-	bl_monitor    .bind ("U" , bl_copier,  "V_K2" );
-	bl_monitor    .bind ("V" , bl_decoder,   "V_K"  );
-	
-	reporters.push_back(std::unique_ptr<aff3ct::tools::Reporter>(new aff3ct::tools::Reporter_noise     <>(noise       ))); // report the noise values (Es/N0 and Eb/N0)
+
+#else
+
+	Block bl_source     (&source     [src::tsk::generate    ], buf_length, 4);
+	Block bl_encoder    (&encoder    [enc::tsk::encode      ], buf_length, 4);
+	Block bl_modulator  (&modulator  [mdm::tsk::modulate    ], buf_length, 4);
+	Block bl_channel    (&channel    [chn::tsk::add_noise   ], buf_length, 4);
+	Block bl_demodulator(&demodulator[mdm::tsk::demodulate  ], buf_length, 4);
+	Block bl_decoder    (&decoder    [dec::tsk::decode_siho ], buf_length, 4);
+	Block bl_splitter   (&splitter   [spl::tsk::split       ], buf_length, 4);
+	Block bl_monitor    (&monitor    [mnt::tsk::check_errors], buf_length, 4);
+
+	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
+	bl_splitter   .bind("U_K" , bl_source     , "U_K" );
+	bl_encoder    .bind("U_K" , bl_splitter   , "V_K1");
+	bl_modulator  .bind("X_N1", bl_encoder    , "X_N" );
+	bl_channel    .bind("X_N" , bl_modulator  , "X_N2");
+	bl_demodulator.bind("Y_N1", bl_channel    , "Y_N" );
+	bl_decoder    .bind("Y_N" , bl_demodulator, "Y_N2");
+	bl_monitor    .bind("U"   , bl_splitter   , "V_K2");
+	bl_monitor    .bind("V"   , bl_decoder    , "V_K" );
+
+	reporters.push_back(std::unique_ptr<aff3ct::tools::Reporter>(new aff3ct::tools::Reporter_noise     <>(noise  ))); // report the noise values (Es/N0 and Eb/N0)
 	reporters.push_back(std::unique_ptr<aff3ct::tools::Reporter>(new aff3ct::tools::Reporter_BFER      <>(monitor))); // report the bit/frame error rates
 	reporters.push_back(std::unique_ptr<aff3ct::tools::Reporter>(new aff3ct::tools::Reporter_throughput<>(monitor))); // report the simulation throughputs
 
@@ -169,29 +168,27 @@ int main(int argc, char** argv)
 
 		// display the performance (BER and FER) in real time (in a separate thread)
 		terminal->start_temp_report();
-		
-		bool isDone = false;
-		std::thread th_done_verif([&isDone, &monitor]() 
+
+		bool is_done = false;
+		std::thread th_done_verif([&is_done, &monitor]()
 		{
-			while(!monitor.fe_limit_achieved())
-			{
-			}
-			isDone = true;
+			while(!monitor.fe_limit_achieved()) {}
+			is_done = true;
 		});
 
 		// run the simulation chain
-		bl_source     .run(&isDone);
-		bl_copier   .run(&isDone);
-		bl_encoder    .run(&isDone);
-		bl_modulator  .run(&isDone);
-		bl_channel    .run(&isDone);
-		bl_demodulator.run(&isDone);
-		bl_decoder    .run(&isDone);
-		bl_monitor    .run(&isDone);
+		bl_source     .run(&is_done);
+		bl_splitter   .run(&is_done);
+		bl_encoder    .run(&is_done);
+		bl_modulator  .run(&is_done);
+		bl_channel    .run(&is_done);
+		bl_demodulator.run(&is_done);
+		bl_decoder    .run(&is_done);
+		bl_monitor    .run(&is_done);
 
 		th_done_verif .join();
 		bl_source     .join();
-		bl_copier   .join();
+		bl_splitter   .join();
 		bl_encoder    .join();
 		bl_modulator  .join();
 		bl_channel    .join();
@@ -200,7 +197,7 @@ int main(int argc, char** argv)
 		bl_monitor    .join();
 
 		bl_source     .reset();
-		bl_copier   .reset();
+		bl_splitter   .reset();
 		bl_encoder    .reset();
 		bl_modulator  .reset();
 		bl_channel    .reset();
@@ -219,8 +216,8 @@ int main(int argc, char** argv)
 	// display the statistics of the tasks (if enabled)
 	auto ordered = true;
 	aff3ct::tools::Stats::show(modules, ordered);
-	
-	#endif
+
+#endif
 
 	std::cout << "# End of the simulation" << std::endl;
 

@@ -16,8 +16,8 @@ public:
 	Block(aff3ct::module::Task* task, int buffered_socket_size, int n_threads = 1);
 	virtual ~Block();
 	int bind     (std::string start_sck_name, Block &dest_block, std::string dest_sck_name);
-	void execute_task(const int task_id, const bool * isDone);
-	void run         (const bool * isDone);
+	void execute_task(const int task_id, const bool * is_done);
+	void run         (const bool * is_done);
 	void join();
 	void reset();
 
@@ -25,8 +25,8 @@ public:
 	Buffered_Socket<T>* get_buffered_socket_in    (std::string name);
 	template <typename T>
 	Buffered_Socket<T>* get_buffered_socket_out   (std::string name);
-	
-	
+
+
 protected:
 	int n_threads;
 	std::vector<std::shared_ptr<aff3ct::module::Task> > tasks;
