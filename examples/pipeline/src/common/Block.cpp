@@ -25,26 +25,32 @@ Block
 	//tasks.push_back(task);
 	std::cout << "a" << std::endl;
 	for (int i = 0 ; i < n_threads; i++)
-		tasks.push_back(task->clone());
+		tasks.push_back(std::shared_ptr<aff3ct::module::Task>(task->clone()));
 		
 	std::cout << "b" << std::endl;
 	
 	int socket_nbr = task->sockets.size();
 	for (auto s_idx = 0 ; s_idx < socket_nbr ; s_idx++)
 	{
-		std::vector<aff3ct::module::Socket* > s_vec;
+		std::vector<std::shared_ptr<aff3ct::module::Socket> > s_vec;
 		for (int i = 0 ; i < n_threads; i++)
+		{
 			s_vec.push_back(tasks[i]->sockets[s_idx]);
-		std::cout << "c" << std::endl;
-		aff3ct::module::Socket* s = task->sockets[s_idx];
+			std::cout << "c" << tasks[i]->sockets[s_idx]->get_n_elmts() << std::endl;
+		}
+			
+
+		
+		std::shared_ptr<aff3ct::module::Socket> s = task->sockets[s_idx];
 		std::cout << "d" << std::endl;
-		if (task->get_socket_type(*s) == aff3ct::module::Socket_type::IN)
+		if (task->get_socket_type(*s) == aff3ct::module::socket_t::SIN)
 		{
 			if(s->get_datatype_string() == "int8")
 			{
 				this->buffered_sockets_in.emplace(s->get_name(),
-				                                  new Buffered_Socket<int8_t>(s_vec, task->get_socket_type(*s), 
-				                                  buffer_size));
+				                                  new Buffered_Socket<int8_t>(s_vec, 
+				                                                              task->get_socket_type(*s), 
+				                                                              buffer_size));
 			}
 			else if(s->get_datatype_string() == "int16")
 			{
@@ -183,23 +189,44 @@ join()
 };
 
 void Block
-::execute_task(const int task_id, const bool * isDone)
+::execute_task(const int task_id, const bool *isDone)
 {
+	static std::mutex print_mx;
 	while(!(*isDone))
-	{		
+	{	
+		print_mx.lock();
+		std::cout << this->name << " pop start" << std::endl;
+		print_mx.unlock();
+		
 		for (auto const& it : this->buffered_sockets_in  )
 			while(!(*isDone) && it.second->pop(task_id)){};
-
+		
+		print_mx.lock();
+		std::cout << this->name << " pop finished" << std::endl;
+		print_mx.unlock();
+		
 		if (*isDone)
 			break;
-						
+		
+		print_mx.lock();
+		std::cout << this->name << " exec start" << std::endl;
+		print_mx.unlock();
+		
 		this->tasks[task_id]->exec();
+		print_mx.lock();
+		std::cout << this->name << " exec finished" << std::endl;
+		std::cout << this->name << " push start" << std::endl;
+		print_mx.unlock();
+
 		for (auto const& it : this->buffered_sockets_out  )
 			while(!(*isDone) && it.second->push(task_id)){};
+		print_mx.lock();
+		std::cout << this->name << " push finished" << std::endl;
+		print_mx.unlock();
 	}	
 
 	for (auto const& it : this->buffered_sockets_out ) { it.second->stop();}
-	for (auto const& it : this->buffered_sockets_in ) { it.second->stop();}
+	for (auto const& it : this->buffered_sockets_in )  { it.second->stop();}
 }
 
 void Block

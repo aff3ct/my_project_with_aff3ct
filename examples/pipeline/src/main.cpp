@@ -1,4 +1,4 @@
-	 #include <vector>
+ #include <vector>
  #include <iostream>
  #include <thread>
  #include <mutex>
@@ -19,6 +19,11 @@ int main(int argc, char** argv)
 	std::cout << "# Feel free to improve it as you want to fit your needs." << std::endl;
 	std::cout << "#-------------------------------------------------------" << std::endl;
 	std::cout << "#"                                                        << std::endl;
+
+	std::vector<std::unique_ptr<aff3ct::tools ::Reporter>>              reporters;
+	            std::unique_ptr<aff3ct::tools ::Terminal>               terminal;
+	                            aff3ct::tools ::Sigma<>                 noise;
+
 
 	const int   fe       = 100;
 	const int   seed     = argc >= 2 ? std::atoi(argv[1]) : 0;
@@ -52,8 +57,9 @@ int main(int argc, char** argv)
 	// configuration of the module tasks
 	std::vector<const aff3ct::module::Module*> modules = {&source, &encoder, &modulator, &channel, &demodulator, &decoder, &splitter, &monitor};
 	for (auto *m : modules)
-		for (auto *t : m->tasks)
+		for (auto pt : m->tasks)
 		{
+			auto t = pt.get();
 			t->set_autoalloc  (false); // enable the automatic allocation of the data in the tasks
 			t->set_autoexec   (false); // disable the auto execution mode of the tasks
 			t->set_debug      (false); // disable the debug mode
@@ -138,9 +144,15 @@ int main(int argc, char** argv)
 	bl_monitor    .bind ("U" , bl_splitter,  "V_K2" );
 	bl_monitor    .bind ("V" , bl_decoder,   "V_K"  );
 	
-	aff3ct::tools::Terminal_BFER<> terminal(monitor);
-	terminal.legend();
-	terminal.start_temp_report();
+	reporters.push_back(std::unique_ptr<aff3ct::tools::Reporter>(new aff3ct::tools::Reporter_noise     <>(noise       ))); // report the noise values (Es/N0 and Eb/N0)
+	reporters.push_back(std::unique_ptr<aff3ct::tools::Reporter>(new aff3ct::tools::Reporter_BFER      <>(monitor))); // report the bit/frame error rates
+	reporters.push_back(std::unique_ptr<aff3ct::tools::Reporter>(new aff3ct::tools::Reporter_throughput<>(monitor))); // report the simulation throughputs
+
+	// allocate a terminal that will display the collected data from the reporters
+	terminal = std::unique_ptr<aff3ct::tools::Terminal>(new aff3ct::tools::Terminal_std(reporters));
+
+	terminal->legend();
+	terminal->start_temp_report();
 
 	// a loop over the various SNRs
 	for (auto ebn0 = ebn0_min; ebn0 < ebn0_max; ebn0 += 1.f)
@@ -148,17 +160,14 @@ int main(int argc, char** argv)
 		// compute the current sigma for the channel noise
 		const auto esn0  = aff3ct::tools::ebn0_to_esn0 (ebn0, R);
 		const auto sigma = aff3ct::tools::esn0_to_sigma(esn0   );
-
-		// give the current SNR to the terminal
-		terminal.set_esn0(esn0);
-		terminal.set_ebn0(ebn0);
+		noise.set_noise(sigma, ebn0, esn0);
 
 		// update the sigma of the modem and the channel
-		demodulator.set_sigma(sigma);
-		channel    .set_sigma(sigma);
+		demodulator.set_noise(noise);
+		channel    .set_noise(noise);
 
 		// display the performance (BER and FER) in real time (in a separate thread)
-		terminal.start_temp_report();
+		terminal->start_temp_report();
 		
 		bool isDone = false;
 		std::thread th_done_verif([&isDone, &monitor]() 
@@ -199,7 +208,7 @@ int main(int argc, char** argv)
 		bl_monitor    .reset();
 
 		// display the performance (BER and FER) in the terminal
-		terminal.final_report();
+		terminal->final_report();
 
 		// reset the monitor for the next SNR
 		monitor.reset();

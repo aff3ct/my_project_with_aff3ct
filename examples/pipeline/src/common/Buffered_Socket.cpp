@@ -9,26 +9,31 @@
 
 template<typename T>
 Buffered_Socket<T>
-::Buffered_Socket(std::vector<aff3ct::module::Socket* > sockets, aff3ct::module::Socket_type sockets_type, int buffer_size)
+::Buffered_Socket(std::vector<std::shared_ptr<aff3ct::module::Socket> > sockets, aff3ct::module::socket_t sockets_type, int buffer_size)
 :NT_Buffered_Socket(sockets, sockets_type, buffer_size),
 sockets_data(),
-buffer(),
+buffer(nullptr),
 pop_buffer_idx(0),
 push_buffer_idx(0)
 {
-	std::cout << "ee3" << std::endl;
-	std::cout << "Il y a " << sockets.size() << " sockets dans le vecteur." << std::endl;
 	int         n_elt     = sockets[0]->get_n_elmts();
-	std::cout << "ee4" << std::endl;
 	std::string type_name = sockets[0]->get_datatype_string();
-	std::cout << "ee5" << std::endl;
+	
+	for (size_t i = 0; i < this->sockets_nbr ; i++)
+		this->sockets_data.push_back(new std::vector<T>(n_elt,(T)0));
+	
+	for (size_t i = 0; i < this->sockets_nbr ; i++)
+		this->sockets[i]->template bind<T>(*this->sockets_data[i]);
+	
+	if (sockets_type == aff3ct::module::socket_t::SOUT || sockets_type == aff3ct::module::socket_t::SIN_SOUT)
+			this->buffer = new Circular_Buffer<T>(buffer_size, n_elt);
 	for (size_t i = 0; i < this->sockets_nbr ; i++)
 	{
-		this->sockets_data.push_back(new std::vector<T>(n_elt,T(0)));
-		this->sockets[i]->template bind<T>(*this->sockets_data[i]);
-		if (sockets_type == aff3ct::module::Socket_type::OUT || sockets_type == aff3ct::module::Socket_type::IN_OUT)
-			this->buffer = new Circular_Buffer<T>(buffer_size, n_elt);
+		std::cout << this->sockets[i]->get_dataptr() << std::endl;
+		std::cout << this->sockets_data[i] << std::endl;
 	}
+
+	
 }
 
 
@@ -36,8 +41,8 @@ template<typename T>
 Buffered_Socket<T>
 ::~Buffered_Socket(){
 
-	if (this->sockets_type == aff3ct::module::Socket_type::OUT || 
-	    this->sockets_type == aff3ct::module::Socket_type::IN_OUT)
+	if (this->sockets_type == aff3ct::module::socket_t::SOUT || 
+	    this->sockets_type == aff3ct::module::socket_t::SIN_SOUT)
 	{
 		delete this->buffer;
 	}
@@ -128,7 +133,9 @@ int Buffered_Socket<T>
 ::bind(Buffered_Socket<T>* s)
 {	
 	if (s->get_buffer() == nullptr)
+	{
 		return 1;
+	}
 	else
 	{
 		this->buffer = s->get_buffer();

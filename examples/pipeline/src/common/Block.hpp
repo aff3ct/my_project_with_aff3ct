@@ -4,6 +4,7 @@
 #include <map>
 #include <thread>
 #include <vector>
+#include <memory>
 #include <aff3ct.hpp>
 #include "Buffered_Socket.hpp"
 
@@ -28,7 +29,7 @@ public:
 	
 protected:
 	int n_threads;
-	std::vector<aff3ct::module::Task *> tasks;
+	std::vector<std::shared_ptr<aff3ct::module::Task> > tasks;
 	unsigned int buffer_size;
 	std::vector<std::thread> threads;
 	std::map<std::string, NT_Buffered_Socket*> buffered_sockets_in  ;

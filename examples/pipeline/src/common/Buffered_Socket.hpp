@@ -18,7 +18,7 @@ template<typename T>
 class Buffered_Socket : public NT_Buffered_Socket
 {
 public:
-	Buffered_Socket(std::vector<aff3ct::module::Socket* > sockets, aff3ct::module::Socket_type sockets_type, int buffer_size);
+	Buffered_Socket(std::vector<std::shared_ptr<aff3ct::module::Socket> > sockets, aff3ct::module::socket_t sockets_type, int buffer_size);
 	virtual ~Buffered_Socket();
 
 	void  stop      (           );
@@ -38,8 +38,7 @@ protected:
 	std::vector<    std::vector<T>* > sockets_data;
 	//std::vector<Circular_Buffer<T>* > buffers;
 	Circular_Buffer<T>*               buffer;
-	std::mutex                        pop_bi_lock;
-	std::mutex                        push_bi_lock;
+
 private:
 	std::atomic<size_t> pop_buffer_idx;
 	std::atomic<size_t> push_buffer_idx;

@@ -7,7 +7,6 @@
 #include <iostream>
 
 #include "Tools/Exception/exception.hpp"
-
 #include "Module/Module.hpp"
 
 namespace aff3ct
@@ -65,10 +64,10 @@ public:
 		}
 
 		auto &p = this->create_task("consume");
-		auto &ps_U_K = this->template create_socket_in<B>(p, "U_K", this->K * this->n_frames);
-		this->create_codelet(p, [this, &ps_U_K]() -> int
+		auto ps_U_K = this->template create_socket_in<B>(p, "U_K", this->K * this->n_frames);
+		this->create_codelet(p, [this, &ps_U_K](Task &t) -> int
 		{
-			this->consume(static_cast<B*>(ps_U_K.get_dataptr()));
+			this->consume(static_cast<B*>(t[ps_U_K].get_dataptr()));
 
 			return 0;
 		});
