@@ -9,29 +9,26 @@ Buffered_Socket<T>
                   const aff3ct::module::socket_t sockets_type,
                   const size_t buffer_size)
 : NT_Buffered_Socket(sockets, sockets_type, buffer_size),
-  sockets_data(),
   buffer(nullptr),
   pop_buffer_idx(0),
   push_buffer_idx(0)
 {
-	int         n_elt     = sockets[0]->get_n_elmts();
-	std::string type_name = sockets[0]->get_datatype_string();
+	auto n_elmts = sockets[0]->get_n_elmts();
 
 	for (size_t i = 0; i < this->sockets.size(); i++)
-		this->sockets_data.push_back(new std::vector<T>(n_elt,(T)0));
+		this->sockets_data.push_back(new std::vector<T>(n_elmts,(T)0));
 
 	for (size_t i = 0; i < this->sockets.size(); i++)
 		this->sockets[i]->template bind<T>(*this->sockets_data[i]);
 
 	if (sockets_type == aff3ct::module::socket_t::SOUT || sockets_type == aff3ct::module::socket_t::SIN_SOUT)
-		this->buffer = new Circular_Buffer<T>(buffer_size, n_elt);
+		this->buffer = new Circular_Buffer<T>(buffer_size, n_elmts);
 }
-
 
 template<typename T>
 Buffered_Socket<T>
-::~Buffered_Socket(){
-
+::~Buffered_Socket()
+{
 	if (this->sockets_type == aff3ct::module::socket_t::SOUT ||
 	    this->sockets_type == aff3ct::module::socket_t::SIN_SOUT)
 	{
@@ -39,7 +36,7 @@ Buffered_Socket<T>
 	}
 	for (auto &sd:this->sockets_data)
 		delete sd;
-};
+}
 
 template<typename T>
 void Buffered_Socket<T>
@@ -48,51 +45,50 @@ void Buffered_Socket<T>
 	this->buffer->reset();
 	this->pop_buffer_idx  = 0;
 	this->push_buffer_idx = 0;
-};
+}
 
 template<typename T>
 void Buffered_Socket<T>
 ::stop()
 {
 	this->buffer->stop();
-};
+}
 
 template<typename T>
-int Buffered_Socket<T>
-::push(size_t sck_idx)
-{
-	size_t the_push_idx = this->push_buffer_idx;
-	if (sck_idx != (the_push_idx % this->sockets.size()))
-		return 1;
-
-	if(this->buffer->push(&this->sockets_data[sck_idx]) == 1)
-		return 1;
-
-	this->sockets[sck_idx]->template bind<T>(*this->sockets_data[sck_idx]);
-	this->push_buffer_idx++;
-	return 0;
-};
-
-template<typename T>
-int Buffered_Socket<T>
-::pop(size_t sck_idx)
+bool Buffered_Socket<T>
+::pop(const size_t sck_idx)
 {
 	size_t the_pop_idx = this->pop_buffer_idx;
 	if (sck_idx != (the_pop_idx % this->sockets.size()))
-		return 1;
+		return true;
 
-	if(this->buffer->pop(&this->sockets_data[sck_idx]) == 1)
-		return 1;
+	if (this->buffer->pop(&this->sockets_data[sck_idx]))
+		return true;
 
 	this->sockets[sck_idx]->template bind<T>(*this->sockets_data[sck_idx]);
 	this->pop_buffer_idx++;
-	return 0;
-};
+	return false;
+}
 
+template<typename T>
+bool Buffered_Socket<T>
+::push(const size_t sck_idx)
+{
+	size_t the_push_idx = this->push_buffer_idx;
+	if (sck_idx != (the_push_idx % this->sockets.size()))
+		return true;
+
+	if (this->buffer->push(&this->sockets_data[sck_idx]))
+		return true;
+
+	this->sockets[sck_idx]->template bind<T>(*this->sockets_data[sck_idx]);
+	this->push_buffer_idx++;
+	return false;
+}
 
 template<typename T>
 void Buffered_Socket<T>
-::wait_push(size_t sck_idx)
+::wait_push(const size_t sck_idx)
 {
 	/*for (int i=1 ; i < this->socket_data.size(); i++)
 	{
@@ -108,31 +104,30 @@ void Buffered_Socket<T>
 	this->buffers[sck_idx]->wait_push(&this->sockets_data[sck_idx]);
 	this->sockets[sck_idx]->template   bind<T>(*this->sockets_data[sck_idx]);
 	*/
-};
-
+}
 
 template<typename T>
 void Buffered_Socket<T>
-::wait_pop(size_t sck_idx)
+::wait_pop(const size_t sck_idx)
 {
 //	this->buffers[sck_idx]         ->wait_pop(&this->sockets_data[sck_idx]);
 //	this->sockets[sck_idx]->template bind<T> (*this->sockets_data[sck_idx]);
-};
+}
 
 template<typename T>
 int Buffered_Socket<T>
-::bind(Buffered_Socket<T>* s)
+::bind(const Buffered_Socket<T>& s)
 {
-	if (s->get_buffer() == nullptr)
+	if (s.get_buffer() == nullptr)
 	{
 		return 1;
 	}
 	else
 	{
-		this->buffer = s->get_buffer();
+		this->buffer = s.get_buffer();
 		return 0;
 	}
-};
+}
 
 template<typename T>
 void Buffered_Socket<T>

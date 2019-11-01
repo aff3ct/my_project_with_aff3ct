@@ -20,13 +20,13 @@ public:
 
 	virtual ~NT_Buffered_Socket() = default;
 
-	virtual void  stop      (               ) = 0;
-	virtual void  reset     (               ) = 0;
-	virtual int   pop       (size_t proc_idx) = 0;
-	virtual int   push      (size_t proc_idx) = 0;
-	virtual void  wait_pop  (size_t proc_idx) = 0;
-	virtual void  wait_push (size_t proc_idx) = 0;
-	virtual void  print_data(               ) = 0;
+	virtual void  stop      (                     ) = 0;
+	virtual void  reset     (                     ) = 0;
+	virtual bool  pop       (const size_t proc_idx) = 0;
+	virtual bool  push      (const size_t proc_idx) = 0;
+	virtual void  wait_pop  (const size_t proc_idx) = 0;
+	virtual void  wait_push (const size_t proc_idx) = 0;
+	virtual void  print_data(                     ) = 0;
 
 	inline const aff3ct::module::Socket& get_socket() const;
 	inline const aff3ct::module::Socket& get_s     () const;

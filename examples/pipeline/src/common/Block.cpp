@@ -72,9 +72,9 @@ template <typename T>
 int Block
 ::_bind(const std::string &start_sck_name, Block &dest_block, const std::string &dest_sck_name)
 {
-	auto sin = this->get_buffered_socket_in<T>(start_sck_name);
-	auto sout = dest_block.get_buffered_socket_out<T>(dest_sck_name);
-	return sin->bind(sout);
+	auto &sin = this->get_buffered_socket_in<T>(start_sck_name);
+	auto &sout = dest_block.get_buffered_socket_out<T>(dest_sck_name);
+	return sin.bind(sout);
 }
 
 int Block
@@ -146,7 +146,7 @@ void Block
 }
 
 template <typename T>
-Buffered_Socket<T>* Block
+Buffered_Socket<T>& Block
 ::get_buffered_socket_in(const std::string &name)
 {
 	if (this->buffered_sockets_in.count(name))
@@ -154,7 +154,7 @@ Buffered_Socket<T>* Block
 		if (aff3ct::module::type_to_string[this->buffered_sockets_in[name]->get_s().get_datatype()] ==
 		    aff3ct::module::type_to_string[typeid(T)])
 		{
-			return static_cast<Buffered_Socket<T>*>(this->buffered_sockets_in[name].get());
+			return *static_cast<Buffered_Socket<T>*>(this->buffered_sockets_in[name].get());
 		}
 		else
 		{
@@ -181,7 +181,7 @@ Buffered_Socket<T>* Block
 }
 
 template <typename T>
-Buffered_Socket<T>* Block
+Buffered_Socket<T>& Block
 ::get_buffered_socket_out(const std::string &name)
 {
 	if (this->buffered_sockets_out.count(name))
@@ -189,7 +189,7 @@ Buffered_Socket<T>* Block
 		if (aff3ct::module::type_to_string[this->buffered_sockets_out[name]->get_s().get_datatype()] ==
 		    aff3ct::module::type_to_string[typeid(T)])
 		{
-			return static_cast<Buffered_Socket<T>*>(this->buffered_sockets_out[name].get());
+			return *static_cast<Buffered_Socket<T>*>(this->buffered_sockets_out[name].get());
 		}
 		else
 		{
