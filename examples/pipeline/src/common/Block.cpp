@@ -12,32 +12,47 @@
 #include "Buffered_Socket.hpp"
 
 Block
-::Block(aff3ct::module::Task* task, int buffer_size, int n_threads)
-: name(task->get_name()),
+::Block(const aff3ct::module::Task &task, const size_t buffer_size, const size_t n_threads)
+: name(task.get_name()),
   n_threads(n_threads),
-  tasks(),
   buffer_size(buffer_size),
-  threads(n_threads),
-  buffered_sockets_in(),
-  buffered_sockets_out()
+  threads(n_threads)
 {
-	task->set_autoalloc(false);
-	task->set_autoexec (false);
-	task->set_fast     (false);
+	if (n_threads == 0)
+	{
+		std::stringstream message;
+		message << "'n_threads' has to be strictly positive ('n_threads' = " << n_threads << ").";
+		throw aff3ct::tools::invalid_argument(__FILE__, __LINE__, __func__, message.str());
+	}
+
+	if (buffer_size < n_threads)
+	{
+		std::stringstream message;
+		message << "'buffer_size' has to be equal or greater than 'n_threads' ("
+		        << "'buffer_size'" << " = " << buffer_size << ", "
+		        << "'n_threads'"   << " = " << n_threads
+		        << ").";
+		throw aff3ct::tools::invalid_argument(__FILE__, __LINE__, __func__, message.str());
+	}
+
+	auto task_cpy = std::unique_ptr<aff3ct::module::Task>(task.clone());
+	task_cpy->set_autoalloc(false);
+	task_cpy->set_autoexec (false);
+	task_cpy->set_fast     (false);
 
 	for (int i = 0; i < n_threads; i++)
-		tasks.push_back(std::shared_ptr<aff3ct::module::Task>(task->clone()));
+		tasks.push_back(std::shared_ptr<aff3ct::module::Task>(task_cpy->clone()));
 
-	for (size_t s_idx = 0; s_idx < task->sockets.size(); s_idx++)
+	for (size_t s_idx = 0; s_idx < task.sockets.size(); s_idx++)
 	{
 		std::vector<std::shared_ptr<aff3ct::module::Socket>> s_vec;
 		for (int i = 0 ; i < n_threads; i++)
 			s_vec.push_back(tasks[i]->sockets[s_idx]);
 
-		std::shared_ptr<aff3ct::module::Socket> s = task->sockets[s_idx];
+		std::shared_ptr<aff3ct::module::Socket> s = task.sockets[s_idx];
 		const auto sdatatype = s->get_datatype_string();
 		const auto sname = s->get_name();
-		const auto stype = task->get_socket_type(*s);
+		const auto stype = task.get_socket_type(*s);
 
 		std::function<void(NT_Buffered_Socket*)> add_socket;
 		if (stype == aff3ct::module::socket_t::SIN)
@@ -73,11 +88,13 @@ int Block
 	if (!this->buffered_sockets_in.count(start_sck_name))
 	{
 		std::stringstream message;
-		message << "This sould not happen :-(.";
+		message << "'buffered_sockets_in.count(start_sck_name)' has to be strictly positive ("
+		        << "'start_sck_name'"                            << " = " << start_sck_name << ", "
+		        << "'buffered_sockets_in.count(start_sck_name)'" << " = " << buffered_sockets_in.count(start_sck_name)
+		        << ").";
 		throw aff3ct::tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
 	}
 
-	int rval = -1;
 	auto sin_datatype = this->buffered_sockets_in[start_sck_name]->get_datatype();
 	     if (sin_datatype == typeid(int8_t )) return bind_by_type<int8_t >(start_sck_name, dest_block, dest_sck_name);
 	else if (sin_datatype == typeid(int16_t)) return bind_by_type<int16_t>(start_sck_name, dest_block, dest_sck_name);
@@ -87,15 +104,15 @@ int Block
 	else if (sin_datatype == typeid(double )) return bind_by_type<double >(start_sck_name, dest_block, dest_sck_name);
 
 	std::stringstream message;
-	message << "This sould not happen :-(.";
+	message << "This should not happen :-(.";
 	throw aff3ct::tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
 }
 
 void Block
-::run(bool const &is_done)
+::run(const bool &is_done)
 {
-	for (int i = 0; i < this->n_threads; i++)
-		this->threads[i] = std::thread{ &Block::execute_task, this, i, &is_done };
+	for (size_t tid = 0; tid < this->n_threads; tid++)
+		this->threads[tid] = std::thread(&Block::execute_task, this, tid, std::ref(is_done));
 };
 
 void Block
@@ -106,20 +123,20 @@ void Block
 };
 
 void Block
-::execute_task(const int task_id, const bool *is_done)
+::execute_task(const size_t tid, const bool &is_done)
 {
-	while (!(*is_done))
+	while (!is_done)
 	{
 		for (auto const& it : this->buffered_sockets_in)
-			while (!(*is_done) && it.second->pop(task_id)){};
+			while (!is_done && it.second->pop(tid)){};
 
-		if (*is_done)
+		if (is_done)
 			break;
 
-		this->tasks[task_id]->exec();
+		this->tasks[tid]->exec();
 
 		for (auto const& it : this->buffered_sockets_out)
-			while (!(*is_done) && it.second->push(task_id)){};
+			while (!is_done && it.second->push(tid)){};
 	}
 
 	for (auto const& it : this->buffered_sockets_out) { it.second->stop(); }
@@ -137,26 +154,68 @@ template <typename T>
 Buffered_Socket<T>* Block
 ::get_buffered_socket_in(std::string name)
 {
-	if (this->buffered_sockets_in.count(name) > 0)
+	if (this->buffered_sockets_in.count(name))
+	{
 		if (aff3ct::module::type_to_string[this->buffered_sockets_in[name]->get_socket()->get_datatype()] ==
 		    aff3ct::module::type_to_string[typeid(T)])
+		{
 			return static_cast<Buffered_Socket<T>*>(this->buffered_sockets_in[name].get());
-
-	std::stringstream message;
-	message << "This sould not happen :-(.";
-	throw aff3ct::tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
+		}
+		else
+		{
+			std::stringstream message;
+			message << "'buffered_sockets_in[name]->get_socket()->get_datatype()' has to be equal to 'typeid(T)' ("
+			        << "'name'" << " = " << name << ", "
+			        << "'buffered_sockets_in[name]->get_socket()->get_datatype()'" << " = "
+			        << aff3ct::module::type_to_string[this->buffered_sockets_in[name]->get_socket()->get_datatype()]
+			        << ", "
+			        << "'typeid(T)'" << " = " << aff3ct::module::type_to_string[typeid(T)]
+			        << ").";
+			throw aff3ct::tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
+		}
+	}
+	else
+	{
+		std::stringstream message;
+		message << "'buffered_sockets_in.count(name)' has to be strictly positive ("
+		        << "'name'"                            << " = " << name << ", "
+		        << "'buffered_sockets_in.count(name)'" << " = " << buffered_sockets_in.count(name)
+		        << ").";
+		throw aff3ct::tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
+	}
 }
 
 template <typename T>
 Buffered_Socket<T>* Block
 ::get_buffered_socket_out(std::string name)
 {
-	if (this->buffered_sockets_out.count(name) > 0)
+	if (this->buffered_sockets_out.count(name))
+	{
 		if (aff3ct::module::type_to_string[this->buffered_sockets_out[name]->get_socket()->get_datatype()] ==
 		    aff3ct::module::type_to_string[typeid(T)])
+		{
 			return static_cast<Buffered_Socket<T>*>(this->buffered_sockets_out[name].get());
-
-	std::stringstream message;
-	message << "This sould not happen :-(.";
-	throw aff3ct::tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
+		}
+		else
+		{
+			std::stringstream message;
+			message << "'buffered_sockets_out[name]->get_socket()->get_datatype()' has to be equal to 'typeid(T)' ("
+			        << "'name'" << " = " << name << ", "
+			        << "'buffered_sockets_out[name]->get_socket()->get_datatype()'" << " = "
+			        << aff3ct::module::type_to_string[this->buffered_sockets_out[name]->get_socket()->get_datatype()]
+			        << ", "
+			        << "'typeid(T)'" << " = " << aff3ct::module::type_to_string[typeid(T)]
+			        << ").";
+			throw aff3ct::tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
+		}
+	}
+	else
+	{
+		std::stringstream message;
+		message << "'buffered_sockets_out.count(name)' has to be strictly positive ("
+		        << "'name'"                             << " = " << name << ", "
+		        << "'buffered_sockets_out.count(name)'" << " = " << buffered_sockets_out.count(name)
+		        << ").";
+		throw aff3ct::tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
+	}
 }

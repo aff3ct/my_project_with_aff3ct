@@ -125,14 +125,14 @@ int main(int argc, char** argv)
 
 #else
 
-	Block bl_source     (&source     [src::tsk::generate    ], buf_length, 4);
-	Block bl_encoder    (&encoder    [enc::tsk::encode      ], buf_length, 4);
-	Block bl_modulator  (&modulator  [mdm::tsk::modulate    ], buf_length, 4);
-	Block bl_channel    (&channel    [chn::tsk::add_noise   ], buf_length, 4);
-	Block bl_demodulator(&demodulator[mdm::tsk::demodulate  ], buf_length, 4);
-	Block bl_decoder    (&decoder    [dec::tsk::decode_siho ], buf_length, 4);
-	Block bl_splitter   (&splitter   [spl::tsk::split       ], buf_length, 4);
-	Block bl_monitor    (&monitor    [mnt::tsk::check_errors], buf_length, 4);
+	Block bl_source     (source     [src::tsk::generate    ], buf_length, 4);
+	Block bl_encoder    (encoder    [enc::tsk::encode      ], buf_length, 4);
+	Block bl_modulator  (modulator  [mdm::tsk::modulate    ], buf_length, 4);
+	Block bl_channel    (channel    [chn::tsk::add_noise   ], buf_length, 4);
+	Block bl_demodulator(demodulator[mdm::tsk::demodulate  ], buf_length, 4);
+	Block bl_decoder    (decoder    [dec::tsk::decode_siho ], buf_length, 4);
+	Block bl_splitter   (splitter   [spl::tsk::split       ], buf_length, 4);
+	Block bl_monitor    (monitor    [mnt::tsk::check_errors], buf_length, 4);
 
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	bl_splitter   .bind("U_K" , bl_source     , "U_K" );
