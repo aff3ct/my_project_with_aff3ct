@@ -5,6 +5,7 @@
 #include <thread>
 #include <vector>
 #include <memory>
+#include <string>
 #include <aff3ct.hpp>
 
 #include "Buffered_Socket.hpp"
@@ -12,7 +13,6 @@
 class Block
 {
 protected:
-	const std::string name;
 	const size_t n_threads;
 	const size_t buffer_size;
 	std::vector<std::shared_ptr<aff3ct::module::Task>> tasks;
@@ -30,14 +30,13 @@ public:
 	void reset();
 
 	template <typename T>
-	Buffered_Socket<T>* get_buffered_socket_in(std::string name);
+	Buffered_Socket<T>* get_buffered_socket_in(const std::string &name);
 	template <typename T>
-	Buffered_Socket<T>* get_buffered_socket_out(std::string name);
-
+	Buffered_Socket<T>* get_buffered_socket_out(const std::string &name);
 
 protected:
 	template <typename T>
-	int bind_by_type(const std::string &start_sck_name, Block &dest_block, const std::string &dest_sck_name);
+	int _bind(const std::string &start_sck_name, Block &dest_block, const std::string &dest_sck_name);
 };
 
 #endif /* BLOCK_HPP */

@@ -1,20 +1,15 @@
+#include <sstream>
 #include <typeinfo>
 #include <algorithm>
-#include <map>
-#include <thread>
-#include <mutex>
-#include <vector>
 #include <functional>
-#include <sstream>
 #include <aff3ct.hpp>
 
-#include "Block.hpp"
 #include "Buffered_Socket.hpp"
+#include "Block.hpp"
 
 Block
 ::Block(const aff3ct::module::Task &task, const size_t buffer_size, const size_t n_threads)
-: name(task.get_name()),
-  n_threads(n_threads),
+: n_threads(n_threads),
   buffer_size(buffer_size),
   threads(n_threads)
 {
@@ -75,7 +70,7 @@ Block
 
 template <typename T>
 int Block
-::bind_by_type(const std::string &start_sck_name, Block &dest_block, const std::string &dest_sck_name)
+::_bind(const std::string &start_sck_name, Block &dest_block, const std::string &dest_sck_name)
 {
 	auto sin = this->get_buffered_socket_in<T>(start_sck_name);
 	auto sout = dest_block.get_buffered_socket_out<T>(dest_sck_name);
@@ -96,12 +91,12 @@ int Block
 	}
 
 	auto sin_datatype = this->buffered_sockets_in[start_sck_name]->get_datatype();
-	     if (sin_datatype == typeid(int8_t )) return bind_by_type<int8_t >(start_sck_name, dest_block, dest_sck_name);
-	else if (sin_datatype == typeid(int16_t)) return bind_by_type<int16_t>(start_sck_name, dest_block, dest_sck_name);
-	else if (sin_datatype == typeid(int32_t)) return bind_by_type<int32_t>(start_sck_name, dest_block, dest_sck_name);
-	else if (sin_datatype == typeid(int64_t)) return bind_by_type<int64_t>(start_sck_name, dest_block, dest_sck_name);
-	else if (sin_datatype == typeid(float  )) return bind_by_type<float  >(start_sck_name, dest_block, dest_sck_name);
-	else if (sin_datatype == typeid(double )) return bind_by_type<double >(start_sck_name, dest_block, dest_sck_name);
+	     if (sin_datatype == typeid(int8_t )) return _bind<int8_t >(start_sck_name, dest_block, dest_sck_name);
+	else if (sin_datatype == typeid(int16_t)) return _bind<int16_t>(start_sck_name, dest_block, dest_sck_name);
+	else if (sin_datatype == typeid(int32_t)) return _bind<int32_t>(start_sck_name, dest_block, dest_sck_name);
+	else if (sin_datatype == typeid(int64_t)) return _bind<int64_t>(start_sck_name, dest_block, dest_sck_name);
+	else if (sin_datatype == typeid(float  )) return _bind<float  >(start_sck_name, dest_block, dest_sck_name);
+	else if (sin_datatype == typeid(double )) return _bind<double >(start_sck_name, dest_block, dest_sck_name);
 
 	std::stringstream message;
 	message << "This should not happen :-(.";
@@ -152,7 +147,7 @@ void Block
 
 template <typename T>
 Buffered_Socket<T>* Block
-::get_buffered_socket_in(std::string name)
+::get_buffered_socket_in(const std::string &name)
 {
 	if (this->buffered_sockets_in.count(name))
 	{
@@ -187,7 +182,7 @@ Buffered_Socket<T>* Block
 
 template <typename T>
 Buffered_Socket<T>* Block
-::get_buffered_socket_out(std::string name)
+::get_buffered_socket_out(const std::string &name)
 {
 	if (this->buffered_sockets_out.count(name))
 	{
