@@ -2,12 +2,20 @@
 #include <exception>
 #include <iostream>
 #include <cstdlib>
+#include <chrono>
 #include <memory>
 #include <vector>
 #include <string>
 
 #include <aff3ct.hpp>
 using namespace aff3ct;
+
+#ifdef _OPENMP
+#include <omp.h>
+#else
+inline int omp_get_thread_num () { return 0; }
+inline int omp_get_num_threads() { return 1; }
+#endif
 
 struct params
 {
@@ -25,26 +33,34 @@ struct params
 };
 void init_params(int argc, char** argv, params &p);
 
+namespace aff3ct { namespace tools {
+using Monitor_BFER_reduction = Monitor_reduction_M<module::Monitor_BFER<>>;
+} }
+
+struct utils
+{
+	std::unique_ptr<tools::Sigma<>>                      noise;         // a sigma noise type
+	std::vector<std::unique_ptr<tools::Reporter>>        reporters;     // list of reporters displayed in the terminal
+	std::unique_ptr<tools::Terminal>                     terminal;      // manage the output text in the terminal
+	std::vector<std::unique_ptr<module::Monitor_BFER<>>> monitors;      // list of the monitors from all the threads
+	std::unique_ptr<tools::Monitor_BFER_reduction>       monitor_red;   // main monitor object that reduce all the thread monitors
+	std::vector<std::vector<const module::Module*>>      modules;       // lists of the allocated modules
+	std::vector<std::vector<const module::Module*>>      modules_stats; // list of the allocated modules reorganized for the statistics
+};
+void init_utils(const params &p, utils &u);
+
 struct modules
 {
 	std::unique_ptr<module::Source<>>       source;
 	std::unique_ptr<module::Codec_SIHO<>>   codec;
 	std::unique_ptr<module::Modem<>>        modem;
 	std::unique_ptr<module::Channel<>>      channel;
-	std::unique_ptr<module::Monitor_BFER<>> monitor;
+	                module::Monitor_BFER<>* monitor;
 	                module::Encoder<>*      encoder;
 	                module::Decoder_SIHO<>* decoder;
 	std::vector<const module::Module*>      list; // list of module pointers declared in this structure
 };
-void init_modules(const params &p, modules &m);
-
-struct utils
-{
-	std::unique_ptr<tools::Sigma<>>               noise;     // a sigma noise type
-	std::vector<std::unique_ptr<tools::Reporter>> reporters; // list of reporters dispayed in the terminal
-	std::unique_ptr<tools::Terminal>              terminal;  // manage the output text in the terminal
-};
-void init_utils(const params &p, const modules &m, utils &u);
+void init_modules_and_utils(const params &p, modules &m, utils &u);
 
 int main(int argc, char** argv)
 {
@@ -59,13 +75,28 @@ int main(int argc, char** argv)
 	std::cout << "#----------------------------------------------------------"      << std::endl;
 	std::cout << "#"                                                                << std::endl;
 
-	params  p; init_params (argc, argv, p); // create and initialize the parameters from the command line with factories
-	modules m; init_modules(p, m         ); // create and initialize the modules
-	utils   u; init_utils  (p, m, u      ); // create and initialize the utils
+	params p; init_params(argc, argv, p); // create and initialize the parameters from the command line with factories
+	utils u; // create an 'utils' structure
+
+#pragma omp parallel
+{
+#pragma omp single
+{
+	// get the number of available threads from OpenMP
+	const size_t n_threads = (size_t)omp_get_num_threads();
+	u.monitors.resize(n_threads);
+	u.modules .resize(n_threads);
+}
+	modules m; init_modules_and_utils(p, m, u); // create and initialize the modules and initialize a part of the utils
+
+#pragma omp barrier
+#pragma omp single
+{
+	init_utils(p, u); // finalize the utils initialization
 
 	// display the legend in the terminal
 	u.terminal->legend();
-
+}
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	using namespace module;
 	(*m.encoder)[enc::sck::encode      ::U_K ].bind((*m.source )[src::sck::generate   ::U_K ]);
@@ -83,6 +114,7 @@ int main(int argc, char** argv)
 		const auto esn0  = tools::ebn0_to_esn0 (ebn0, p.R, p.modem->bps);
 		const auto sigma = tools::esn0_to_sigma(esn0, p.modem->cpm_upf );
 
+#pragma omp single
 		u.noise->set_noise(sigma, ebn0, esn0);
 
 		// update the sigma of the modem and the channel
@@ -90,11 +122,12 @@ int main(int argc, char** argv)
 		m.modem  ->set_noise(*u.noise);
 		m.channel->set_noise(*u.noise);
 
+#pragma omp single
 		// display the performance (BER and FER) in real time (in a separate thread)
 		u.terminal->start_temp_report();
 
 		// run the simulation chain
-		while (!m.monitor->fe_limit_achieved() && !u.terminal->is_interrupt())
+		while (!u.monitor_red->is_done_all() && !u.terminal->is_interrupt())
 		{
 			(*m.source )[src::tsk::generate    ].exec();
 			(*m.encoder)[enc::tsk::encode      ].exec();
@@ -105,22 +138,32 @@ int main(int argc, char** argv)
 			(*m.monitor)[mnt::tsk::check_errors].exec();
 		}
 
+// need to wait all the threads here before to reset the 'monitors' and 'terminal' states
+#pragma omp barrier
+#pragma omp single
+{
+		// final reduction
+		u.monitor_red->is_done_all(true, true);
+
 		// display the performance (BER and FER) in the terminal
 		u.terminal->final_report();
 
 		// reset the monitor and the terminal for the next SNR
-		m.monitor->reset();
+		u.monitor_red->reset_all();
 		u.terminal->reset();
-
+}
 		// if user pressed Ctrl+c twice, exit the SNRs loop
 		if (u.terminal->is_over()) break;
 	}
 
+#pragma omp single
+{
 	// display the statistics of the tasks (if enabled)
 	std::cout << "#" << std::endl;
-	tools::Stats::show(m.list, true);
+	tools::Stats::show(u.modules_stats, true);
 	std::cout << "# End of the simulation" << std::endl;
-
+}
+}
 	return 0;
 }
 
@@ -154,17 +197,26 @@ void init_params(int argc, char** argv, params &p)
 	p.R = (float)p.codec->enc->K / (float)p.codec->enc->N_cw; // compute the code rate
 }
 
-void init_modules(const params &p, modules &m)
+void init_modules_and_utils(const params &p, modules &m, utils &u)
 {
-	m.source  = std::unique_ptr<module::Source      <>>(p.source ->build());
-	m.codec   = std::unique_ptr<module::Codec_SIHO  <>>(p.codec  ->build());
-	m.modem   = std::unique_ptr<module::Modem       <>>(p.modem  ->build());
-	m.channel = std::unique_ptr<module::Channel     <>>(p.channel->build());
-	m.monitor = std::unique_ptr<module::Monitor_BFER<>>(p.monitor->build());
-	m.encoder = m.codec->get_encoder().get();
-	m.decoder = m.codec->get_decoder_siho().get();
+	// get the thread id from OpenMP
+	const int tid = omp_get_thread_num();
 
-	m.list = { m.source.get(), m.modem.get(), m.channel.get(), m.monitor.get(), m.encoder, m.decoder };
+	// set different seeds for different threads when the module use a PRNG
+	p.source->seed += tid;
+	p.channel->seed += tid;
+
+	m.source        = std::unique_ptr<module::Source      <>>(p.source ->build());
+	m.codec         = std::unique_ptr<module::Codec_SIHO  <>>(p.codec  ->build());
+	m.modem         = std::unique_ptr<module::Modem       <>>(p.modem  ->build());
+	m.channel       = std::unique_ptr<module::Channel     <>>(p.channel->build());
+	u.monitors[tid] = std::unique_ptr<module::Monitor_BFER<>>(p.monitor->build());
+	m.monitor       = u.monitors[tid].get();
+	m.encoder       = m.codec->get_encoder().get();
+	m.decoder       = m.codec->get_decoder_siho().get();
+
+	m.list = { m.source.get(), m.modem.get(), m.channel.get(), m.monitor, m.encoder, m.decoder };
+	u.modules[tid] = m.list;
 
 	// configuration of the module tasks
 	for (auto& mod : m.list)
@@ -185,16 +237,24 @@ void init_modules(const params &p, modules &m)
 	m.monitor->add_handler_check(std::bind(&module::Decoder::reset, m.decoder));
 }
 
-void init_utils(const params &p, const modules &m, utils &u)
+void init_utils(const params &p, utils &u)
 {
+	// allocate a common monitor module to reduce all the monitors
+	u.monitor_red = std::unique_ptr<tools::Monitor_BFER_reduction>(new tools::Monitor_BFER_reduction(u.monitors));
+	u.monitor_red->set_reduce_frequency(std::chrono::milliseconds(500));
 	// create a sigma noise type
 	u.noise = std::unique_ptr<tools::Sigma<>>(new tools::Sigma<>());
 	// report the noise values (Es/N0 and Eb/N0)
 	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_noise<>(*u.noise)));
 	// report the bit/frame error rates
-	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_BFER<>(*m.monitor)));
+	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_BFER<>(*u.monitor_red)));
 	// report the simulation throughputs
-	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_throughput<>(*m.monitor)));
+	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_throughput<>(*u.monitor_red)));
 	// create a terminal that will display the collected data from the reporters
 	u.terminal = std::unique_ptr<tools::Terminal>(p.terminal->build(u.reporters));
+
+	u.modules_stats.resize(u.modules[0].size());
+	for (size_t m = 0; m < u.modules[0].size(); m++)
+		for (size_t t = 0; t < u.modules.size(); t++)
+			u.modules_stats[m].push_back(u.modules[t][m]);
 }

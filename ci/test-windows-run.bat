@@ -1,4 +1,6 @@
-@echo off
+@echo on
+
+cd examples
 
 set i=1
 
@@ -32,3 +34,4 @@ cd ../..
 goto EndLoop
 
 :End
+exit /B 0

@@ -1,27 +1,41 @@
 @echo on
 
-set examples=bootstrap tasks factory pipeline
-
 set "VSCMD_START_DIR=%CD%"
 call "%VS_PATH%\VC\Auxiliary\Build\vcvars64.bat"
 
-cd examples
-for %%a in (%examples%) do (
+rem Compile the AFF3CT library
+cd lib\aff3ct
+mkdir %BUILD%
+cd %BUILD%
+cmake .. -G"Visual Studio 15 2017 Win64" -DCMAKE_CXX_FLAGS="%CFLAGS% /MP%THREADS%" -DAFF3CT_COMPILE_EXE="OFF" -DAFF3CT_COMPILE_STATIC_LIB="ON"
+if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
+devenv /build Release aff3ct.sln
+if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
+rem devenv /build Release aff3ct.sln /project INSTALL > nul
+rem if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
+cd ..
+
+rem Compile all the projects using AFF3CT
+cd ..\..\examples
+for %%a in (%EXAMPLES%) do (
 	cd %%a
-	call :compile
+	call :compile_my_project
 	if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
 	cd ..
 )
 
 exit /B %ERRORLEVEL%
 
-:compile
-mkdir build_windows_msvc
-cd build_windows_msvc
-cmake .. -G"Visual Studio 15 2017 Win64" -DCMAKE_CXX_FLAGS="-D_CRT_SECURE_NO_DEPRECATE /EHsc /MP%THREADS% /arch:AVX"
+:compile_my_project
+mkdir cmake && mkdir cmake/Modules
+xcopy ..\..\lib\aff3ct\%BUILD%\lib\cmake\aff3ct-%AFF3CT_GIT_VERSION%\* cmake\Modules\ /s /e
+mkdir %BUILD%
+cd %BUILD%
+cmake .. -G"Visual Studio 15 2017 Win64" -DCMAKE_CXX_FLAGS="%CFLAGS% /MP%THREADS%"
 if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
 devenv /build Release my_project.sln
-rem msbuild my_project.sln /t:Build /p:Configuration=Release
 if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
+copy bin\Release\my_project.exe bin\
+rd /s /q "bin\Release\"
 cd ..
 exit /B 0

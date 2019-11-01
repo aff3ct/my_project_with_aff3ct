@@ -22,3 +22,17 @@ find_package(Threads REQUIRED)
 set (AFF3CT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
 find_package(AFF3CT CONFIG 2.3.2 REQUIRED)
 target_link_libraries(my_project PRIVATE aff3ct::aff3ct-static-lib)
+
+# Link with OpenMP
+find_package(OpenMP)
+if (OpenMP_FOUND)
+    # good way to link with OpenMP in the CMake3 style
+    if(${CMAKE_VERSION} VERSION_EQUAL "3.9" OR ${CMAKE_VERSION} VERSION_GREATER "3.9")
+        target_link_libraries(my_project PRIVATE OpenMP::OpenMP_CXX)
+    # old an ugly way to link with OpenMP, may not work with all the comiler
+    else()
+        set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+        set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+    endif()
+endif(OpenMP_FOUND)
