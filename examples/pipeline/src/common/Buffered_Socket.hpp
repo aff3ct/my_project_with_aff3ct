@@ -22,12 +22,12 @@ public:
 	Buffered_Socket(std::vector<std::shared_ptr<aff3ct::module::Socket> > sockets, aff3ct::module::socket_t sockets_type, int buffer_size);
 	virtual ~Buffered_Socket();
 
-	void  stop      (           );
-	void  reset     (           );
-	int   pop       (int sck_idx);
-	int   push      (int sck_idx);
-	void  wait_pop  (int sck_idx);
-	void  wait_push (int sck_idx);
+	void  stop      (              );
+	void  reset     (              );
+	int   pop       (size_t sck_idx);
+	int   push      (size_t sck_idx);
+	void  wait_pop  (size_t sck_idx);
+	void  wait_push (size_t sck_idx);
 
 	int  bind       (Buffered_Socket<T>* s);
 

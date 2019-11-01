@@ -28,10 +28,10 @@ public:
 
 	virtual void  stop             () = 0;
 	virtual void  reset            () = 0;
-	virtual int   pop              (int proc_idx) = 0;
-	virtual int   push             (int proc_idx) = 0;
-	virtual void  wait_pop         (int proc_idx) = 0;
-	virtual void  wait_push        (int proc_idx) = 0;
+	virtual int   pop              (size_t proc_idx) = 0;
+	virtual int   push             (size_t proc_idx) = 0;
+	virtual void  wait_pop         (size_t proc_idx) = 0;
+	virtual void  wait_push        (size_t proc_idx) = 0;
 	virtual void  print_socket_data() = 0;
 
 	inline std::string                             get_name       () const { return this->name;       }

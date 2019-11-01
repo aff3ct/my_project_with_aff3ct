@@ -35,16 +35,16 @@ Block
 	task_cpy->set_autoexec (false);
 	task_cpy->set_fast     (false);
 
-	for (int i = 0; i < n_threads; i++)
+	for (size_t tid = 0; tid < n_threads; tid++)
 		tasks.push_back(std::shared_ptr<aff3ct::module::Task>(task_cpy->clone()));
 
-	for (size_t s_idx = 0; s_idx < task.sockets.size(); s_idx++)
+	for (size_t sid = 0; sid < task.sockets.size(); sid++)
 	{
 		std::vector<std::shared_ptr<aff3ct::module::Socket>> s_vec;
-		for (int i = 0 ; i < n_threads; i++)
-			s_vec.push_back(tasks[i]->sockets[s_idx]);
+		for (size_t tid = 0; tid < n_threads; tid++)
+			s_vec.push_back(tasks[tid]->sockets[sid]);
 
-		std::shared_ptr<aff3ct::module::Socket> s = task.sockets[s_idx];
+		std::shared_ptr<aff3ct::module::Socket> s = task.sockets[sid];
 		const auto sdatatype = s->get_datatype_string();
 		const auto sname = s->get_name();
 		const auto stype = task.get_socket_type(*s);

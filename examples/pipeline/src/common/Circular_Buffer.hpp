@@ -29,21 +29,21 @@ public:
 
 	virtual ~Circular_Buffer();
 
-	inline int get_max_buffer_nbr() const {return (int)this->max_buffer_nbr;};
-	inline int get_cur_buffer_nbr() const 
+	inline size_t get_max_buffer_nbr() const { return this->max_buffer_nbr; }
+	inline size_t get_cur_buffer_nbr() const
 	{
-		return (int)this->head_buffer - (int)this->tail_buffer + ((this->tail_buffer > this->head_buffer)?(int)this->cb_size:0);
+		return this->head_buffer - this->tail_buffer + ((this->tail_buffer > this->head_buffer) ? this->cb_size :  0);
 	};
 
 	void stop();
 	int pop        (std::vector<T,A>** elt);
 	int push       (std::vector<T,A>** elt);
 	void wait_pop  (std::vector<T,A>** elt);
-	void wait_push (std::vector<T,A>** elt);	
-	
+	void wait_push (std::vector<T,A>** elt);
+
 	inline bool is_full()  const {return this->get_cur_buffer_nbr() == this->max_buffer_nbr;};
 	inline bool is_empty() const {return this->get_cur_buffer_nbr() == 0;                   };
-	
+
 	void print() const;
 	void reset();
 };

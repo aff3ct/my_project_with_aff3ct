@@ -64,7 +64,7 @@ void Buffered_Socket<T>
 
 template<typename T>
 int Buffered_Socket<T>
-:: push(int sck_idx)
+:: push(size_t sck_idx)
 {
 	size_t the_push_idx = this->push_buffer_idx;
 	if (sck_idx != (the_push_idx % this->sockets_nbr))
@@ -80,7 +80,7 @@ int Buffered_Socket<T>
 
 template<typename T>
 int Buffered_Socket<T>
-:: pop(int sck_idx)
+:: pop(size_t sck_idx)
 {
 	size_t the_pop_idx = this->pop_buffer_idx;
 	if (sck_idx != (the_pop_idx % this->sockets_nbr))
@@ -97,7 +97,7 @@ int Buffered_Socket<T>
 
 template<typename T>
 void Buffered_Socket<T>
-:: wait_push(int sck_idx)
+:: wait_push(size_t sck_idx)
 {
 	/*for (int i=1 ; i < this->socket_data.size(); i++)
 	{
@@ -118,7 +118,7 @@ void Buffered_Socket<T>
 
 template<typename T>
 void Buffered_Socket<T>
-:: wait_pop(int sck_idx)
+:: wait_pop(size_t sck_idx)
 {
 //	this->buffers[sck_idx]         ->wait_pop(&this->sockets_data[sck_idx]);
 //	this->sockets[sck_idx]->template bind<T> (*this->sockets_data[sck_idx]);
