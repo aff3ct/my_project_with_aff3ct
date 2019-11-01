@@ -34,7 +34,7 @@ Buffered_Socket<T>
 	{
 		delete this->buffer;
 	}
-	for (auto &sd:this->sockets_data)
+	for (auto &sd : this->sockets_data)
 		delete sd;
 }
 

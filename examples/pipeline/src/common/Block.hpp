@@ -28,6 +28,7 @@ public:
 	void run(const bool &is_done);
 	void join();
 	void reset();
+	std::vector<const aff3ct::module::Task*> get_tasks() const;
 
 private:
 	template <typename T>

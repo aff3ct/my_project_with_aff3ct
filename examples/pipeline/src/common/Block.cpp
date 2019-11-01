@@ -68,6 +68,15 @@ Block
 	}
 }
 
+std::vector<const aff3ct::module::Task*> Block
+::get_tasks() const
+{
+	std::vector<const aff3ct::module::Task*> tasks_bis(this->tasks.size(), nullptr);
+	for (size_t t = 0; t < this->tasks.size(); t++)
+		tasks_bis[t] = const_cast<const aff3ct::module::Task*>(this->tasks[t].get());
+	return tasks_bis;
+}
+
 template <typename T>
 int Block
 ::_bind(const std::string &start_sck_name, Block &dest_block, const std::string &dest_sck_name)
@@ -122,27 +131,27 @@ void Block
 {
 	while (!is_done)
 	{
-		for (auto const& it : this->buffered_sockets_in)
-			while (!is_done && it.second->pop(tid)){};
+		for (auto const& sin : this->buffered_sockets_in)
+			while (!is_done && sin.second->pop(tid));
 
 		if (is_done)
 			break;
 
 		this->tasks[tid]->exec();
 
-		for (auto const& it : this->buffered_sockets_out)
-			while (!is_done && it.second->push(tid)){};
+		for (auto const& sout : this->buffered_sockets_out)
+			while (!is_done && sout.second->push(tid));
 	}
 
-	for (auto const& it : this->buffered_sockets_out) { it.second->stop(); }
-	for (auto const& it : this->buffered_sockets_in ) { it.second->stop(); }
+	for (auto const& sout : this->buffered_sockets_out) { sout.second->stop(); }
+	for (auto const& sin  : this->buffered_sockets_in ) { sin .second->stop(); }
 }
 
 void Block
 ::reset()
 {
-	for (auto const& it : this->buffered_sockets_in ) { it.second->reset(); }
-	for (auto const& it : this->buffered_sockets_out) { it.second->reset(); }
+	for (auto const& sin  : this->buffered_sockets_in ) { sin .second->reset(); }
+	for (auto const& sout : this->buffered_sockets_out) { sout.second->reset(); }
 }
 
 template <typename T>

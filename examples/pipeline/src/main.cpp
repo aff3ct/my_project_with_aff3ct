@@ -31,7 +31,6 @@ int main(int argc, char** argv)
 	const float R        = (float)K / (float)N;
 	const float ebn0_min = 0.00f;
 	const float ebn0_max = 10.1f;
-	const int buf_length = 100000;
 
 	std::cout << "# * Simulation parameters: "           << std::endl;
 	std::cout << "#    ** Frame errors   = " << fe       << std::endl;
@@ -125,14 +124,16 @@ int main(int argc, char** argv)
 
 #else
 
-	Block bl_source     (source     [src::tsk::generate    ], buf_length, 4);
-	Block bl_encoder    (encoder    [enc::tsk::encode      ], buf_length, 4);
-	Block bl_modulator  (modulator  [mdm::tsk::modulate    ], buf_length, 4);
-	Block bl_channel    (channel    [chn::tsk::add_noise   ], buf_length, 4);
-	Block bl_demodulator(demodulator[mdm::tsk::demodulate  ], buf_length, 4);
-	Block bl_decoder    (decoder    [dec::tsk::decode_siho ], buf_length, 4);
-	Block bl_splitter   (splitter   [spl::tsk::split       ], buf_length, 4);
-	Block bl_monitor    (monitor    [mnt::tsk::check_errors], buf_length, 4);
+	const size_t buffer_size = 4;
+	const size_t n_threads   = 2;
+	Block bl_source     (source     [src::tsk::generate    ], buffer_size, n_threads);
+	Block bl_encoder    (encoder    [enc::tsk::encode      ], buffer_size, n_threads);
+	Block bl_modulator  (modulator  [mdm::tsk::modulate    ], buffer_size, n_threads);
+	Block bl_channel    (channel    [chn::tsk::add_noise   ], buffer_size, n_threads);
+	Block bl_demodulator(demodulator[mdm::tsk::demodulate  ], buffer_size, n_threads);
+	Block bl_decoder    (decoder    [dec::tsk::decode_siho ], buffer_size, n_threads);
+	Block bl_splitter   (splitter   [spl::tsk::split       ], buffer_size, n_threads);
+	Block bl_monitor    (monitor    [mnt::tsk::check_errors], buffer_size, n_threads);
 
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	bl_splitter   .bind("U_K" , bl_source     , "U_K" );
@@ -214,8 +215,12 @@ int main(int argc, char** argv)
 	std::cout << "#" << std::endl;
 
 	// display the statistics of the tasks (if enabled)
+	std::vector<std::vector<const Task*>> bl_tasks = { bl_source     .get_tasks(), bl_encoder.get_tasks(),
+	                                                   bl_modulator  .get_tasks(), bl_channel.get_tasks(),
+	                                                   bl_demodulator.get_tasks(), bl_decoder.get_tasks(),
+	                                                   bl_splitter   .get_tasks(), bl_monitor.get_tasks() };
 	auto ordered = true;
-	aff3ct::tools::Stats::show(modules, ordered);
+	aff3ct::tools::Stats::show(bl_tasks, ordered);
 
 #endif
 
