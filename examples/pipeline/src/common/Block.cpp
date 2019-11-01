@@ -45,7 +45,7 @@ Block
 			s_vec.push_back(tasks[tid]->sockets[sid]);
 
 		std::shared_ptr<aff3ct::module::Socket> s = task.sockets[sid];
-		const auto sdatatype = s->get_datatype_string();
+		const auto sdatatype = s->get_datatype();
 		const auto sname = s->get_name();
 		const auto stype = task.get_socket_type(*s);
 
@@ -59,12 +59,12 @@ Block
 				this->buffered_sockets_out[sname] = std::unique_ptr<NT_Buffered_Socket>(socket);
 			};
 
-		     if (sdatatype == "int8"   ) add_socket(new Buffered_Socket<int8_t >(s_vec, stype, buffer_size));
-		else if (sdatatype == "int16"  ) add_socket(new Buffered_Socket<int16_t>(s_vec, stype, buffer_size));
-		else if (sdatatype == "int32"  ) add_socket(new Buffered_Socket<int32_t>(s_vec, stype, buffer_size));
-		else if (sdatatype == "int64"  ) add_socket(new Buffered_Socket<int64_t>(s_vec, stype, buffer_size));
-		else if (sdatatype == "float32") add_socket(new Buffered_Socket<float  >(s_vec, stype, buffer_size));
-		else if (sdatatype == "float64") add_socket(new Buffered_Socket<double >(s_vec, stype, buffer_size));
+		     if (sdatatype == typeid(int8_t )) add_socket(new Buffered_Socket<int8_t >(s_vec, stype, buffer_size));
+		else if (sdatatype == typeid(int16_t)) add_socket(new Buffered_Socket<int16_t>(s_vec, stype, buffer_size));
+		else if (sdatatype == typeid(int32_t)) add_socket(new Buffered_Socket<int32_t>(s_vec, stype, buffer_size));
+		else if (sdatatype == typeid(int64_t)) add_socket(new Buffered_Socket<int64_t>(s_vec, stype, buffer_size));
+		else if (sdatatype == typeid(float  )) add_socket(new Buffered_Socket<float  >(s_vec, stype, buffer_size));
+		else if (sdatatype == typeid(float  )) add_socket(new Buffered_Socket<double >(s_vec, stype, buffer_size));
 	}
 }
 
@@ -90,7 +90,7 @@ int Block
 		throw aff3ct::tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
 	}
 
-	auto sin_datatype = this->buffered_sockets_in[start_sck_name]->get_datatype();
+	auto sin_datatype = this->buffered_sockets_in[start_sck_name]->get_s().get_datatype();
 	     if (sin_datatype == typeid(int8_t )) return _bind<int8_t >(start_sck_name, dest_block, dest_sck_name);
 	else if (sin_datatype == typeid(int16_t)) return _bind<int16_t>(start_sck_name, dest_block, dest_sck_name);
 	else if (sin_datatype == typeid(int32_t)) return _bind<int32_t>(start_sck_name, dest_block, dest_sck_name);
@@ -151,7 +151,7 @@ Buffered_Socket<T>* Block
 {
 	if (this->buffered_sockets_in.count(name))
 	{
-		if (aff3ct::module::type_to_string[this->buffered_sockets_in[name]->get_socket()->get_datatype()] ==
+		if (aff3ct::module::type_to_string[this->buffered_sockets_in[name]->get_s().get_datatype()] ==
 		    aff3ct::module::type_to_string[typeid(T)])
 		{
 			return static_cast<Buffered_Socket<T>*>(this->buffered_sockets_in[name].get());
@@ -159,10 +159,10 @@ Buffered_Socket<T>* Block
 		else
 		{
 			std::stringstream message;
-			message << "'buffered_sockets_in[name]->get_socket()->get_datatype()' has to be equal to 'typeid(T)' ("
+			message << "'buffered_sockets_in[name]->get_s().get_datatype()' has to be equal to 'typeid(T)' ("
 			        << "'name'" << " = " << name << ", "
-			        << "'buffered_sockets_in[name]->get_socket()->get_datatype()'" << " = "
-			        << aff3ct::module::type_to_string[this->buffered_sockets_in[name]->get_socket()->get_datatype()]
+			        << "'buffered_sockets_in[name]->get_s().get_datatype()'" << " = "
+			        << aff3ct::module::type_to_string[this->buffered_sockets_in[name]->get_s().get_datatype()]
 			        << ", "
 			        << "'typeid(T)'" << " = " << aff3ct::module::type_to_string[typeid(T)]
 			        << ").";
@@ -186,7 +186,7 @@ Buffered_Socket<T>* Block
 {
 	if (this->buffered_sockets_out.count(name))
 	{
-		if (aff3ct::module::type_to_string[this->buffered_sockets_out[name]->get_socket()->get_datatype()] ==
+		if (aff3ct::module::type_to_string[this->buffered_sockets_out[name]->get_s().get_datatype()] ==
 		    aff3ct::module::type_to_string[typeid(T)])
 		{
 			return static_cast<Buffered_Socket<T>*>(this->buffered_sockets_out[name].get());
@@ -194,10 +194,10 @@ Buffered_Socket<T>* Block
 		else
 		{
 			std::stringstream message;
-			message << "'buffered_sockets_out[name]->get_socket()->get_datatype()' has to be equal to 'typeid(T)' ("
+			message << "'buffered_sockets_out[name]->get_s().get_datatype()' has to be equal to 'typeid(T)' ("
 			        << "'name'" << " = " << name << ", "
-			        << "'buffered_sockets_out[name]->get_socket()->get_datatype()'" << " = "
-			        << aff3ct::module::type_to_string[this->buffered_sockets_out[name]->get_socket()->get_datatype()]
+			        << "'buffered_sockets_out[name]->get_s().get_datatype()'" << " = "
+			        << aff3ct::module::type_to_string[this->buffered_sockets_out[name]->get_s().get_datatype()]
 			        << ", "
 			        << "'typeid(T)'" << " = " << aff3ct::module::type_to_string[typeid(T)]
 			        << ").";

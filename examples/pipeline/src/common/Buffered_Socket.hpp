@@ -5,11 +5,9 @@
 #ifndef BUFFERED_SOCKET_HPP
 #define BUFFERED_SOCKET_HPP
 
-#include <cassert>
-#include <iostream>
 #include <vector>
 #include <atomic>
-//#include <mipp.h>
+#include <memory>
 #include <aff3ct.hpp>
 
 #include "NT_Buffered_Socket.hpp"
@@ -19,30 +17,31 @@ template<typename T>
 class Buffered_Socket : public NT_Buffered_Socket
 {
 public:
-	Buffered_Socket(std::vector<std::shared_ptr<aff3ct::module::Socket> > sockets, aff3ct::module::socket_t sockets_type, int buffer_size);
+	Buffered_Socket(const std::vector<std::shared_ptr<aff3ct::module::Socket>> &sockets,
+	                const aff3ct::module::socket_t sockets_type,
+	                const size_t buffer_size);
 	virtual ~Buffered_Socket();
 
-	void  stop      (              );
-	void  reset     (              );
-	int   pop       (size_t sck_idx);
-	int   push      (size_t sck_idx);
-	void  wait_pop  (size_t sck_idx);
-	void  wait_push (size_t sck_idx);
+	void  stop      (                     );
+	void  reset     (                     );
+	int   pop       (size_t sck_idx       );
+	int   push      (size_t sck_idx       );
+	void  wait_pop  (size_t sck_idx       );
+	void  wait_push (size_t sck_idx       );
+	void  print_data(                     );
+	int   bind      (Buffered_Socket<T>* s);
 
-	int  bind       (Buffered_Socket<T>* s);
-
-	void print_socket_data();
-
-	inline Circular_Buffer<T>* get_buffer     () const { return this->buffer; };
+	inline Circular_Buffer<T>* get_buffer() const;
 
 protected:
-	std::vector<    std::vector<T>* > sockets_data;
-	//std::vector<Circular_Buffer<T>* > buffers;
-	Circular_Buffer<T>*               buffer;
+	std::vector<std::vector<T>*> sockets_data;
+	Circular_Buffer<T>*          buffer;
 
 private:
 	std::atomic<size_t> pop_buffer_idx;
 	std::atomic<size_t> push_buffer_idx;
 };
+
+#include "Buffered_Socket.hxx"
 
 #endif //BUFFERED_SOCKET_HPP

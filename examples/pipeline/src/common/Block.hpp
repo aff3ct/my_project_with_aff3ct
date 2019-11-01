@@ -29,14 +29,13 @@ public:
 	void join();
 	void reset();
 
+private:
+	template <typename T>
+	int _bind(const std::string &start_sck_name, Block &dest_block, const std::string &dest_sck_name);
 	template <typename T>
 	Buffered_Socket<T>* get_buffered_socket_in(const std::string &name);
 	template <typename T>
 	Buffered_Socket<T>* get_buffered_socket_out(const std::string &name);
-
-protected:
-	template <typename T>
-	int _bind(const std::string &start_sck_name, Block &dest_block, const std::string &dest_sck_name);
 };
 
 #endif /* BLOCK_HPP */
