@@ -9,8 +9,8 @@
 #include <aff3ct.hpp>
 using namespace aff3ct;
 
-#include "Block.hpp"
-#include "Splitter/Splitter.hpp"
+#include "common/Block.hpp"
+#include "common/Splitter/Splitter.hpp"
 
 struct params
 {
