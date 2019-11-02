@@ -83,6 +83,9 @@ int main(int argc, char** argv)
 	Block bl_splitter   ((*m.splitter   )[spl::tsk::split       ], p.bl_buffer_size, p.bl_n_threads);
 	Block bl_monitor    ((*m.monitor    )[mnt::tsk::check_errors], p.bl_buffer_size, p.bl_n_threads);
 
+	std::vector<Block*> blocks = { &bl_source,      &bl_encoder, &bl_modulator, &bl_channel,
+	                               &bl_demodulator, &bl_decoder, &bl_splitter,  &bl_monitor };
+
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	bl_splitter   .bind("U_K" , bl_source     , "U_K" );
 	bl_encoder    .bind("U_K" , bl_splitter   , "V_K1");
@@ -118,33 +121,11 @@ int main(int argc, char** argv)
 		});
 
 		// run the simulation chain
-		bl_source     .run(is_done);
-		bl_splitter   .run(is_done);
-		bl_encoder    .run(is_done);
-		bl_modulator  .run(is_done);
-		bl_channel    .run(is_done);
-		bl_demodulator.run(is_done);
-		bl_decoder    .run(is_done);
-		bl_monitor    .run(is_done);
+		for (auto &b : blocks) b->run  (is_done);
+		for (auto &b : blocks) b->join (       );
+		for (auto &b : blocks) b->reset(       );
 
-		th_done_verif .join();
-		bl_source     .join();
-		bl_splitter   .join();
-		bl_encoder    .join();
-		bl_modulator  .join();
-		bl_channel    .join();
-		bl_demodulator.join();
-		bl_decoder    .join();
-		bl_monitor    .join();
-
-		bl_source     .reset();
-		bl_splitter   .reset();
-		bl_encoder    .reset();
-		bl_modulator  .reset();
-		bl_channel    .reset();
-		bl_demodulator.reset();
-		bl_decoder    .reset();
-		bl_monitor    .reset();
+		th_done_verif.join();
 
 		// display the performance (BER and FER) in the terminal
 		u.terminal->final_report();
