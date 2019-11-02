@@ -1,139 +1,87 @@
- #include <vector>
- #include <iostream>
- #include <thread>
- #include <mutex>
- #include <algorithm>
- #include <aff3ct.hpp>
+#include <functional>
+#include <exception>
+#include <iostream>
+#include <cstdlib>
+#include <memory>
+#include <vector>
+#include <string>
 
- #include "Block.hpp"
- #include "Circular_Buffer.hpp"
- #include "Destination/NO/Destination_NO.hpp"
- #include "Splitter/Splitter.hpp"
+#include <aff3ct.hpp>
+using namespace aff3ct;
 
-#define TEST 0
+#include "Block.hpp"
+#include "Splitter/Splitter.hpp"
+
+struct params
+{
+	const size_t bl_buffer_size = 16;     // the circular buffer size in the pipeline blocks
+	const size_t bl_n_threads   =  1;     // the number of threads in one pipeline block
+	const float ebn0_min        =  0.00f; // minimum SNR value
+	const float ebn0_max        = 10.01f; // maximum SNR value
+	const float ebn0_step       =  1.00f; // SNR step
+	      float R;                        // code rate (R=K/N)
+
+	std::unique_ptr<factory::Source          > source;
+	std::unique_ptr<factory::Codec_repetition> codec;
+	std::unique_ptr<factory::Modem           > modem;
+	std::unique_ptr<factory::Channel         > channel;
+	std::unique_ptr<factory::Monitor_BFER    > monitor;
+	std::unique_ptr<factory::Terminal        > terminal;
+};
+void init_params(int argc, char** argv, params &p);
+
+struct modules
+{
+	std::unique_ptr<module::Source<>>       source;
+	std::unique_ptr<module::Splitter<>>     splitter;
+	std::unique_ptr<module::Codec_SIHO<>>   codec;
+	std::unique_ptr<module::Modem<>>        modulator;
+	std::unique_ptr<module::Modem<>>        demodulator;
+	std::unique_ptr<module::Channel<>>      channel;
+	std::unique_ptr<module::Monitor_BFER<>> monitor;
+	                module::Encoder<>*      encoder;
+	                module::Decoder_SIHO<>* decoder;
+	std::vector<const module::Module*>      list; // list of module pointers declared in this structure
+};
+void init_modules(const params &p, modules &m);
+
+struct utils
+{
+	std::unique_ptr<tools::Sigma<>>               noise;     // a sigma noise type
+	std::vector<std::unique_ptr<tools::Reporter>> reporters; // list of reporters dispayed in the terminal
+	std::unique_ptr<tools::Terminal>              terminal;  // manage the output text in the terminal
+};
+void init_utils(const params &p, const modules &m, utils &u);
 
 int main(int argc, char** argv)
 {
-	std::cout << "#-------------------------------------------------------" << std::endl;
-	std::cout << "# This is a basic program using the AFF3CT library."      << std::endl;
-	std::cout << "# Feel free to improve it as you want to fit your needs." << std::endl;
-	std::cout << "#-------------------------------------------------------" << std::endl;
-	std::cout << "#"                                                        << std::endl;
+	// get the AFF3CT version
+	const std::string v = "v" + std::to_string(tools::version_major()) + "." +
+	                            std::to_string(tools::version_minor()) + "." +
+	                            std::to_string(tools::version_release());
 
-	std::vector<std::unique_ptr<aff3ct::tools::Reporter>> reporters;
-	            std::unique_ptr<aff3ct::tools::Terminal>  terminal;
-	                            aff3ct::tools::Sigma<>    noise;
+	std::cout << "#----------------------------------------------------------"      << std::endl;
+	std::cout << "# This is a basic program using the AFF3CT library (" << v << ")" << std::endl;
+	std::cout << "# Feel free to improve it as you want to fit your needs."         << std::endl;
+	std::cout << "#----------------------------------------------------------"      << std::endl;
+	std::cout << "#"                                                                << std::endl;
 
-	const int   fe       = 100;
-	const int   seed     = argc >= 2 ? std::atoi(argv[1]) : 0;
-	const int   K        = 32;
-	const int   N        = 128;
-	const float R        = (float)K / (float)N;
-	const float ebn0_min = 0.00f;
-	const float ebn0_max = 10.1f;
+	params  p; init_params (argc, argv, p); // create and initialize the parameters from the command line with factories
+	modules m; init_modules(p, m         ); // create and initialize the modules
+	utils   u; init_utils  (p, m, u      ); // create and initialize the utils
 
-	std::cout << "# * Simulation parameters: "           << std::endl;
-	std::cout << "#    ** Frame errors   = " << fe       << std::endl;
-	std::cout << "#    ** Noise seed     = " << seed     << std::endl;
-	std::cout << "#    ** Info. bits (K) = " << K        << std::endl;
-	std::cout << "#    ** Frame size (N) = " << N        << std::endl;
-	std::cout << "#    ** Code rate  (R) = " << R        << std::endl;
-	std::cout << "#    ** SNR min   (dB) = " << ebn0_min << std::endl;
-	std::cout << "#    ** SNR max   (dB) = " << ebn0_max << std::endl;
-	std::cout << "#"                                     << std::endl;
+	// display the legend in the terminal
+	u.terminal->legend();
 
-	// create the AFF3CT modules
-	aff3ct::module::Source_random<>          source     (K      );
-	aff3ct::module::Encoder_repetition_sys<> encoder    (K, N   );
-	aff3ct::module::Modem_BPSK<>             modulator  (N      );
-	aff3ct::module::Modem_BPSK<>             demodulator(N      );
-	aff3ct::module::Channel_AWGN_LLR<>       channel    (N, seed);
-	aff3ct::module::Decoder_repetition_std<> decoder    (K, N   );
-	aff3ct::module::Splitter<>               splitter   (K      );
-	aff3ct::module::Monitor_BFER<>           monitor    (K, fe  );
-
-	// configuration of the module tasks
-	std::vector<const aff3ct::module::Module*> modules = { &source, &encoder, &modulator, &channel, &demodulator,
-	                                                       &decoder, &splitter, &monitor };
-	for (auto *m : modules)
-		for (auto pt : m->tasks)
-		{
-			auto t = pt.get();
-			t->set_autoalloc  (false); // enable the automatic allocation of the data in the tasks
-			t->set_autoexec   (false); // disable the auto execution mode of the tasks
-			t->set_debug      (false); // disable the debug mode
-			t->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
-			t->set_stats      (true ); // enable the statistics
-
-			// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
-			if (!t->is_debug() && !t->is_stats())
-				t->set_fast(true);
-		}
-
-	using namespace aff3ct::module;
-
-#if TEST == 1
-
-	Circular_Buffer<int32_t> cb(4,10);
-
-	std::mutex print_lock;
-
-	std::thread t1([&cb, &print_lock]() {
-		int32_t a = 0;
-		std::vector<int32_t>* v = new std::vector<int32_t>(10,a);
-
-		while(true)
-		{
-
-			for (auto &elt : *v)
-				elt = a++%100;
-
-			print_lock.lock();
-
-			std::cout << "Thread 1 push : ";
-			std::cout << "[ ";
-			for (auto const &elt : *v)
-				std::cout << std::setw(2) << elt << " ";
-			std::cout << "]" << std::endl;
-
-			print_lock.unlock();
-			cb.wait_push(&v);
-			std::this_thread::sleep_for(std::chrono::milliseconds(1));
-		}
-	});
-
-	std::thread t2([&cb, &print_lock]() {
-		std::vector<int32_t>* v = new std::vector<int32_t>(10,0);
-
-		while(true)
-		{
-			cb.wait_pop(&v);
-			print_lock.lock();
-			std::cout << "Thread 2 pop :                                      ";
-			std::cout << "[ ";
-			for (auto const &elt : *v)
-				std::cout << std::setw(2) << elt << " ";
-			std::cout << "]" << std::endl;
-			print_lock.unlock();
-			std::this_thread::sleep_for(std::chrono::milliseconds(1));
-		}
-	});
-
-	t1.join();
-	t2.join();
-
-#else
-
-	const size_t buffer_size = 4;
-	const size_t n_threads   = 2;
-	Block bl_source     (source     [src::tsk::generate    ], buffer_size, n_threads);
-	Block bl_encoder    (encoder    [enc::tsk::encode      ], buffer_size, n_threads);
-	Block bl_modulator  (modulator  [mdm::tsk::modulate    ], buffer_size, n_threads);
-	Block bl_channel    (channel    [chn::tsk::add_noise   ], buffer_size, n_threads);
-	Block bl_demodulator(demodulator[mdm::tsk::demodulate  ], buffer_size, n_threads);
-	Block bl_decoder    (decoder    [dec::tsk::decode_siho ], buffer_size, n_threads);
-	Block bl_splitter   (splitter   [spl::tsk::split       ], buffer_size, n_threads);
-	Block bl_monitor    (monitor    [mnt::tsk::check_errors], buffer_size, n_threads);
+	using namespace module;
+	Block bl_source     ((*m.source     )[src::tsk::generate    ], p.bl_buffer_size, p.bl_n_threads);
+	Block bl_encoder    ((*m.encoder    )[enc::tsk::encode      ], p.bl_buffer_size, p.bl_n_threads);
+	Block bl_modulator  ((*m.modulator  )[mdm::tsk::modulate    ], p.bl_buffer_size, p.bl_n_threads);
+	Block bl_channel    ((*m.channel    )[chn::tsk::add_noise   ], p.bl_buffer_size, p.bl_n_threads);
+	Block bl_demodulator((*m.demodulator)[mdm::tsk::demodulate  ], p.bl_buffer_size, p.bl_n_threads);
+	Block bl_decoder    ((*m.decoder    )[dec::tsk::decode_siho ], p.bl_buffer_size, p.bl_n_threads);
+	Block bl_splitter   ((*m.splitter   )[spl::tsk::split       ], p.bl_buffer_size, p.bl_n_threads);
+	Block bl_monitor    ((*m.monitor    )[mnt::tsk::check_errors], p.bl_buffer_size, p.bl_n_threads);
 
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	bl_splitter   .bind("U_K" , bl_source     , "U_K" );
@@ -145,35 +93,27 @@ int main(int argc, char** argv)
 	bl_monitor    .bind("U"   , bl_splitter   , "V_K2");
 	bl_monitor    .bind("V"   , bl_decoder    , "V_K" );
 
-	reporters.push_back(std::unique_ptr<aff3ct::tools::Reporter>(new aff3ct::tools::Reporter_noise     <>(noise  ))); // report the noise values (Es/N0 and Eb/N0)
-	reporters.push_back(std::unique_ptr<aff3ct::tools::Reporter>(new aff3ct::tools::Reporter_BFER      <>(monitor))); // report the bit/frame error rates
-	reporters.push_back(std::unique_ptr<aff3ct::tools::Reporter>(new aff3ct::tools::Reporter_throughput<>(monitor))); // report the simulation throughputs
-
-	// allocate a terminal that will display the collected data from the reporters
-	terminal = std::unique_ptr<aff3ct::tools::Terminal>(new aff3ct::tools::Terminal_std(reporters));
-
-	terminal->legend();
-	terminal->start_temp_report();
-
-	// a loop over the various SNRs
-	for (auto ebn0 = ebn0_min; ebn0 < ebn0_max; ebn0 += 1.f)
+	// loop over the various SNRs
+	for (auto ebn0 = p.ebn0_min; ebn0 < p.ebn0_max; ebn0 += p.ebn0_step)
 	{
 		// compute the current sigma for the channel noise
-		const auto esn0  = aff3ct::tools::ebn0_to_esn0 (ebn0, R);
-		const auto sigma = aff3ct::tools::esn0_to_sigma(esn0   );
-		noise.set_noise(sigma, ebn0, esn0);
+		const auto esn0  = tools::ebn0_to_esn0 (ebn0, p.R, p.modem->bps);
+		const auto sigma = tools::esn0_to_sigma(esn0, p.modem->cpm_upf );
+
+		u.noise->set_noise(sigma, ebn0, esn0);
 
 		// update the sigma of the modem and the channel
-		demodulator.set_noise(noise);
-		channel    .set_noise(noise);
+		m.codec      ->set_noise(*u.noise);
+		m.demodulator->set_noise(*u.noise);
+		m.channel    ->set_noise(*u.noise);
 
 		// display the performance (BER and FER) in real time (in a separate thread)
-		terminal->start_temp_report();
+		u.terminal->start_temp_report();
 
 		bool is_done = false;
-		std::thread th_done_verif([&is_done, &monitor]()
+		std::thread th_done_verif([&is_done, &m, &u]()
 		{
-			while(!monitor.fe_limit_achieved()) {}
+			while (!m.monitor->fe_limit_achieved() && !u.terminal->is_interrupt());
 			is_done = true;
 		});
 
@@ -207,24 +147,106 @@ int main(int argc, char** argv)
 		bl_monitor    .reset();
 
 		// display the performance (BER and FER) in the terminal
-		terminal->final_report();
+		u.terminal->final_report();
 
-		// reset the monitor for the next SNR
-		monitor.reset();
+		// reset the monitor and the terminal for the next SNR
+		m.monitor->reset();
+		u.terminal->reset();
+
+		// if user pressed Ctrl+c twice, exit the SNRs loop
+		if (u.terminal->is_over()) break;
 	}
-	std::cout << "#" << std::endl;
 
 	// display the statistics of the tasks (if enabled)
+	std::cout << "#" << std::endl;
 	std::vector<std::vector<const Task*>> bl_tasks = { bl_source     .get_tasks(), bl_encoder.get_tasks(),
 	                                                   bl_modulator  .get_tasks(), bl_channel.get_tasks(),
 	                                                   bl_demodulator.get_tasks(), bl_decoder.get_tasks(),
 	                                                   bl_splitter   .get_tasks(), bl_monitor.get_tasks() };
-	auto ordered = true;
-	aff3ct::tools::Stats::show(bl_tasks, ordered);
-
-#endif
-
+	tools::Stats::show(bl_tasks, true);
 	std::cout << "# End of the simulation" << std::endl;
 
 	return 0;
+}
+
+void init_params(int argc, char** argv, params &p)
+{
+	p.source   = std::unique_ptr<factory::Source          >(new factory::Source          ());
+	p.codec    = std::unique_ptr<factory::Codec_repetition>(new factory::Codec_repetition());
+	p.modem    = std::unique_ptr<factory::Modem           >(new factory::Modem           ());
+	p.channel  = std::unique_ptr<factory::Channel         >(new factory::Channel         ());
+	p.monitor  = std::unique_ptr<factory::Monitor_BFER    >(new factory::Monitor_BFER    ());
+	p.terminal = std::unique_ptr<factory::Terminal        >(new factory::Terminal        ());
+
+	std::vector<factory::Factory*> params_list = { p.source .get(), p.codec  .get(), p.modem   .get(),
+	                                               p.channel.get(), p.monitor.get(), p.terminal.get() };
+
+	// parse the command for the given parameters and fill them
+	tools::Command_parser cp(argc, argv, params_list, true);
+	if (cp.parsing_failed())
+	{
+		cp.print_help    ();
+		cp.print_warnings();
+		cp.print_errors  ();
+		std::exit(1);
+	}
+
+	std::cout << "# Simulation parameters: " << std::endl;
+	tools::Header::print_parameters(params_list); // display the headers (= print the AFF3CT parameters on the screen)
+	std::cout << "#" << std::endl;
+	cp.print_warnings();
+
+	p.R = (float)p.codec->enc->K / (float)p.codec->enc->N_cw; // compute the code rate
+}
+
+void init_modules(const params &p, modules &m)
+{
+	m.source      = std::unique_ptr<module::Source      <>>(p.source ->build()                 );
+	m.splitter    = std::unique_ptr<module::Splitter    <>>(new module::Splitter<>(p.source->K));
+	m.codec       = std::unique_ptr<module::Codec_SIHO  <>>(p.codec  ->build()                 );
+	m.modulator   = std::unique_ptr<module::Modem       <>>(p.modem  ->build()                 );
+	m.demodulator = std::unique_ptr<module::Modem       <>>(p.modem  ->build()                 );
+	m.channel     = std::unique_ptr<module::Channel     <>>(p.channel->build()                 );
+	m.monitor     = std::unique_ptr<module::Monitor_BFER<>>(p.monitor->build()                 );
+	m.encoder     = m.codec->get_encoder().get();
+	m.decoder     = m.codec->get_decoder_siho().get();
+
+	m.list = { m.source .get(), m.splitter.get(), m.modulator.get(), m.demodulator.get(),
+	           m.channel.get(), m.monitor .get(), m.encoder,         m.decoder };
+
+	m.modulator  ->set_custom_name("Modulator"  );
+	m.demodulator->set_custom_name("Demodulator");
+
+	// configuration of the module tasks
+	for (auto& mod : m.list)
+		for (auto& tsk : mod->tasks)
+		{
+			tsk->set_autoalloc  (true ); // enable the automatic allocation of the data in the tasks
+			tsk->set_autoexec   (false); // disable the auto execution mode of the tasks
+			tsk->set_debug      (false); // disable the debug mode
+			tsk->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
+			tsk->set_stats      (true ); // enable the statistics
+
+			// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
+			if (!tsk->is_debug() && !tsk->is_stats())
+				tsk->set_fast(true);
+		}
+
+	// reset the memory of the decoder after the end of each communication
+	// TODO: this is not done when using pipeline Block, be careful!!!
+	m.monitor->add_handler_check(std::bind(&module::Decoder::reset, m.decoder));
+}
+
+void init_utils(const params &p, const modules &m, utils &u)
+{
+	// create a sigma noise type
+	u.noise = std::unique_ptr<tools::Sigma<>>(new tools::Sigma<>());
+	// report the noise values (Es/N0 and Eb/N0)
+	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_noise<>(*u.noise)));
+	// report the bit/frame error rates
+	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_BFER<>(*m.monitor)));
+	// report the simulation throughputs
+	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_throughput<>(*m.monitor)));
+	// create a terminal that will display the collected data from the reporters
+	u.terminal = std::unique_ptr<tools::Terminal>(p.terminal->build(u.reporters));
 }

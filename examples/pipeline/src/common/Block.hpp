@@ -33,6 +33,11 @@ public:
 private:
 	template <typename T>
 	int _bind(const std::string &start_sck_name, Block &dest_block, const std::string &dest_sck_name);
+	NT_Buffered_Socket& get_buffered_socket(const std::string &name,
+	                                        std::map<std::string, std::unique_ptr<NT_Buffered_Socket>> &buffered_sockets);
+	template <typename T>
+	Buffered_Socket<T>& get_buffered_socket(const std::string &name,
+	                                        std::map<std::string, std::unique_ptr<NT_Buffered_Socket>> &buffered_sockets);
 	template <typename T>
 	Buffered_Socket<T>& get_buffered_socket_in(const std::string &name);
 	template <typename T>

@@ -33,7 +33,6 @@ Block
 	auto task_cpy = std::unique_ptr<aff3ct::module::Task>(task.clone());
 	task_cpy->set_autoalloc(false);
 	task_cpy->set_autoexec (false);
-	task_cpy->set_fast     (false);
 
 	for (size_t tid = 0; tid < n_threads; tid++)
 		tasks.push_back(std::shared_ptr<aff3ct::module::Task>(task_cpy->clone()));
@@ -89,17 +88,7 @@ int Block
 int Block
 ::bind(const std::string &start_sck_name, Block &dest_block, const std::string &dest_sck_name)
 {
-	if (!this->buffered_sockets_in.count(start_sck_name))
-	{
-		std::stringstream message;
-		message << "'buffered_sockets_in.count(start_sck_name)' has to be strictly positive ("
-		        << "'start_sck_name'"                            << " = " << start_sck_name << ", "
-		        << "'buffered_sockets_in.count(start_sck_name)'" << " = " << buffered_sockets_in.count(start_sck_name)
-		        << ").";
-		throw aff3ct::tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
-	}
-
-	auto sin_datatype = this->buffered_sockets_in[start_sck_name]->get_s().get_datatype();
+	auto sin_datatype = this->get_buffered_socket(start_sck_name, this->buffered_sockets_in).get_s().get_datatype();
 	     if (sin_datatype == typeid(int8_t )) return _bind<int8_t >(start_sck_name, dest_block, dest_sck_name);
 	else if (sin_datatype == typeid(int16_t)) return _bind<int16_t>(start_sck_name, dest_block, dest_sck_name);
 	else if (sin_datatype == typeid(int32_t)) return _bind<int32_t>(start_sck_name, dest_block, dest_sck_name);
@@ -154,31 +143,11 @@ void Block
 	for (auto const& sout : this->buffered_sockets_out) { sout.second->reset(); }
 }
 
-template <typename T>
-Buffered_Socket<T>& Block
-::get_buffered_socket_in(const std::string &name)
+NT_Buffered_Socket& Block
+::get_buffered_socket(const std::string &name,
+                      std::map<std::string, std::unique_ptr<NT_Buffered_Socket>> &buffered_sockets)
 {
-	if (this->buffered_sockets_in.count(name))
-	{
-		if (aff3ct::module::type_to_string[this->buffered_sockets_in[name]->get_s().get_datatype()] ==
-		    aff3ct::module::type_to_string[typeid(T)])
-		{
-			return *static_cast<Buffered_Socket<T>*>(this->buffered_sockets_in[name].get());
-		}
-		else
-		{
-			std::stringstream message;
-			message << "'buffered_sockets_in[name]->get_s().get_datatype()' has to be equal to 'typeid(T)' ("
-			        << "'name'" << " = " << name << ", "
-			        << "'buffered_sockets_in[name]->get_s().get_datatype()'" << " = "
-			        << aff3ct::module::type_to_string[this->buffered_sockets_in[name]->get_s().get_datatype()]
-			        << ", "
-			        << "'typeid(T)'" << " = " << aff3ct::module::type_to_string[typeid(T)]
-			        << ").";
-			throw aff3ct::tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
-		}
-	}
-	else
+	if (buffered_sockets.count(name) == 0)
 	{
 		std::stringstream message;
 		message << "'buffered_sockets_in.count(name)' has to be strictly positive ("
@@ -187,39 +156,41 @@ Buffered_Socket<T>& Block
 		        << ").";
 		throw aff3ct::tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
 	}
+
+	return *buffered_sockets[name].get();
+}
+
+template <typename T>
+Buffered_Socket<T>& Block
+::get_buffered_socket(const std::string &name,
+                      std::map<std::string, std::unique_ptr<NT_Buffered_Socket>> &buffered_sockets)
+{
+	auto &socket = this->get_buffered_socket(name, buffered_sockets);
+	if (aff3ct::module::type_to_string[socket.get_s().get_datatype()] != aff3ct::module::type_to_string[typeid(T)])
+	{
+		std::stringstream message;
+		message << "'socket.get_s().get_datatype()' has to be equal to 'typeid(T)' ("
+		        << "'name'" << " = " << name << ", "
+		        << "'socket.get_s().get_datatype()'" << " = "
+		        << aff3ct::module::type_to_string[socket.get_s().get_datatype()] << ", "
+		        << "'typeid(T)'" << " = " << aff3ct::module::type_to_string[typeid(T)]
+		        << ").";
+		throw aff3ct::tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
+	}
+
+	return static_cast<Buffered_Socket<T>&>(socket);
+}
+
+template <typename T>
+Buffered_Socket<T>& Block
+::get_buffered_socket_in(const std::string &name)
+{
+	return this->get_buffered_socket<T>(name, this->buffered_sockets_in);
 }
 
 template <typename T>
 Buffered_Socket<T>& Block
 ::get_buffered_socket_out(const std::string &name)
 {
-	if (this->buffered_sockets_out.count(name))
-	{
-		if (aff3ct::module::type_to_string[this->buffered_sockets_out[name]->get_s().get_datatype()] ==
-		    aff3ct::module::type_to_string[typeid(T)])
-		{
-			return *static_cast<Buffered_Socket<T>*>(this->buffered_sockets_out[name].get());
-		}
-		else
-		{
-			std::stringstream message;
-			message << "'buffered_sockets_out[name]->get_s().get_datatype()' has to be equal to 'typeid(T)' ("
-			        << "'name'" << " = " << name << ", "
-			        << "'buffered_sockets_out[name]->get_s().get_datatype()'" << " = "
-			        << aff3ct::module::type_to_string[this->buffered_sockets_out[name]->get_s().get_datatype()]
-			        << ", "
-			        << "'typeid(T)'" << " = " << aff3ct::module::type_to_string[typeid(T)]
-			        << ").";
-			throw aff3ct::tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
-		}
-	}
-	else
-	{
-		std::stringstream message;
-		message << "'buffered_sockets_out.count(name)' has to be strictly positive ("
-		        << "'name'"                             << " = " << name << ", "
-		        << "'buffered_sockets_out.count(name)'" << " = " << buffered_sockets_out.count(name)
-		        << ").";
-		throw aff3ct::tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
-	}
+	return this->get_buffered_socket<T>(name, this->buffered_sockets_out);
 }

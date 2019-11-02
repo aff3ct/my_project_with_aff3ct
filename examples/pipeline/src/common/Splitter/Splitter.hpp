@@ -64,13 +64,15 @@ public:
 			throw tools::invalid_argument(__FILE__, __LINE__, __func__, message.str());
 		}
 
-		auto &p = this->create_task("splitter");
+		auto &p = this->create_task("split");
 		auto ps_U_K  = this->template create_socket_in <B>(p, "U_K" , this->K * this->n_frames);
 		auto ps_V_K1 = this->template create_socket_out<B>(p, "V_K1", this->K * this->n_frames);
 		auto ps_V_K2 = this->template create_socket_out<B>(p, "V_K2", this->K * this->n_frames);
 		this->create_codelet(p, [this, ps_U_K, ps_V_K1, ps_V_K2](Task &t) -> int
 		{
-			this->split(static_cast<B*>(t[ps_U_K].get_dataptr()), static_cast<B*>(t[ps_V_K1].get_dataptr()), static_cast<B*>(t[ps_V_K2].get_dataptr()));
+			this->split(static_cast<B*>(t[ps_U_K].get_dataptr()),
+			            static_cast<B*>(t[ps_V_K1].get_dataptr()),
+			            static_cast<B*>(t[ps_V_K2].get_dataptr()));
 
 			return 0;
 		});
