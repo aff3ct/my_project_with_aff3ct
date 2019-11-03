@@ -9,17 +9,17 @@
 #include <aff3ct.hpp>
 using namespace aff3ct;
 
-#include "common/Block.hpp"
-#include "common/Splitter/Splitter.hpp"
+#include "common/Tools/Pipeline/Block/Pipeline_block.hpp"
+#include "common/Module/Splitter/Splitter.hpp"
 
 struct params
 {
-	const size_t bl_buffer_size = 16;     // the circular buffer size in the pipeline blocks
-	const size_t bl_n_threads   =  1;     // the number of threads in one pipeline block
-	const float ebn0_min        =  0.00f; // minimum SNR value
-	const float ebn0_max        = 10.01f; // maximum SNR value
-	const float ebn0_step       =  1.00f; // SNR step
-	      float R;                        // code rate (R=K/N)
+	const size_t pb_buffer_size = 128;     // the circular buffer size in the pipeline blocks
+	const size_t pb_n_threads   =   1;     // the number of threads in one pipeline block
+	const float  ebn0_min       =   0.00f; // minimum SNR value
+	const float  ebn0_max       =  10.01f; // maximum SNR value
+	const float  ebn0_step      =   1.00f; // SNR step
+	      float  R;                         // code rate (R=K/N)
 
 	std::unique_ptr<factory::Source          > source;
 	std::unique_ptr<factory::Codec_repetition> codec;
@@ -74,27 +74,27 @@ int main(int argc, char** argv)
 	u.terminal->legend();
 
 	using namespace module;
-	Block bl_source     ((*m.source     )[src::tsk::generate    ], p.bl_buffer_size, p.bl_n_threads);
-	Block bl_encoder    ((*m.encoder    )[enc::tsk::encode      ], p.bl_buffer_size, p.bl_n_threads);
-	Block bl_modulator  ((*m.modulator  )[mdm::tsk::modulate    ], p.bl_buffer_size, p.bl_n_threads);
-	Block bl_channel    ((*m.channel    )[chn::tsk::add_noise   ], p.bl_buffer_size, p.bl_n_threads);
-	Block bl_demodulator((*m.demodulator)[mdm::tsk::demodulate  ], p.bl_buffer_size, p.bl_n_threads);
-	Block bl_decoder    ((*m.decoder    )[dec::tsk::decode_siho ], p.bl_buffer_size, p.bl_n_threads);
-	Block bl_splitter   ((*m.splitter   )[spl::tsk::split       ], p.bl_buffer_size, p.bl_n_threads);
-	Block bl_monitor    ((*m.monitor    )[mnt::tsk::check_errors], p.bl_buffer_size, p.bl_n_threads);
+	tools::Pipeline_block pb_source     ((*m.source     )[src::tsk::generate    ], p.pb_buffer_size, p.pb_n_threads);
+	tools::Pipeline_block pb_encoder    ((*m.encoder    )[enc::tsk::encode      ], p.pb_buffer_size, p.pb_n_threads);
+	tools::Pipeline_block pb_modulator  ((*m.modulator  )[mdm::tsk::modulate    ], p.pb_buffer_size, p.pb_n_threads);
+	tools::Pipeline_block pb_channel    ((*m.channel    )[chn::tsk::add_noise   ], p.pb_buffer_size, p.pb_n_threads);
+	tools::Pipeline_block pb_demodulator((*m.demodulator)[mdm::tsk::demodulate  ], p.pb_buffer_size, p.pb_n_threads);
+	tools::Pipeline_block pb_decoder    ((*m.decoder    )[dec::tsk::decode_siho ], p.pb_buffer_size, p.pb_n_threads);
+	tools::Pipeline_block pb_splitter   ((*m.splitter   )[spl::tsk::split       ], p.pb_buffer_size, p.pb_n_threads);
+	tools::Pipeline_block pb_monitor    ((*m.monitor    )[mnt::tsk::check_errors], p.pb_buffer_size, p.pb_n_threads);
 
-	std::vector<Block*> blocks = { &bl_source,      &bl_encoder, &bl_modulator, &bl_channel,
-	                               &bl_demodulator, &bl_decoder, &bl_splitter,  &bl_monitor };
+	std::vector<tools::Pipeline_block*> blocks = { &pb_source,      &pb_encoder, &pb_modulator, &pb_channel,
+	                                               &pb_demodulator, &pb_decoder, &pb_splitter,  &pb_monitor };
 
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
-	bl_splitter   .bind("U_K" , bl_source     , "U_K" );
-	bl_encoder    .bind("U_K" , bl_splitter   , "V_K1");
-	bl_modulator  .bind("X_N1", bl_encoder    , "X_N" );
-	bl_channel    .bind("X_N" , bl_modulator  , "X_N2");
-	bl_demodulator.bind("Y_N1", bl_channel    , "Y_N" );
-	bl_decoder    .bind("Y_N" , bl_demodulator, "Y_N2");
-	bl_monitor    .bind("U"   , bl_splitter   , "V_K2");
-	bl_monitor    .bind("V"   , bl_decoder    , "V_K" );
+	pb_splitter   .bind("U_K" , pb_source     , "U_K" );
+	pb_encoder    .bind("U_K" , pb_splitter   , "V_K1");
+	pb_modulator  .bind("X_N1", pb_encoder    , "X_N" );
+	pb_channel    .bind("X_N" , pb_modulator  , "X_N2");
+	pb_demodulator.bind("Y_N1", pb_channel    , "Y_N" );
+	pb_decoder    .bind("Y_N" , pb_demodulator, "Y_N2");
+	pb_monitor    .bind("U"   , pb_splitter   , "V_K2");
+	pb_monitor    .bind("V"   , pb_decoder    , "V_K" );
 
 	// loop over the various SNRs
 	for (auto ebn0 = p.ebn0_min; ebn0 < p.ebn0_max; ebn0 += p.ebn0_step)
@@ -140,11 +140,11 @@ int main(int argc, char** argv)
 
 	// display the statistics of the tasks (if enabled)
 	std::cout << "#" << std::endl;
-	std::vector<std::vector<const Task*>> bl_tasks = { bl_source     .get_tasks(), bl_encoder.get_tasks(),
-	                                                   bl_modulator  .get_tasks(), bl_channel.get_tasks(),
-	                                                   bl_demodulator.get_tasks(), bl_decoder.get_tasks(),
-	                                                   bl_splitter   .get_tasks(), bl_monitor.get_tasks() };
-	tools::Stats::show(bl_tasks, true);
+	std::vector<std::vector<const Task*>> pb_tasks = { pb_source     .get_tasks(), pb_encoder.get_tasks(),
+	                                                   pb_modulator  .get_tasks(), pb_channel.get_tasks(),
+	                                                   pb_demodulator.get_tasks(), pb_decoder.get_tasks(),
+	                                                   pb_splitter   .get_tasks(), pb_monitor.get_tasks() };
+	tools::Stats::show(pb_tasks, true);
 	std::cout << "# End of the simulation" << std::endl;
 
 	return 0;
@@ -214,7 +214,7 @@ void init_modules(const params &p, modules &m)
 		}
 
 	// reset the memory of the decoder after the end of each communication
-	// TODO: this is not done when using pipeline Block, be careful!!!
+	// TODO: this is not done when using pipeline block, be careful!!!
 	m.monitor->add_handler_check(std::bind(&module::Decoder::reset, m.decoder));
 }
 
