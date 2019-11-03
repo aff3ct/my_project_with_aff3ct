@@ -1,4 +1,5 @@
 #include <cassert>
+#include <limits>
 
 #include "Circular_buffer.hpp"
 
@@ -39,6 +40,20 @@ void Circular_buffer<T>
 }
 
 template <typename T>
+bool Circular_buffer<T>
+::is_full() const
+{
+	return (this->head_buffer - this->tail_buffer) == this->circular_buffer.size();
+}
+
+template <typename T>
+bool Circular_buffer<T>
+::is_empty() const
+{
+	return (this->head_buffer - this->tail_buffer) == 0;
+}
+
+template <typename T>
 T* Circular_buffer<T>
 ::try_pop(T* data_ptr)
 {
@@ -48,18 +63,13 @@ T* Circular_buffer<T>
 		return nullptr;
 
 	mtx.lock();
-	if (this->is_empty())
-	{
-		mtx.unlock();
-		return nullptr;
-	}
-	auto pos = this->tail_buffer % this->circular_buffer.size();
-	auto data_ptr2 = this->circular_buffer[pos];
-	this->circular_buffer[pos] = data_ptr;
+	assert(!this->is_empty());
+	std::swap(this->circular_buffer[this->tail_buffer % this->circular_buffer.size()], data_ptr);
 	this->tail_buffer++;
+	assert(this->tail_buffer != std::numeric_limits<size_t>::max());
 	mtx.unlock();
 
-	return data_ptr2;
+	return data_ptr;
 }
 
 template <typename T>
@@ -72,18 +82,13 @@ T* Circular_buffer<T>
 		return nullptr;
 
 	mtx.lock();
-	if (this->is_full())
-	{
-		mtx.unlock();
-		return nullptr;
-	}
-	auto pos = this->head_buffer % this->circular_buffer.size();
-	auto data_ptr2 = this->circular_buffer[pos];
-	this->circular_buffer[pos] = data_ptr;
+	assert(!this->is_full());
+	std::swap(this->circular_buffer[this->head_buffer % this->circular_buffer.size()], data_ptr);
 	this->head_buffer++;
+	assert(this->head_buffer != std::numeric_limits<size_t>::max());
 	mtx.unlock();
 
-	return data_ptr2;
+	return data_ptr;
 }
 
 template class aff3ct::tools::Circular_buffer<int8_t >;
