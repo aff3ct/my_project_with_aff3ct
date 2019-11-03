@@ -19,6 +19,9 @@ Pipeline_socket_buffered<T>
   pop_buffer_idx(0),
   push_buffer_idx(0)
 {
+	assert( pop_buffer_idx.is_lock_free());
+	assert(push_buffer_idx.is_lock_free());
+
 	auto n_elmts = sockets[0]->get_n_elmts();
 
 	for (size_t i = 0; i < this->sockets.size(); i++)
