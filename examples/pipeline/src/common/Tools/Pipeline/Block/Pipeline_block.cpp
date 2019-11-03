@@ -24,13 +24,10 @@ Pipeline_block
 		throw invalid_argument(__FILE__, __LINE__, __func__, message.str());
 	}
 
-	if (buffer_size < n_threads)
+	if (buffer_size == 0)
 	{
 		std::stringstream message;
-		message << "'buffer_size' has to be equal or greater than 'n_threads' ("
-		        << "'buffer_size'" << " = " << buffer_size << ", "
-		        << "'n_threads'"   << " = " << n_threads
-		        << ").";
+		message << "'buffer_size' has to be strictly positive ('buffer_size' = " << buffer_size << ").";
 		throw invalid_argument(__FILE__, __LINE__, __func__, message.str());
 	}
 
