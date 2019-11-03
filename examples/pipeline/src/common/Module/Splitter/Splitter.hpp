@@ -1,6 +1,7 @@
 #ifndef SPLITTER_HPP_
 #define SPLITTER_HPP_
 
+#include <cstddef>
 #include <vector>
 #include <memory>
 
