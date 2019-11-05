@@ -98,7 +98,8 @@ int main(int argc, char** argv)
 		};
 
 		// run the simulation chain from the source
-		(*m.source)[src::tsk::generate].exec_chain(stop_condition, 1);
+		auto chain = Chain((*m.source)[src::tsk::generate], 1);
+		chain.exec(stop_condition);
 
 		// display the performance (BER and FER) in the terminal
 		u.terminal->final_report();
@@ -169,7 +170,7 @@ void init_modules(const params &p, modules &m)
 			tsk->set_autoexec   (false); // disable the auto execution mode of the tasks
 			tsk->set_debug      (false); // disable the debug mode
 			tsk->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
-			tsk->set_stats      (true ); // enable the statistics
+			tsk->set_stats      (false); // enable the statistics
 
 			// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
 			if (!tsk->is_debug() && !tsk->is_stats())
