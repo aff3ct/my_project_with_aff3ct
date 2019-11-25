@@ -34,7 +34,7 @@ struct modules
 {
 	std::unique_ptr<module::Source<>>       source;
 	std::unique_ptr<module::Splitter<>>     splitter;
-	std::unique_ptr<module::Codec_SIHO<>>   codec;
+	std::unique_ptr<tools ::Codec_SIHO<>>   codec;
 	std::unique_ptr<module::Modem<>>        modulator;
 	std::unique_ptr<module::Modem<>>        demodulator;
 	std::unique_ptr<module::Channel<>>      channel;
@@ -73,6 +73,11 @@ int main(int argc, char** argv)
 	// display the legend in the terminal
 	u.terminal->legend();
 
+	// set the noise and register modules to "noise changed" callback
+	m.codec      ->set_noise(*u.noise); u.noise->record_callback_changed([&m](){ m.codec      ->noise_changed(); });
+	m.demodulator->set_noise(*u.noise); u.noise->record_callback_changed([&m](){ m.demodulator->noise_changed(); });
+	m.channel    ->set_noise(*u.noise); u.noise->record_callback_changed([&m](){ m.channel    ->noise_changed(); });
+
 	using namespace module;
 	tools::Pipeline_block pb_source     ((*m.source     )[src::tsk::generate    ], p.pb_buffer_size, p.pb_n_threads);
 	tools::Pipeline_block pb_encoder    ((*m.encoder    )[enc::tsk::encode      ], p.pb_buffer_size, p.pb_n_threads);
@@ -103,12 +108,7 @@ int main(int argc, char** argv)
 		const auto esn0  = tools::ebn0_to_esn0 (ebn0, p.R, p.modem->bps);
 		const auto sigma = tools::esn0_to_sigma(esn0, p.modem->cpm_upf );
 
-		u.noise->set_noise(sigma, ebn0, esn0);
-
-		// update the sigma of the modem and the channel
-		m.codec      ->set_noise(*u.noise);
-		m.demodulator->set_noise(*u.noise);
-		m.channel    ->set_noise(*u.noise);
+		u.noise->set_values(sigma, ebn0, esn0);
 
 		// display the performance (BER and FER) in real time (in a separate thread)
 		u.terminal->start_temp_report();
@@ -184,13 +184,13 @@ void init_modules(const params &p, modules &m)
 {
 	m.source      = std::unique_ptr<module::Source      <>>(p.source ->build()                 );
 	m.splitter    = std::unique_ptr<module::Splitter    <>>(new module::Splitter<>(p.source->K));
-	m.codec       = std::unique_ptr<module::Codec_SIHO  <>>(p.codec  ->build()                 );
+	m.codec       = std::unique_ptr<tools ::Codec_SIHO  <>>(p.codec  ->build()                 );
 	m.modulator   = std::unique_ptr<module::Modem       <>>(p.modem  ->build()                 );
 	m.demodulator = std::unique_ptr<module::Modem       <>>(p.modem  ->build()                 );
 	m.channel     = std::unique_ptr<module::Channel     <>>(p.channel->build()                 );
 	m.monitor     = std::unique_ptr<module::Monitor_BFER<>>(p.monitor->build()                 );
-	m.encoder     = m.codec->get_encoder().get();
-	m.decoder     = m.codec->get_decoder_siho().get();
+	m.encoder     = &m.codec->get_encoder();
+	m.decoder     = &m.codec->get_decoder_siho();
 
 	m.list = { m.source .get(), m.splitter.get(), m.modulator.get(), m.demodulator.get(),
 	           m.channel.get(), m.monitor .get(), m.encoder,         m.decoder };
@@ -212,10 +212,6 @@ void init_modules(const params &p, modules &m)
 			if (!tsk->is_debug() && !tsk->is_stats())
 				tsk->set_fast(true);
 		}
-
-	// reset the memory of the decoder after the end of each communication
-	// TODO: this is not done when using pipeline block, be careful!!!
-	m.monitor->add_handler_check(std::bind(&module::Decoder::reset, m.decoder));
 }
 
 void init_utils(const params &p, const modules &m, utils &u)
