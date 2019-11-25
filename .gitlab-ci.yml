@@ -240,7 +240,7 @@ test-linux-run-chain:
     - linux
     - sse4.2
   script:
-    - ./ci/test-linux-macos-run.sh chain " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh chain "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
 
 # test-linux-run-openmp:
 #   stage: test
