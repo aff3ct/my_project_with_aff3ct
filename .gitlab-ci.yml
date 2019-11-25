@@ -37,9 +37,10 @@ build-linux-gcc:
       - ./examples/systemc/build_linux_gcc/bin/
       - ./examples/tasks/build_linux_gcc/bin/
       - ./examples/pipeline/build_linux_gcc/bin/
+      - ./examples/chain/build_linux_gcc/bin/
       - ./examples/openmp/build_linux_gcc/bin/
   script:
-    - export EXAMPLES="bootstrap tasks systemc factory pipeline openmp"
+    - export EXAMPLES="bootstrap tasks systemc factory pipeline chain openmp"
     - export CXX="g++"
     - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations"
     - export BUILD="build_linux_gcc"
@@ -62,9 +63,10 @@ build-linux-clang:
       - ./examples/systemc/build_linux_clang/bin/
       - ./examples/tasks/build_linux_clang/bin/
       - ./examples/pipeline/build_linux_clang/bin/
+      - ./examples/chain/build_linux_clang/bin/
       - ./examples/openmp/build_linux_clang/bin/
   script:
-    - export EXAMPLES="bootstrap tasks systemc factory pipeline openmp"
+    - export EXAMPLES="bootstrap tasks systemc factory pipeline chain openmp"
     - export CXX="clang++"
     - export CFLAGS="-Wall -Wno-overloaded-virtual -funroll-loops -msse4.2 -Wno-deprecated-declarations"
     - export BUILD="build_linux_clang"
@@ -86,9 +88,10 @@ build-linux-gcc-4.8:
       - ./examples/systemc/build_linux_gcc-4.8/bin/
       - ./examples/tasks/build_linux_gcc-4.8/bin/
       - ./examples/pipeline/build_linux_gcc-4.8/bin/
+      - ./examples/chain/build_linux_gcc-4.8/bin/
       - ./examples/openmp/build_linux_gcc-4.8/bin/
   script:
-    - export EXAMPLES="bootstrap tasks systemc factory pipeline openmp"
+    - export EXAMPLES="bootstrap tasks systemc factory pipeline chain openmp"
     - export CXX="g++-4.8"
     - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations"
     - export BUILD="build_linux_gcc-4.8"
@@ -111,9 +114,10 @@ build-linux-icpc:
       - ./examples/systemc/build_linux_icpc/bin/
       - ./examples/tasks/build_linux_icpc/bin/
       - ./examples/pipeline/build_linux_icpc/bin/
+      - ./examples/chain/build_linux_icpc/bin/
       - ./examples/openmp/build_linux_icpc/bin/
   script:
-    - export EXAMPLES="bootstrap tasks systemc factory pipeline openmp"
+    - export EXAMPLES="bootstrap tasks systemc factory pipeline chain openmp"
     - export CXX="icpc"
     - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations -std=c++11"
     - export BUILD="build_linux_icpc"
@@ -133,9 +137,10 @@ build-windows-gcc:
       - ./examples/factory/build_windows_gcc/bin/
       - ./examples/tasks/build_windows_gcc/bin/
       - ./examples/pipeline/build_windows_gcc/bin/
+      - ./examples/chain/build_windows_gcc/bin/
       - ./examples/openmp/build_windows_gcc/bin/
   script:
-    - set "EXAMPLES=bootstrap tasks factory pipeline openmp"
+    - set "EXAMPLES=bootstrap tasks factory pipeline chain openmp"
     - set "CFLAGS=-Wall -Wno-deprecated-declarations -funroll-loops -mavx"
     - set "BUILD=build_windows_gcc"
     - call ./ci/tools/threads.bat
@@ -154,9 +159,10 @@ build-windows-msvc:
       - ./examples/factory/build_windows_msvc/bin/
       - ./examples/tasks/build_windows_msvc/bin/
       - ./examples/pipeline/build_windows_msvc/bin/
+      - ./examples/chain/build_windows_msvc/bin/
       - ./examples/openmp/build_windows_msvc/bin/
   script:
-    - set "EXAMPLES=bootstrap tasks factory pipeline openmp"
+    - set "EXAMPLES=bootstrap tasks factory pipeline chain openmp"
     - set "CFLAGS=-D_CRT_SECURE_NO_DEPRECATE /EHsc /arch:AVX"
     - set "BUILD=build_windows_msvc"
     - call ./ci/tools/threads.bat
@@ -176,9 +182,10 @@ build-macos-clang:
       - ./examples/factory/build_macos_clang/bin/
       - ./examples/tasks/build_macos_clang/bin/
       - ./examples/pipeline/build_macos_clang/bin/
+      - ./examples/chain/build_macos_clang/bin/
       - ./examples/openmp/build_macos_clang/bin/
   script:
-    - export EXAMPLES="bootstrap tasks factory pipeline openmp"
+    - export EXAMPLES="bootstrap tasks factory pipeline chain openmp"
     - export CXX="clang++"
     - export CFLAGS="-Wall -Wno-overloaded-virtual -funroll-loops -msse4.2"
     - export BUILD="build_macos_clang"
@@ -226,6 +233,14 @@ test-linux-run-factory:
 #     - sse4.2
 #   script:
 #     - ./ci/test-linux-macos-run.sh pipeline " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+
+test-linux-run-chain:
+  stage: test
+  tags:
+    - linux
+    - sse4.2
+  script:
+    - ./ci/test-linux-macos-run.sh chain " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
 
 # test-linux-run-openmp:
 #   stage: test
