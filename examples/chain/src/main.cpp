@@ -28,10 +28,10 @@ void init_params(int argc, char** argv, params &p);
 struct modules
 {
 	std::unique_ptr<module::Source<>>       source;
-	std::unique_ptr<module::Codec_SIHO<>>   codec;
 	std::unique_ptr<module::Modem<>>        modem;
 	std::unique_ptr<module::Channel<>>      channel;
 	std::unique_ptr<module::Monitor_BFER<>> monitor;
+	std::unique_ptr<tools ::Codec_SIHO<>>   codec;
 	                module::Encoder<>*      encoder;
 	                module::Decoder_SIHO<>* decoder;
 	std::vector<const module::Module*>      list; // list of module pointers declared in this structure
@@ -40,9 +40,9 @@ void init_modules(const params &p, modules &m);
 
 struct utils
 {
-	std::unique_ptr<tools::Sigma<>>               noise;     // a sigma noise type
+	            std::unique_ptr<tools::Sigma<> >  noise;     // a sigma noise type
 	std::vector<std::unique_ptr<tools::Reporter>> reporters; // list of reporters dispayed in the terminal
-	std::unique_ptr<tools::Terminal>              terminal;  // manage the output text in the terminal
+	            std::unique_ptr<tools::Terminal>  terminal;  // manage the output text in the terminal
 };
 void init_utils(const params &p, const modules &m, utils &u);
 
@@ -66,6 +66,11 @@ int main(int argc, char** argv)
 	// display the legend in the terminal
 	u.terminal->legend();
 
+	// set the noise and register modules to "noise changed" callback
+	m.codec  ->set_noise(*u.noise); u.noise->record_callback_changed([&m](){ m.codec  ->noise_changed(); });
+	m.modem  ->set_noise(*u.noise); u.noise->record_callback_changed([&m](){ m.modem  ->noise_changed(); });
+	m.channel->set_noise(*u.noise); u.noise->record_callback_changed([&m](){ m.channel->noise_changed(); });
+
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	using namespace module;
 	(*m.encoder)[enc::sck::encode      ::U_K ].bind((*m.source )[src::sck::generate   ::U_K ]);
@@ -83,12 +88,7 @@ int main(int argc, char** argv)
 		const auto esn0  = tools::ebn0_to_esn0 (ebn0, p.R, p.modem->bps);
 		const auto sigma = tools::esn0_to_sigma(esn0, p.modem->cpm_upf );
 
-		u.noise->set_noise(sigma, ebn0, esn0);
-
-		// update the sigma of the modem and the channel
-		m.codec  ->set_noise(*u.noise);
-		m.modem  ->set_noise(*u.noise);
-		m.channel->set_noise(*u.noise);
+		u.noise->set_values(sigma, ebn0, esn0);
 
 		// display the performance (BER and FER) in real time (in a separate thread)
 		u.terminal->start_temp_report();
@@ -153,12 +153,12 @@ void init_params(int argc, char** argv, params &p)
 void init_modules(const params &p, modules &m)
 {
 	m.source  = std::unique_ptr<module::Source      <>>(p.source ->build());
-	m.codec   = std::unique_ptr<module::Codec_SIHO  <>>(p.codec  ->build());
+	m.codec   = std::unique_ptr<tools ::Codec_SIHO  <>>(p.codec  ->build());
 	m.modem   = std::unique_ptr<module::Modem       <>>(p.modem  ->build());
 	m.channel = std::unique_ptr<module::Channel     <>>(p.channel->build());
 	m.monitor = std::unique_ptr<module::Monitor_BFER<>>(p.monitor->build());
-	m.encoder = m.codec->get_encoder().get();
-	m.decoder = m.codec->get_decoder_siho().get();
+	m.encoder = &m.codec->get_encoder();
+	m.decoder = &m.codec->get_decoder_siho();
 
 	m.list = { m.source.get(), m.modem.get(), m.channel.get(), m.monitor.get(), m.encoder, m.decoder };
 
@@ -176,9 +176,6 @@ void init_modules(const params &p, modules &m)
 			if (!tsk->is_debug() && !tsk->is_stats())
 				tsk->set_fast(true);
 		}
-
-	// reset the memory of the decoder after the end of each communication
-	m.monitor->add_handler_check(std::bind(&module::Decoder::reset, m.decoder));
 }
 
 void init_utils(const params &p, const modules &m, utils &u)

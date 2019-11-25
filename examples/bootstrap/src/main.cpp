@@ -77,7 +77,7 @@ int main(int argc, char** argv)
 		const auto esn0  = tools::ebn0_to_esn0 (ebn0, p.R);
 		const auto sigma = tools::esn0_to_sigma(esn0     );
 
-		u.noise->set_noise(sigma, ebn0, esn0);
+		u.noise->set_values(sigma, ebn0, esn0);
 
 		// update the sigma of the modem and the channel
 		m.modem  ->set_noise(*u.noise);
@@ -131,12 +131,13 @@ void init_params(params &p)
 
 void init_modules(const params &p, modules &m)
 {
-	m.source  = std::unique_ptr<module::Source_random         <>>(new module::Source_random         <>(p.K        ));
-	m.encoder = std::unique_ptr<module::Encoder_repetition_sys<>>(new module::Encoder_repetition_sys<>(p.K, p.N   ));
-	m.modem   = std::unique_ptr<module::Modem_BPSK            <>>(new module::Modem_BPSK            <>(p.N        ));
-	m.channel = std::unique_ptr<module::Channel_AWGN_LLR      <>>(new module::Channel_AWGN_LLR      <>(p.N, p.seed));
-	m.decoder = std::unique_ptr<module::Decoder_repetition_std<>>(new module::Decoder_repetition_std<>(p.K, p.N   ));
-	m.monitor = std::unique_ptr<module::Monitor_BFER          <>>(new module::Monitor_BFER          <>(p.K, p.fe  ));
+	m.source  = std::unique_ptr<module::Source_random         <>>(new module::Source_random         <>(p.K      ));
+	m.encoder = std::unique_ptr<module::Encoder_repetition_sys<>>(new module::Encoder_repetition_sys<>(p.K, p.N ));
+	m.modem   = std::unique_ptr<module::Modem_BPSK            <>>(new module::Modem_BPSK            <>(p.N      ));
+	m.channel = std::unique_ptr<module::Channel_AWGN_LLR      <>>(new module::Channel_AWGN_LLR      <>(p.N      ));
+	m.decoder = std::unique_ptr<module::Decoder_repetition_std<>>(new module::Decoder_repetition_std<>(p.K, p.N ));
+	m.monitor = std::unique_ptr<module::Monitor_BFER          <>>(new module::Monitor_BFER          <>(p.K, p.fe));
+	m.channel->set_seed(p.seed);
 };
 
 void init_buffers(const params &p, buffers &b)

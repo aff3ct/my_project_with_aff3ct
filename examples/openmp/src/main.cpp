@@ -39,20 +39,21 @@ using Monitor_BFER_reduction = Monitor_reduction_M<module::Monitor_BFER<>>;
 
 struct utils
 {
-	std::unique_ptr<tools::Sigma<>>                      noise;         // a sigma noise type
-	std::vector<std::unique_ptr<tools::Reporter>>        reporters;     // list of reporters displayed in the terminal
-	std::unique_ptr<tools::Terminal>                     terminal;      // manage the output text in the terminal
-	std::vector<std::unique_ptr<module::Monitor_BFER<>>> monitors;      // list of the monitors from all the threads
-	std::unique_ptr<tools::Monitor_BFER_reduction>       monitor_red;   // main monitor object that reduce all the thread monitors
-	std::vector<std::vector<const module::Module*>>      modules;       // lists of the allocated modules
-	std::vector<std::vector<const module::Module*>>      modules_stats; // list of the allocated modules reorganized for the statistics
+	            std::unique_ptr<tools ::Sigma<>               >  noise;       // a sigma noise type
+	std::vector<std::unique_ptr<tools ::Reporter              >> reporters;   // list of reporters displayed in the terminal
+	            std::unique_ptr<tools ::Terminal              >  terminal;    // manage the output text in the terminal
+	std::vector<std::unique_ptr<module::Monitor_BFER<>        >> monitors;    // list of the monitors from all the threads
+	            std::unique_ptr<tools ::Monitor_BFER_reduction>  monitor_red; // main monitor object that reduce all the thread monitors
+
+	std::vector<std::vector<const module::Module*>> modules;       // lists of the allocated modules
+	std::vector<std::vector<const module::Module*>> modules_stats; // list of the allocated modules reorganized for the statistics
 };
 void init_utils(const params &p, utils &u);
 
 struct modules
 {
 	std::unique_ptr<module::Source<>>       source;
-	std::unique_ptr<module::Codec_SIHO<>>   codec;
+	std::unique_ptr<tools ::Codec_SIHO<>>   codec;
 	std::unique_ptr<module::Modem<>>        modem;
 	std::unique_ptr<module::Channel<>>      channel;
 	                module::Monitor_BFER<>* monitor;
@@ -97,6 +98,12 @@ int main(int argc, char** argv)
 	// display the legend in the terminal
 	u.terminal->legend();
 }
+
+	// set the noise and register modules to "noise changed" callback
+	m.codec  ->set_noise(*u.noise); u.noise->record_callback_changed([&m](){ m.codec  ->noise_changed(); });
+	m.modem  ->set_noise(*u.noise); u.noise->record_callback_changed([&m](){ m.modem  ->noise_changed(); });
+	m.channel->set_noise(*u.noise); u.noise->record_callback_changed([&m](){ m.channel->noise_changed(); });
+
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	using namespace module;
 	(*m.encoder)[enc::sck::encode      ::U_K ].bind((*m.source )[src::sck::generate   ::U_K ]);
@@ -115,16 +122,12 @@ int main(int argc, char** argv)
 		const auto sigma = tools::esn0_to_sigma(esn0, p.modem->cpm_upf );
 
 #pragma omp single
-		u.noise->set_noise(sigma, ebn0, esn0);
+{
+		u.noise->set_values(sigma, ebn0, esn0);
 
-		// update the sigma of the modem and the channel
-		m.codec  ->set_noise(*u.noise);
-		m.modem  ->set_noise(*u.noise);
-		m.channel->set_noise(*u.noise);
-
-#pragma omp single
 		// display the performance (BER and FER) in real time (in a separate thread)
 		u.terminal->start_temp_report();
+}
 
 		// run the simulation chain
 		while (!u.monitor_red->is_done_all() && !u.terminal->is_interrupt())
@@ -207,13 +210,13 @@ void init_modules_and_utils(const params &p, modules &m, utils &u)
 	p.channel->seed += tid;
 
 	m.source        = std::unique_ptr<module::Source      <>>(p.source ->build());
-	m.codec         = std::unique_ptr<module::Codec_SIHO  <>>(p.codec  ->build());
+	m.codec         = std::unique_ptr<tools ::Codec_SIHO  <>>(p.codec  ->build());
 	m.modem         = std::unique_ptr<module::Modem       <>>(p.modem  ->build());
 	m.channel       = std::unique_ptr<module::Channel     <>>(p.channel->build());
 	u.monitors[tid] = std::unique_ptr<module::Monitor_BFER<>>(p.monitor->build());
 	m.monitor       = u.monitors[tid].get();
-	m.encoder       = m.codec->get_encoder().get();
-	m.decoder       = m.codec->get_decoder_siho().get();
+	m.encoder       = &m.codec->get_encoder();
+	m.decoder       = &m.codec->get_decoder_siho();
 
 	m.list = { m.source.get(), m.modem.get(), m.channel.get(), m.monitor, m.encoder, m.decoder };
 	u.modules[tid] = m.list;
@@ -232,9 +235,6 @@ void init_modules_and_utils(const params &p, modules &m, utils &u)
 			if (!tsk->is_debug() && !tsk->is_stats())
 				tsk->set_fast(true);
 		}
-
-	// reset the memory of the decoder after the end of each communication
-	m.monitor->add_handler_check(std::bind(&module::Decoder::reset, m.decoder));
 }
 
 void init_utils(const params &p, utils &u)
