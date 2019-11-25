@@ -66,7 +66,7 @@ int main(int argc, char** argv)
 	// display the legend in the terminal
 	u.terminal->legend();
 
-	// set the noise and register modules to "noise changed" callback
+	// set the noise and register modules to "noise changed" callback | /!\ the callbacks are not valid for the chain |
 	m.codec  ->set_noise(*u.noise); u.noise->record_callback_changed([&m](){ m.codec  ->noise_changed(); });
 	m.modem  ->set_noise(*u.noise); u.noise->record_callback_changed([&m](){ m.modem  ->noise_changed(); });
 	m.channel->set_noise(*u.noise); u.noise->record_callback_changed([&m](){ m.channel->noise_changed(); });
@@ -80,6 +80,9 @@ int main(int argc, char** argv)
 	(*m.decoder)[dec::sck::decode_siho ::Y_N ].bind((*m.modem  )[mdm::sck::demodulate ::Y_N2]);
 	(*m.monitor)[mnt::sck::check_errors::U   ].bind((*m.source )[src::sck::generate   ::U_K ]);
 	(*m.monitor)[mnt::sck::check_errors::V   ].bind((*m.decoder)[dec::sck::decode_siho::V_K ]);
+
+	// create a chain from the previous binding
+	auto chain = Chain((*m.source)[src::tsk::generate], 1);
 
 	// loop over the various SNRs
 	for (auto ebn0 = p.ebn0_min; ebn0 < p.ebn0_max; ebn0 += p.ebn0_step)
@@ -97,8 +100,7 @@ int main(int argc, char** argv)
 			return m.monitor->fe_limit_achieved() || u.terminal->is_interrupt();
 		};
 
-		// run the simulation chain from the source
-		auto chain = Chain((*m.source)[src::tsk::generate], 1);
+		// run the simulation chain
 		chain.exec(stop_condition);
 
 		// display the performance (BER and FER) in the terminal
