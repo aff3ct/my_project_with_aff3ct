@@ -5,16 +5,18 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <thread>
 
 #include <aff3ct.hpp>
 using namespace aff3ct;
 
 struct params
 {
-	float ebn0_min  =  0.00f; // minimum SNR value
-	float ebn0_max  = 10.01f; // maximum SNR value
-	float ebn0_step =  1.00f; // SNR step
-	float R;                  // code rate (R=K/N)
+	size_t n_threads = std::thread::hardware_concurrency() ? std::thread::hardware_concurrency() : 1;
+	float  ebn0_min  =  0.00f; // minimum SNR value
+	float  ebn0_max  = 10.01f; // maximum SNR value
+	float  ebn0_step =  1.00f; // SNR step
+	float  R;                  // code rate (R=K/N)
 
 	std::unique_ptr<factory::Source          > source;
 	std::unique_ptr<factory::Codec_repetition> codec;
@@ -34,15 +36,20 @@ struct modules
 	std::unique_ptr<tools ::Codec_SIHO<>>   codec;
 	                module::Encoder<>*      encoder;
 	                module::Decoder_SIHO<>* decoder;
-	std::vector<const module::Module*>      list; // list of module pointers declared in this structure
 };
 void init_modules(const params &p, modules &m);
 
+namespace aff3ct { namespace tools {
+using Monitor_BFER_reduction = Monitor_reduction_M<module::Monitor_BFER<>>;
+} }
+
 struct utils
 {
-	            std::unique_ptr<tools::Sigma<> >  noise;     // a sigma noise type
-	std::vector<std::unique_ptr<tools::Reporter>> reporters; // list of reporters dispayed in the terminal
-	            std::unique_ptr<tools::Terminal>  terminal;  // manage the output text in the terminal
+	            std::unique_ptr<tools ::Sigma<>               >  noise;       // a sigma noise type
+	std::vector<std::unique_ptr<tools ::Reporter              >> reporters;   // list of reporters displayed in the terminal
+	            std::unique_ptr<tools ::Terminal              >  terminal;    // manage the output text in the terminal
+	            std::unique_ptr<tools ::Monitor_BFER_reduction>  monitor_red; // main monitor object that reduce all the thread monitors
+	            std::unique_ptr<module::Chain                 >  chain;
 };
 void init_utils(const params &p, const modules &m, utils &u);
 
@@ -61,15 +68,6 @@ int main(int argc, char** argv)
 
 	params  p; init_params (argc, argv, p); // create and initialize the parameters from the command line with factories
 	modules m; init_modules(p, m         ); // create and initialize the modules
-	utils   u; init_utils  (p, m, u      ); // create and initialize the utils
-
-	// display the legend in the terminal
-	u.terminal->legend();
-
-	// set the noise and register modules to "noise changed" callback | /!\ the callbacks are not valid for the chain |
-	m.codec  ->set_noise(*u.noise); u.noise->record_callback_changed([&m](){ m.codec  ->noise_changed(); });
-	m.modem  ->set_noise(*u.noise); u.noise->record_callback_changed([&m](){ m.modem  ->noise_changed(); });
-	m.channel->set_noise(*u.noise); u.noise->record_callback_changed([&m](){ m.channel->noise_changed(); });
 
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	using namespace module;
@@ -81,8 +79,25 @@ int main(int argc, char** argv)
 	(*m.monitor)[mnt::sck::check_errors::U   ].bind((*m.source )[src::sck::generate   ::U_K ]);
 	(*m.monitor)[mnt::sck::check_errors::V   ].bind((*m.decoder)[dec::sck::decode_siho::V_K ]);
 
-	// create a chain from the previous binding
-	auto chain = Chain((*m.source)[src::tsk::generate], 1);
+	utils u; init_utils(p, m, u); // create and initialize the utils
+
+	// set the noise
+	m.codec->set_noise(*u.noise);
+	for (auto &x : u.chain->get_modules<module::Modem  <>>()) x->set_noise(*u.noise);
+	for (auto &x : u.chain->get_modules<module::Channel<>>()) x->set_noise(*u.noise);
+
+	// register modules and tools to "noise changed" callback
+	u.noise->record_callback_changed([&m](){ m.codec->noise_changed(); });
+	for (auto &x : u.chain->get_modules<Modem<>>())
+		u.noise->record_callback_changed([x](){ x->noise_changed(); });
+	for (auto &x : u.chain->get_modules<Channel<>>())
+		u.noise->record_callback_changed([x](){ x->noise_changed(); });
+	// specific to polar codes
+	for (auto &x : u.chain->get_modules<tools::Frozenbits_notifier>())
+		u.noise->record_callback_changed([x](){ x->notify_frozenbits_update(); });
+
+	// display the legend in the terminal
+	u.terminal->legend();
 
 	// loop over the various SNRs
 	for (auto ebn0 = p.ebn0_min; ebn0 < p.ebn0_max; ebn0 += p.ebn0_step)
@@ -96,18 +111,17 @@ int main(int argc, char** argv)
 		// display the performance (BER and FER) in real time (in a separate thread)
 		u.terminal->start_temp_report();
 
-		std::function<bool(const std::vector<int>&)> stop_condition = [&m, &u](const std::vector<int>& statuses) {
-			return m.monitor->fe_limit_achieved() || u.terminal->is_interrupt();
-		};
+		// execute the simulation chain (multi-threaded)
+		u.chain->exec([&u]() { return u.monitor_red->is_done_all() || u.terminal->is_interrupt(); });
 
-		// run the simulation chain
-		chain.exec(stop_condition);
+		// final reduction
+		u.monitor_red->is_done_all(true, true);
 
 		// display the performance (BER and FER) in the terminal
 		u.terminal->final_report();
 
 		// reset the monitor and the terminal for the next SNR
-		m.monitor->reset();
+		u.monitor_red->reset_all();
 		u.terminal->reset();
 
 		// if user pressed Ctrl+c twice, exit the SNRs loop
@@ -116,7 +130,7 @@ int main(int argc, char** argv)
 
 	// display the statistics of the tasks (if enabled)
 	std::cout << "#" << std::endl;
-	tools::Stats::show(m.list, true);
+	tools::Stats::show(u.chain->get_modules_per_types(), true);
 	std::cout << "# End of the simulation" << std::endl;
 
 	return 0;
@@ -162,10 +176,11 @@ void init_modules(const params &p, modules &m)
 	m.encoder = &m.codec->get_encoder();
 	m.decoder = &m.codec->get_decoder_siho();
 
-	m.list = { m.source.get(), m.modem.get(), m.channel.get(), m.monitor.get(), m.encoder, m.decoder };
+	std::vector<const module::Module*> list = { m.source.get(), m.modem.get(), m.channel.get(), m.monitor.get(),
+	                                            m.encoder, m.decoder };
 
 	// configuration of the module tasks
-	for (auto& mod : m.list)
+	for (auto& mod : list)
 		for (auto& tsk : mod->tasks)
 		{
 			tsk->set_autoalloc  (true ); // enable the automatic allocation of the data in the tasks
@@ -182,14 +197,19 @@ void init_modules(const params &p, modules &m)
 
 void init_utils(const params &p, const modules &m, utils &u)
 {
+	u.chain = std::unique_ptr<module::Chain>(new module::Chain((*m.source)[module::src::tsk::generate], p.n_threads));
+	// allocate a common monitor module to reduce all the monitors
+	u.monitor_red = std::unique_ptr<tools::Monitor_BFER_reduction>(new tools::Monitor_BFER_reduction(
+		u.chain->get_modules<module::Monitor_BFER<>>()));
+	u.monitor_red->set_reduce_frequency(std::chrono::milliseconds(500));
 	// create a sigma noise type
 	u.noise = std::unique_ptr<tools::Sigma<>>(new tools::Sigma<>());
 	// report the noise values (Es/N0 and Eb/N0)
 	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_noise<>(*u.noise)));
 	// report the bit/frame error rates
-	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_BFER<>(*m.monitor)));
+	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_BFER<>(*u.monitor_red)));
 	// report the simulation throughputs
-	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_throughput<>(*m.monitor)));
+	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_throughput<>(*u.monitor_red)));
 	// create a terminal that will display the collected data from the reporters
 	u.terminal = std::unique_ptr<tools::Terminal>(p.terminal->build(u.reporters));
 }
