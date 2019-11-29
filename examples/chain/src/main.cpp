@@ -40,7 +40,7 @@ struct modules
 void init_modules(const params &p, modules &m);
 
 namespace aff3ct { namespace tools {
-using Monitor_BFER_reduction = Monitor_reduction_M<module::Monitor_BFER<>>;
+using Monitor_BFER_reduction = Monitor_reduction<module::Monitor_BFER<>>;
 } }
 
 struct utils
@@ -112,16 +112,16 @@ int main(int argc, char** argv)
 		u.terminal->start_temp_report();
 
 		// execute the simulation chain (multi-threaded)
-		u.chain->exec([&u]() { return u.monitor_red->is_done_all() || u.terminal->is_interrupt(); });
+		u.chain->exec([&u]() { return u.monitor_red->is_done() || u.terminal->is_interrupt(); });
 
 		// final reduction
-		u.monitor_red->is_done_all(true, true);
+		u.monitor_red->reduce();
 
 		// display the performance (BER and FER) in the terminal
 		u.terminal->final_report();
 
 		// reset the monitor and the terminal for the next SNR
-		u.monitor_red->reset_all();
+		u.monitor_red->reset();
 		u.terminal->reset();
 
 		// if user pressed Ctrl+c twice, exit the SNRs loop
