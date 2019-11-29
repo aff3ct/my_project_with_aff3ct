@@ -83,18 +83,18 @@ int main(int argc, char** argv)
 
 	// set the noise
 	m.codec->set_noise(*u.noise);
-	for (auto &x : u.chain->get_modules<module::Modem  <>>()) x->set_noise(*u.noise);
-	for (auto &x : u.chain->get_modules<module::Channel<>>()) x->set_noise(*u.noise);
+	for (auto &m : u.chain->get_modules<tools::Interface_get_set_noise>())
+		m->set_noise(*u.noise);
 
-	// register modules and tools to "noise changed" callback
-	u.noise->record_callback_changed([&m](){ m.codec->noise_changed(); });
-	for (auto &x : u.chain->get_modules<Modem<>>())
-		u.noise->record_callback_changed([x](){ x->noise_changed(); });
-	for (auto &x : u.chain->get_modules<Channel<>>())
-		u.noise->record_callback_changed([x](){ x->noise_changed(); });
-	// specific to polar codes
-	for (auto &x : u.chain->get_modules<tools::Frozenbits_notifier>())
-		u.noise->record_callback_changed([x](){ x->notify_frozenbits_update(); });
+	// registering to noise updates
+	u.noise->record_callback_update([&m](){ m.codec->notify_noise_update(); });
+	for (auto &m : u.chain->get_modules<tools::Interface_notify_noise_update>())
+		u.noise->record_callback_update([m](){ m->notify_noise_update(); });
+
+	// set different seeds in the modules that uses PRNG
+	std::mt19937 prng;
+	for (auto &m : u.chain->get_modules<tools::Interface_set_seed>())
+		m->set_seed(prng());
 
 	// display the legend in the terminal
 	u.terminal->legend();
@@ -187,7 +187,7 @@ void init_modules(const params &p, modules &m)
 			tsk->set_autoexec   (false); // disable the auto execution mode of the tasks
 			tsk->set_debug      (false); // disable the debug mode
 			tsk->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
-			tsk->set_stats      (false); // enable the statistics
+			tsk->set_stats      (true ); // enable the statistics
 
 			// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
 			if (!tsk->is_debug() && !tsk->is_stats())

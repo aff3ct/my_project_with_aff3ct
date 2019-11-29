@@ -74,9 +74,9 @@ int main(int argc, char** argv)
 	u.terminal->legend();
 
 	// set the noise and register modules to "noise changed" callback
-	m.codec      ->set_noise(*u.noise); u.noise->record_callback_changed([&m](){ m.codec      ->noise_changed(); });
-	m.demodulator->set_noise(*u.noise); u.noise->record_callback_changed([&m](){ m.demodulator->noise_changed(); });
-	m.channel    ->set_noise(*u.noise); u.noise->record_callback_changed([&m](){ m.channel    ->noise_changed(); });
+	m.codec      ->set_noise(*u.noise); u.noise->record_callback_update([&m](){ m.codec      ->notify_noise_update(); });
+	m.demodulator->set_noise(*u.noise); u.noise->record_callback_update([&m](){ m.demodulator->notify_noise_update(); });
+	m.channel    ->set_noise(*u.noise); u.noise->record_callback_update([&m](){ m.channel    ->notify_noise_update(); });
 
 	using namespace module;
 	tools::Pipeline_block pb_source     ((*m.source     )[src::tsk::generate    ], p.pb_buffer_size, p.pb_n_threads);

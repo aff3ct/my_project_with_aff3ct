@@ -100,9 +100,9 @@ int main(int argc, char** argv)
 }
 
 	// set the noise and register modules to "noise changed" callback
-	m.codec  ->set_noise(*u.noise); u.noise->record_callback_changed([&m](){ m.codec  ->noise_changed(); });
-	m.modem  ->set_noise(*u.noise); u.noise->record_callback_changed([&m](){ m.modem  ->noise_changed(); });
-	m.channel->set_noise(*u.noise); u.noise->record_callback_changed([&m](){ m.channel->noise_changed(); });
+	m.codec  ->set_noise(*u.noise); u.noise->record_callback_update([&m](){ m.codec  ->notify_noise_update(); });
+	m.modem  ->set_noise(*u.noise); u.noise->record_callback_update([&m](){ m.modem  ->notify_noise_update(); });
+	m.channel->set_noise(*u.noise); u.noise->record_callback_update([&m](){ m.channel->notify_noise_update(); });
 
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	using namespace module;
