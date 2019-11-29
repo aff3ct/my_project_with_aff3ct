@@ -12,7 +12,7 @@ using namespace aff3ct;
 
 struct params
 {
-	size_t n_threads = std::thread::hardware_concurrency() ? std::thread::hardware_concurrency() : 1;
+	size_t n_threads = std::thread::hardware_concurrency();
 	float  ebn0_min  =  0.00f; // minimum SNR value
 	float  ebn0_max  = 10.01f; // maximum SNR value
 	float  ebn0_step =  1.00f; // SNR step
@@ -197,7 +197,8 @@ void init_modules(const params &p, modules &m)
 
 void init_utils(const params &p, const modules &m, utils &u)
 {
-	u.chain = std::unique_ptr<module::Chain>(new module::Chain((*m.source)[module::src::tsk::generate], p.n_threads));
+	u.chain = std::unique_ptr<module::Chain>(new module::Chain((*m.source)[module::src::tsk::generate],
+		p.n_threads ? p.n_threads : 1));
 	// allocate a common monitor module to reduce all the monitors
 	u.monitor_red = std::unique_ptr<tools::Monitor_BFER_reduction>(new tools::Monitor_BFER_reduction(
 		u.chain->get_modules<module::Monitor_BFER<>>()));
