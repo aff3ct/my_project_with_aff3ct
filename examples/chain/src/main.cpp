@@ -45,11 +45,11 @@ using Monitor_BFER_reduction = Monitor_reduction<module::Monitor_BFER<>>;
 
 struct utils
 {
-	            std::unique_ptr<tools ::Sigma<>               >  noise;       // a sigma noise type
-	std::vector<std::unique_ptr<tools ::Reporter              >> reporters;   // list of reporters displayed in the terminal
-	            std::unique_ptr<tools ::Terminal              >  terminal;    // manage the output text in the terminal
-	            std::unique_ptr<tools ::Monitor_BFER_reduction>  monitor_red; // main monitor object that reduce all the thread monitors
-	            std::unique_ptr<module::Chain                 >  chain;
+	            std::unique_ptr<tools::Sigma<>               >  noise;       // a sigma noise type
+	std::vector<std::unique_ptr<tools::Reporter              >> reporters;   // list of reporters displayed in the terminal
+	            std::unique_ptr<tools::Terminal              >  terminal;    // manage the output text in the terminal
+	            std::unique_ptr<tools::Monitor_BFER_reduction>  monitor_red; // main monitor object that reduce all the thread monitors
+	            std::unique_ptr<tools::Chain                 >  chain;
 };
 void init_utils(const params &p, const modules &m, utils &u);
 
@@ -197,7 +197,7 @@ void init_modules(const params &p, modules &m)
 
 void init_utils(const params &p, const modules &m, utils &u)
 {
-	u.chain = std::unique_ptr<module::Chain>(new module::Chain((*m.source)[module::src::tsk::generate],
+	u.chain = std::unique_ptr<tools::Chain>(new tools::Chain((*m.source)[module::src::tsk::generate],
 		p.n_threads ? p.n_threads : 1));
 	// allocate a common monitor module to reduce all the monitors
 	u.monitor_red = std::unique_ptr<tools::Monitor_BFER_reduction>(new tools::Monitor_BFER_reduction(
