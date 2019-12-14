@@ -166,7 +166,6 @@ void init_modules(const params &p, modules &m)
 		for (auto& tsk : mod->tasks)
 		{
 			tsk->set_autoalloc  (true ); // enable the automatic allocation of the data in the tasks
-			tsk->set_autoexec   (false); // disable the auto execution mode of the tasks
 			tsk->set_debug      (false); // disable the debug mode
 			tsk->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
 			tsk->set_stats      (true ); // enable the statistics

@@ -1,3 +1,4 @@
+#include <type_traits>
 #include <functional>
 #include <exception>
 #include <iostream>
@@ -6,9 +7,12 @@
 #include <vector>
 #include <string>
 #include <thread>
+#include <random>
 
 #include <aff3ct.hpp>
 using namespace aff3ct;
+
+// #define SUB_CHAIN
 
 struct params
 {
@@ -71,13 +75,27 @@ int main(int argc, char** argv)
 
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	using namespace module;
-	(*m.encoder)[enc::sck::encode      ::U_K ].bind((*m.source )[src::sck::generate   ::U_K ]);
-	(*m.modem  )[mdm::sck::modulate    ::X_N1].bind((*m.encoder)[enc::sck::encode     ::X_N ]);
-	(*m.channel)[chn::sck::add_noise   ::X_N ].bind((*m.modem  )[mdm::sck::modulate   ::X_N2]);
-	(*m.modem  )[mdm::sck::demodulate  ::Y_N1].bind((*m.channel)[chn::sck::add_noise  ::Y_N ]);
-	(*m.decoder)[dec::sck::decode_siho ::Y_N ].bind((*m.modem  )[mdm::sck::demodulate ::Y_N2]);
-	(*m.monitor)[mnt::sck::check_errors::U   ].bind((*m.source )[src::sck::generate   ::U_K ]);
-	(*m.monitor)[mnt::sck::check_errors::V   ].bind((*m.decoder)[dec::sck::decode_siho::V_K ]);
+#ifndef SUB_CHAIN
+	(*m.encoder)[enc::sck::encode      ::U_K ].bind((*m.source )[src::sck::generate   ::U_K ], false);
+	(*m.modem  )[mdm::sck::modulate    ::X_N1].bind((*m.encoder)[enc::sck::encode     ::X_N ], false);
+	(*m.channel)[chn::sck::add_noise   ::X_N ].bind((*m.modem  )[mdm::sck::modulate   ::X_N2], false);
+	(*m.modem  )[mdm::sck::demodulate  ::Y_N1].bind((*m.channel)[chn::sck::add_noise  ::Y_N ], false);
+	(*m.decoder)[dec::sck::decode_siho ::Y_N ].bind((*m.modem  )[mdm::sck::demodulate ::Y_N2], false);
+	(*m.monitor)[mnt::sck::check_errors::U   ].bind((*m.source )[src::sck::generate   ::U_K ], false);
+	(*m.monitor)[mnt::sck::check_errors::V   ].bind((*m.decoder)[dec::sck::decode_siho::V_K ], false);
+#else
+	(*m.modem  )[mdm::sck::modulate    ::X_N1].bind((*m.encoder)[enc::sck::encode     ::X_N ], false);
+	(*m.channel)[chn::sck::add_noise   ::X_N ].bind((*m.modem  )[mdm::sck::modulate   ::X_N2], false);
+	(*m.modem  )[mdm::sck::demodulate  ::Y_N1].bind((*m.channel)[chn::sck::add_noise  ::Y_N ], false);
+	(*m.decoder)[dec::sck::decode_siho ::Y_N ].bind((*m.modem  )[mdm::sck::demodulate ::Y_N2], false);
+
+	tools::Chain chain((*m.encoder)[enc::tsk::encode], (*m.decoder)[dec::tsk::decode_siho]);
+	module::Subchain schain(chain);
+
+	schain      [sch::tsk::exec        ][0].bind((*m.source)[src::sck::generate::U_K], false);
+	(*m.monitor)[mnt::sck::check_errors::U].bind((*m.source)[src::sck::generate::U_K], false);
+	(*m.monitor)[mnt::sck::check_errors::V].bind(schain     [sch::tsk::exec    ][1  ], false);
+#endif
 
 	utils u; init_utils(p, m, u); // create and initialize the utils
 
@@ -175,24 +193,6 @@ void init_modules(const params &p, modules &m)
 	m.monitor = std::unique_ptr<module::Monitor_BFER<>>(p.monitor->build());
 	m.encoder = &m.codec->get_encoder();
 	m.decoder = &m.codec->get_decoder_siho();
-
-	std::vector<const module::Module*> list = { m.source.get(), m.modem.get(), m.channel.get(), m.monitor.get(),
-	                                            m.encoder, m.decoder };
-
-	// configuration of the module tasks
-	for (auto& mod : list)
-		for (auto& tsk : mod->tasks)
-		{
-			tsk->set_autoalloc  (true ); // enable the automatic allocation of the data in the tasks
-			tsk->set_autoexec   (false); // disable the auto execution mode of the tasks
-			tsk->set_debug      (false); // disable the debug mode
-			tsk->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
-			tsk->set_stats      (true ); // enable the statistics
-
-			// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
-			if (!tsk->is_debug() && !tsk->is_stats())
-				tsk->set_fast(true);
-		}
 }
 
 void init_utils(const params &p, const modules &m, utils &u)
@@ -213,4 +213,17 @@ void init_utils(const params &p, const modules &m, utils &u)
 	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_throughput<>(*u.monitor_red)));
 	// create a terminal that will display the collected data from the reporters
 	u.terminal = std::unique_ptr<tools::Terminal>(p.terminal->build(u.reporters));
+
+	// configuration of the chain tasks
+	for (auto& mod : u.chain->get_modules<module::Module>(false))
+		for (auto& tsk : mod->tasks)
+		{
+			tsk->set_debug      (false); // disable the debug mode
+			tsk->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
+			tsk->set_stats      (true ); // enable the statistics
+
+			// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
+			if (!tsk->is_debug() && !tsk->is_stats())
+				tsk->set_fast(true);
+		}
 }

@@ -33,7 +33,6 @@ Pipeline_block
 
 	auto task_cpy = std::unique_ptr<module::Task>(task.clone());
 	task_cpy->set_autoalloc(false);
-	task_cpy->set_autoexec (false);
 
 	for (size_t tid = 0; tid < n_threads; tid++)
 		tasks.push_back(std::shared_ptr<module::Task>(task_cpy->clone()));
