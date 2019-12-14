@@ -12,8 +12,6 @@
 #include <aff3ct.hpp>
 using namespace aff3ct;
 
-// #define SUB_CHAIN
-
 struct params
 {
 	size_t n_threads = std::thread::hardware_concurrency();
@@ -75,7 +73,6 @@ int main(int argc, char** argv)
 
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	using namespace module;
-#ifndef SUB_CHAIN
 	(*m.encoder)[enc::sck::encode      ::U_K ].bind((*m.source )[src::sck::generate   ::U_K ], false);
 	(*m.modem  )[mdm::sck::modulate    ::X_N1].bind((*m.encoder)[enc::sck::encode     ::X_N ], false);
 	(*m.channel)[chn::sck::add_noise   ::X_N ].bind((*m.modem  )[mdm::sck::modulate   ::X_N2], false);
@@ -83,19 +80,6 @@ int main(int argc, char** argv)
 	(*m.decoder)[dec::sck::decode_siho ::Y_N ].bind((*m.modem  )[mdm::sck::demodulate ::Y_N2], false);
 	(*m.monitor)[mnt::sck::check_errors::U   ].bind((*m.source )[src::sck::generate   ::U_K ], false);
 	(*m.monitor)[mnt::sck::check_errors::V   ].bind((*m.decoder)[dec::sck::decode_siho::V_K ], false);
-#else
-	(*m.modem  )[mdm::sck::modulate    ::X_N1].bind((*m.encoder)[enc::sck::encode     ::X_N ], false);
-	(*m.channel)[chn::sck::add_noise   ::X_N ].bind((*m.modem  )[mdm::sck::modulate   ::X_N2], false);
-	(*m.modem  )[mdm::sck::demodulate  ::Y_N1].bind((*m.channel)[chn::sck::add_noise  ::Y_N ], false);
-	(*m.decoder)[dec::sck::decode_siho ::Y_N ].bind((*m.modem  )[mdm::sck::demodulate ::Y_N2], false);
-
-	tools::Chain chain((*m.encoder)[enc::tsk::encode], (*m.decoder)[dec::tsk::decode_siho]);
-	module::Subchain schain(chain);
-
-	schain      [sch::tsk::exec        ][0].bind((*m.source)[src::sck::generate::U_K], false);
-	(*m.monitor)[mnt::sck::check_errors::U].bind((*m.source)[src::sck::generate::U_K], false);
-	(*m.monitor)[mnt::sck::check_errors::V].bind(schain     [sch::tsk::exec    ][1  ], false);
-#endif
 
 	utils u; init_utils(p, m, u); // create and initialize the utils
 
