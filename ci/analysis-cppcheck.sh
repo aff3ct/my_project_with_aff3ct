@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 
-examples=(bootstrap tasks systemc factory pipeline)
+examples=(bootstrap tasks systemc factory chain)
 
 touch src_files.txt
 for example in ${examples[*]}; do
