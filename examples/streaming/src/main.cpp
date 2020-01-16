@@ -85,7 +85,7 @@ int main(int argc, char** argv)
 	using namespace module;
 
 #ifdef ADAPTOR
-	(*m.adaptor_1_to_n)[adp::sck::put_1       ::in  ].bind((*m.source        )[src::sck::generate   ::U_K ]);
+	(*m.adaptor_1_to_n)[adp::sck::push_1      ::in  ].bind((*m.source        )[src::sck::generate   ::U_K ]);
 	(*m.encoder       )[enc::sck::encode      ::U_K ].bind((*m.adaptor_1_to_n)[adp::sck::pull_n     ::out ]);
 	(*m.modem         )[mdm::sck::modulate    ::X_N1].bind((*m.encoder       )[enc::sck::encode     ::X_N ]);
 	(*m.channel       )[chn::sck::add_noise   ::X_N ].bind((*m.modem         )[mdm::sck::modulate   ::X_N2]);
@@ -93,7 +93,7 @@ int main(int argc, char** argv)
 	(*m.decoder       )[dec::sck::decode_siho ::Y_N ].bind((*m.modem         )[mdm::sck::demodulate ::Y_N2]);
 	(*m.monitor       )[mnt::sck::check_errors::U   ].bind((*m.adaptor_1_to_n)[adp::sck::pull_n     ::out ]);
 	(*m.monitor       )[mnt::sck::check_errors::V   ].bind((*m.decoder       )[dec::sck::decode_siho::V_K ]);
-	(*m.adaptor_n_to_1)[adp::sck::put_n       ::in  ].bind((*m.decoder       )[dec::sck::decode_siho::V_K ]);
+	(*m.adaptor_n_to_1)[adp::sck::push_n      ::in  ].bind((*m.decoder       )[dec::sck::decode_siho::V_K ]);
 	(*m.sink          )[snk::sck::send        ::V   ].bind((*m.adaptor_n_to_1)[adp::sck::pull_1     ::out ]);
 #else
 	(*m.encoder)[enc::sck::encode      ::U_K ].bind((*m.source )[src::sck::generate   ::U_K ]);
@@ -194,13 +194,13 @@ int main(int argc, char** argv)
 	// display the statistics of the tasks (if enabled)
 #ifdef ADAPTOR
 	std::cout << "#" << std::endl << "# Chain pre: " << std::endl;
-	tools::Stats::show(u.chain_pre->get_modules_per_types(), true);
+	tools::Stats::show(u.chain_pre->get_tasks_per_types(), true);
 #endif
 	std::cout << "#" << std::endl << "# Chain main: " << std::endl;
-	tools::Stats::show(u.chain_main->get_modules_per_types(), true);
+	tools::Stats::show(u.chain_main->get_tasks_per_types(), true);
 #ifdef ADAPTOR
 	std::cout << "#" << std::endl << "# Chain post: " << std::endl;
-	tools::Stats::show(u.chain_post->get_modules_per_types(), true);
+	tools::Stats::show(u.chain_post->get_tasks_per_types(), true);
 #endif
 	std::cout << "# End of the simulation" << std::endl;
 
@@ -253,13 +253,13 @@ void init_modules(const params &p, modules &m)
 #ifdef ADAPTOR
 	m.adaptor_1_to_n = std::unique_ptr<module::Adaptor_1_to_n>(new module::Adaptor_1_to_n(p.codec->enc->K,
 	                                                                                      typeid(int),
-	                                                                                      16,
+	                                                                                      1,
 	                                                                                      false,
 	                                                                                      p.source->n_frames));
 
 	m.adaptor_n_to_1 = std::unique_ptr<module::Adaptor_n_to_1>(new module::Adaptor_n_to_1(p.codec->enc->K,
 	                                                                                      typeid(int),
-	                                                                                      16,
+	                                                                                      1,
 	                                                                                      false,
 	                                                                                      p.source->n_frames));
 
@@ -272,14 +272,14 @@ void init_utils(const params &p, const modules &m, utils &u)
 {
 #ifdef ADAPTOR
 	u.chain_pre = std::unique_ptr<tools::Chain>(new tools::Chain((*m.source        )[module::src::tsk::generate],
-	                                                             (*m.adaptor_1_to_n)[module::adp::tsk::put_1   ],
+	                                                             (*m.adaptor_1_to_n)[module::adp::tsk::push_1  ],
 	                                                             1));
 
 	std::ofstream f_pre("chain_pre.dot");
 	u.chain_pre->export_dot(f_pre);
 
 	u.chain_main = std::unique_ptr<tools::Chain>(new tools::Chain((*m.adaptor_1_to_n)[module::adp::tsk::pull_n],
-	                                                              (*m.adaptor_n_to_1)[module::adp::tsk::put_n ],
+	                                                              (*m.adaptor_n_to_1)[module::adp::tsk::push_n],
 	                                                              p.n_threads ? p.n_threads : 1));
 
 	std::ofstream f_main("chain_main.dot");
