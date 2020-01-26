@@ -85,16 +85,16 @@ int main(int argc, char** argv)
 	using namespace module;
 
 #ifdef ADAPTOR
-	(*m.adaptor_1_to_n)[adp::sck::push_1      ::in  ].bind((*m.source        )[src::sck::generate   ::U_K ]);
-	(*m.encoder       )[enc::sck::encode      ::U_K ].bind((*m.adaptor_1_to_n)[adp::sck::pull_n     ::out ]);
+	(*m.adaptor_1_to_n)[adp::sck::push_1      ::in1 ].bind((*m.source        )[src::sck::generate   ::U_K ]);
+	(*m.encoder       )[enc::sck::encode      ::U_K ].bind((*m.adaptor_1_to_n)[adp::sck::pull_n     ::out1]);
 	(*m.modem         )[mdm::sck::modulate    ::X_N1].bind((*m.encoder       )[enc::sck::encode     ::X_N ]);
 	(*m.channel       )[chn::sck::add_noise   ::X_N ].bind((*m.modem         )[mdm::sck::modulate   ::X_N2]);
 	(*m.modem         )[mdm::sck::demodulate  ::Y_N1].bind((*m.channel       )[chn::sck::add_noise  ::Y_N ]);
 	(*m.decoder       )[dec::sck::decode_siho ::Y_N ].bind((*m.modem         )[mdm::sck::demodulate ::Y_N2]);
-	(*m.monitor       )[mnt::sck::check_errors::U   ].bind((*m.adaptor_1_to_n)[adp::sck::pull_n     ::out ]);
+	(*m.monitor       )[mnt::sck::check_errors::U   ].bind((*m.adaptor_1_to_n)[adp::sck::pull_n     ::out1]);
 	(*m.monitor       )[mnt::sck::check_errors::V   ].bind((*m.decoder       )[dec::sck::decode_siho::V_K ]);
-	(*m.adaptor_n_to_1)[adp::sck::push_n      ::in  ].bind((*m.decoder       )[dec::sck::decode_siho::V_K ]);
-	(*m.sink          )[snk::sck::send        ::V   ].bind((*m.adaptor_n_to_1)[adp::sck::pull_1     ::out ]);
+	(*m.adaptor_n_to_1)[adp::sck::push_n      ::in1 ].bind((*m.decoder       )[dec::sck::decode_siho::V_K ]);
+	(*m.sink          )[snk::sck::send        ::V   ].bind((*m.adaptor_n_to_1)[adp::sck::pull_1     ::out1]);
 #else
 	(*m.encoder)[enc::sck::encode      ::U_K ].bind((*m.source )[src::sck::generate   ::U_K ]);
 	(*m.modem  )[mdm::sck::modulate    ::X_N1].bind((*m.encoder)[enc::sck::encode     ::X_N ]);
