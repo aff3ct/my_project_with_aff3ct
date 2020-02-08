@@ -131,10 +131,8 @@ int main(int argc, char** argv)
 	{
 		for (auto &m : u.chain_pre->get_modules<tools::Interface_waiting>())
 			m->cancel_waiting();
-
 		for (auto &m : u.chain_main->get_modules<tools::Interface_waiting>())
 			m->cancel_waiting();
-
 		for (auto &m : u.chain_post->get_modules<tools::Interface_waiting>())
 			m->cancel_waiting();
 	};
@@ -316,43 +314,40 @@ void init_utils(const params &p, const modules &m, utils &u)
 	u.terminal = std::unique_ptr<tools::Terminal>(p.terminal->build(u.reporters));
 
 	// configuration of the chain tasks
-	for (auto& mod : u.chain_main->get_modules<module::Module>(false))
-		for (auto& tsk : mod->tasks)
-		{
-			tsk->set_debug      (false); // disable the debug mode
-			tsk->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
-			tsk->set_stats      (true ); // enable the statistics
+	for (auto& type : u.chain_main->get_tasks_per_types()) for (auto& tsk : type)
+	{
+		tsk->set_debug      (false); // disable the debug mode
+		tsk->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
+		tsk->set_stats      (true ); // enable the statistics
 
-			// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
-			if (!tsk->is_debug() && !tsk->is_stats())
-				tsk->set_fast(true);
-		}
+		// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
+		if (!tsk->is_debug() && !tsk->is_stats())
+			tsk->set_fast(true);
+	}
 
 #ifdef ADAPTOR
 	// configuration of the chain tasks
-	for (auto& mod : u.chain_pre->get_modules<module::Module>(false))
-		for (auto& tsk : mod->tasks)
-		{
-			tsk->set_debug      (false); // disable the debug mode
-			tsk->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
-			tsk->set_stats      (true ); // enable the statistics
+	for (auto& type : u.chain_pre->get_tasks_per_types()) for (auto& tsk : type)
+	{
+		tsk->set_debug      (false); // disable the debug mode
+		tsk->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
+		tsk->set_stats      (true ); // enable the statistics
 
-			// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
-			if (!tsk->is_debug() && !tsk->is_stats())
-				tsk->set_fast(true);
-		}
+		// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
+		if (!tsk->is_debug() && !tsk->is_stats())
+			tsk->set_fast(true);
+	}
 
 	// configuration of the chain tasks
-	for (auto& mod : u.chain_post->get_modules<module::Module>(false))
-		for (auto& tsk : mod->tasks)
-		{
-			tsk->set_debug      (false); // disable the debug mode
-			tsk->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
-			tsk->set_stats      (true ); // enable the statistics
+	for (auto& type : u.chain_post->get_tasks_per_types()) for (auto& tsk : type)
+	{
+		tsk->set_debug      (false); // disable the debug mode
+		tsk->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
+		tsk->set_stats      (true ); // enable the statistics
 
-			// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
-			if (!tsk->is_debug() && !tsk->is_stats())
-				tsk->set_fast(true);
-		}
+		// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
+		if (!tsk->is_debug() && !tsk->is_stats())
+			tsk->set_fast(true);
+	}
 #endif
 }
