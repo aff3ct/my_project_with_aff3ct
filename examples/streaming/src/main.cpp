@@ -251,13 +251,13 @@ void init_modules(const params &p, modules &m)
 #ifdef ADAPTOR
 	m.adaptor_1_to_n = std::unique_ptr<module::Adaptor_1_to_n>(new module::Adaptor_1_to_n(p.codec->enc->K,
 	                                                                                      typeid(int),
-	                                                                                      1,
+	                                                                                      1024,
 	                                                                                      false,
 	                                                                                      p.source->n_frames));
 
 	m.adaptor_n_to_1 = std::unique_ptr<module::Adaptor_n_to_1>(new module::Adaptor_n_to_1(p.codec->enc->K,
 	                                                                                      typeid(int),
-	                                                                                      1,
+	                                                                                      1024,
 	                                                                                      false,
 	                                                                                      p.source->n_frames));
 
