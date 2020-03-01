@@ -12,11 +12,15 @@
 #include <aff3ct.hpp>
 using namespace aff3ct;
 
-#define ADAPTOR
+#define MULTI_THREADED
 
 struct params
 {
+#ifdef MULTI_THREADED
 	size_t n_threads = std::thread::hardware_concurrency();
+#else
+	size_t n_threads = 1;
+#endif
 	float  ebn0      = 20.00f; // SNR value
 	float  R;                  // code rate (R=K/N)
 
@@ -32,7 +36,7 @@ void init_params(int argc, char** argv, params &p);
 
 struct modules
 {
-#ifdef ADAPTOR
+#ifdef MULTI_THREADED
 	std::unique_ptr<module::Adaptor_1_to_n> adaptor_1_to_n;
 	std::unique_ptr<module::Adaptor_n_to_1> adaptor_n_to_1;
 #endif
@@ -47,21 +51,12 @@ struct modules
 };
 void init_modules(const params &p, modules &m);
 
-namespace aff3ct { namespace tools {
-using Monitor_BFER_reduction = Monitor_reduction<module::Monitor_BFER<>>;
-} }
-
 struct utils
 {
-	            std::unique_ptr<tools::Sigma<>               >  noise;       // a sigma noise type
-	std::vector<std::unique_ptr<tools::Reporter              >> reporters;   // list of reporters displayed in the terminal
-	            std::unique_ptr<tools::Terminal              >  terminal;    // manage the output text in the terminal
-	            std::unique_ptr<tools::Monitor_BFER_reduction>  monitor_red; // main monitor object that reduce all the thread monitors
-	            std::unique_ptr<tools::Chain                 >  chain_main;
-#ifdef ADAPTOR
-	            std::unique_ptr<tools::Chain                 >  chain_pre;
-	            std::unique_ptr<tools::Chain                 >  chain_post;
-#endif
+	            std::unique_ptr<tools::Sigma<>  > noise;     // a sigma noise type
+	std::vector<std::unique_ptr<tools::Reporter>> reporters; // list of reporters displayed in the terminal
+	            std::unique_ptr<tools::Terminal > terminal;  // manage the output text in the terminal
+	std::vector<std::unique_ptr<tools::Chain>   > chains;
 };
 void init_utils(const params &p, const modules &m, utils &u);
 
@@ -84,17 +79,18 @@ int main(int argc, char** argv)
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	using namespace module;
 
-#ifdef ADAPTOR
+#ifdef MULTI_THREADED
 	(*m.adaptor_1_to_n)[adp::sck::push_1      ::in1 ].bind((*m.source        )[src::sck::generate   ::U_K ]);
 	(*m.encoder       )[enc::sck::encode      ::U_K ].bind((*m.adaptor_1_to_n)[adp::sck::pull_n     ::out1]);
+	(*m.adaptor_n_to_1)[adp::sck::push_n      ::in1 ].bind((*m.adaptor_1_to_n)[adp::sck::pull_n     ::out1]);
 	(*m.modem         )[mdm::sck::modulate    ::X_N1].bind((*m.encoder       )[enc::sck::encode     ::X_N ]);
 	(*m.channel       )[chn::sck::add_noise   ::X_N ].bind((*m.modem         )[mdm::sck::modulate   ::X_N2]);
 	(*m.modem         )[mdm::sck::demodulate  ::Y_N1].bind((*m.channel       )[chn::sck::add_noise  ::Y_N ]);
 	(*m.decoder       )[dec::sck::decode_siho ::Y_N ].bind((*m.modem         )[mdm::sck::demodulate ::Y_N2]);
-	(*m.monitor       )[mnt::sck::check_errors::U   ].bind((*m.adaptor_1_to_n)[adp::sck::pull_n     ::out1]);
-	(*m.monitor       )[mnt::sck::check_errors::V   ].bind((*m.decoder       )[dec::sck::decode_siho::V_K ]);
-	(*m.adaptor_n_to_1)[adp::sck::push_n      ::in1 ].bind((*m.decoder       )[dec::sck::decode_siho::V_K ]);
-	(*m.sink          )[snk::sck::send        ::V   ].bind((*m.adaptor_n_to_1)[adp::sck::pull_1     ::out1]);
+	(*m.adaptor_n_to_1)[adp::sck::push_n      ::in2 ].bind((*m.decoder       )[dec::sck::decode_siho::V_K ]);
+	(*m.monitor       )[mnt::sck::check_errors::U   ].bind((*m.adaptor_n_to_1)[adp::sck::pull_1     ::out1]);
+	(*m.monitor       )[mnt::sck::check_errors::V   ].bind((*m.adaptor_n_to_1)[adp::sck::pull_1     ::out2]);
+	(*m.sink          )[snk::sck::send        ::V   ].bind((*m.adaptor_n_to_1)[adp::sck::pull_1     ::out2]);
 #else
 	(*m.encoder)[enc::sck::encode      ::U_K ].bind((*m.source )[src::sck::generate   ::U_K ]);
 	(*m.modem  )[mdm::sck::modulate    ::X_N1].bind((*m.encoder)[enc::sck::encode     ::X_N ]);
@@ -110,33 +106,28 @@ int main(int argc, char** argv)
 
 	// set the noise
 	m.codec->set_noise(*u.noise);
-	for (auto &m : u.chain_main->get_modules<tools::Interface_get_set_noise>())
-		m->set_noise(*u.noise);
+	for (auto &chain : u.chains)
+		for (auto &m : chain->get_modules<tools::Interface_get_set_noise>())
+			m->set_noise(*u.noise);
 
 	// registering to noise updates
 	u.noise->record_callback_update([&m](){ m.codec->notify_noise_update(); });
-	for (auto &m : u.chain_main->get_modules<tools::Interface_notify_noise_update>())
-		u.noise->record_callback_update([m](){ m->notify_noise_update(); });
+	for (auto &chain : u.chains)
+		for (auto &m : chain->get_modules<tools::Interface_notify_noise_update>())
+			u.noise->record_callback_update([m](){ m->notify_noise_update(); });
 
 	// set different seeds in the modules that uses PRNG
 	std::mt19937 prng;
-	for (auto &m : u.chain_main->get_modules<tools::Interface_set_seed>())
-		m->set_seed(prng());
+	for (auto &chain : u.chains)
+		for (auto &m : chain->get_modules<tools::Interface_set_seed>())
+			m->set_seed(prng());
 
-	// display the legend in the terminal
-	u.terminal->legend();
-
-#ifdef ADAPTOR
 	auto stop_threads = [&u]()
 	{
-		for (auto &m : u.chain_pre->get_modules<tools::Interface_waiting>())
-			m->cancel_waiting();
-		for (auto &m : u.chain_main->get_modules<tools::Interface_waiting>())
-			m->cancel_waiting();
-		for (auto &m : u.chain_post->get_modules<tools::Interface_waiting>())
-			m->cancel_waiting();
+		for (auto &chain : u.chains)
+			for (auto &m : chain->get_modules<tools::Interface_waiting>())
+				m->cancel_waiting();
 	};
-#endif
 
 	// compute the current sigma for the channel noise
 	const auto esn0  = tools::ebn0_to_esn0 (p.ebn0, p.R, p.modem->bps);
@@ -145,61 +136,33 @@ int main(int argc, char** argv)
 	u.noise->set_values(sigma, p.ebn0, esn0);
 
 	// display the performance (BER and FER) in real time (in a separate thread)
+	u.terminal->legend();
 	u.terminal->start_temp_report();
 
-#ifdef ADAPTOR
 	std::vector<std::thread> threads;
-	threads.push_back(std::thread([&u, &m, &stop_threads](){
-		u.chain_pre->exec([&u, &m]()
-		{
-			return m.source->is_over() || u.terminal->is_interrupt();
-		});
-		stop_threads();
-	}));
-
-	threads.push_back(std::thread([&u, &m, &stop_threads](){
-		u.chain_post->exec([&u, &m]()
-		{
-			return m.source->is_over() || u.terminal->is_interrupt();
-		});
-		stop_threads();
-	}));
-#endif
-
-	u.chain_main->exec([&u, &m]()
-	{
-		u.monitor_red->is_done();
-		return m.source->is_over() || u.terminal->is_interrupt();
-	});
-
-#ifdef ADAPTOR
-	stop_threads();
+	for (auto &chain : u.chains)
+		threads.push_back(std::thread([&chain, &u, &m, &stop_threads](){
+			chain->exec([&u, &m]()
+			{
+				return m.source->is_over() || u.terminal->is_interrupt();
+			});
+			stop_threads();
+		}));
 
 	for (auto &t : threads)
 		t.join();
-#endif
-
-	// final reduction
-	u.monitor_red->reduce();
 
 	// display the performance (BER and FER) in the terminal
 	u.terminal->final_report();
 
-	// reset the monitor and the terminal for the next SNR
-	u.monitor_red->reset();
-	u.terminal->reset();
-
 	// display the statistics of the tasks (if enabled)
-#ifdef ADAPTOR
-	std::cout << "#" << std::endl << "# Chain pre: " << std::endl;
-	tools::Stats::show(u.chain_pre->get_tasks_per_types(), true);
-#endif
-	std::cout << "#" << std::endl << "# Chain main: " << std::endl;
-	tools::Stats::show(u.chain_main->get_tasks_per_types(), true);
-#ifdef ADAPTOR
-	std::cout << "#" << std::endl << "# Chain post: " << std::endl;
-	tools::Stats::show(u.chain_post->get_tasks_per_types(), true);
-#endif
+	for (size_t c = 0; c < u.chains.size(); c++)
+	{
+		const int n_threads = u.chains[c]->get_n_threads();
+		std::cout << "#" << std::endl << "# Chain stage " << c << " (" << n_threads << " thread(s)): " << std::endl;
+		tools::Stats::show(u.chains[c]->get_tasks_per_types(), true);
+		std::cout << "#" << std::endl;
+	}
 	std::cout << "# End of the simulation" << std::endl;
 
 	return 0;
@@ -217,7 +180,7 @@ void init_params(int argc, char** argv, params &p)
 
 	std::vector<factory::Factory*> params_list = { p.source  .get(), p.codec  .get(), p.modem.get(),
 	                                               p.channel .get(), p.monitor.get(), p.sink .get(),
-	                                               p.terminal.get()                                 };
+	                                               p.terminal.get()                                  };
 
 	// parse the command for the given parameters and fill them
 	tools::Command_parser cp(argc, argv, params_list, true);
@@ -248,15 +211,15 @@ void init_modules(const params &p, modules &m)
 	m.encoder = &m.codec->get_encoder();
 	m.decoder = &m.codec->get_decoder_siho();
 
-#ifdef ADAPTOR
+#ifdef MULTI_THREADED
 	m.adaptor_1_to_n = std::unique_ptr<module::Adaptor_1_to_n>(new module::Adaptor_1_to_n(p.codec->enc->K,
 	                                                                                      typeid(int),
 	                                                                                      1024,
 	                                                                                      false,
 	                                                                                      p.source->n_frames));
 
-	m.adaptor_n_to_1 = std::unique_ptr<module::Adaptor_n_to_1>(new module::Adaptor_n_to_1(p.codec->enc->K,
-	                                                                                      typeid(int),
+	m.adaptor_n_to_1 = std::unique_ptr<module::Adaptor_n_to_1>(new module::Adaptor_n_to_1({(size_t)p.codec->enc->K, (size_t)p.codec->enc->K},
+	                                                                                      {typeid(int), typeid(int)},
 	                                                                                      1024,
 	                                                                                      false,
 	                                                                                      p.source->n_frames));
@@ -268,86 +231,43 @@ void init_modules(const params &p, modules &m)
 
 void init_utils(const params &p, const modules &m, utils &u)
 {
-#ifdef ADAPTOR
-	u.chain_pre = std::unique_ptr<tools::Chain>(new tools::Chain((*m.source        )[module::src::tsk::generate],
-	                                                             (*m.adaptor_1_to_n)[module::adp::tsk::push_1  ],
-	                                                             1));
-
-	std::ofstream f_pre("chain_pre.dot");
-	u.chain_pre->export_dot(f_pre);
-
-	u.chain_main = std::unique_ptr<tools::Chain>(new tools::Chain((*m.adaptor_1_to_n)[module::adp::tsk::pull_n],
-	                                                              (*m.adaptor_n_to_1)[module::adp::tsk::push_n],
-	                                                              p.n_threads ? p.n_threads : 1));
-
-	std::ofstream f_main("chain_main.dot");
-	u.chain_main->export_dot(f_main);
-
-	u.chain_post = std::unique_ptr<tools::Chain>(new tools::Chain((*m.adaptor_n_to_1)[module::adp::tsk::pull_1],
-	                                                              (*m.sink          )[module::snk::tsk::send  ],
-	                                                              1));
-
-	std::ofstream f_post("chain_post.dot");
-	u.chain_post->export_dot(f_post);
+#ifdef MULTI_THREADED
+	u.chains.resize(3);
+	u.chains[0].reset(new tools::Chain((*m.source        )[module::src::tsk::generate],                             1));
+	u.chains[1].reset(new tools::Chain((*m.adaptor_1_to_n)[module::adp::tsk::pull_n  ], p.n_threads ? p.n_threads : 1));
+	u.chains[2].reset(new tools::Chain((*m.adaptor_n_to_1)[module::adp::tsk::pull_1  ],                             1));
 #else
-	u.chain_main = std::unique_ptr<tools::Chain>(new tools::Chain((*m.source)[module::src::tsk::generate],
-	                                                              (*m.sink  )[module::snk::tsk::send    ],
-	                                                              p.n_threads ? p.n_threads : 1));
-
-	std::ofstream f_main("chain_main.dot");
-	u.chain_main->export_dot(f_main);
+	u.chains.resize(1);
+	u.chains[0].reset(new tools::Chain((*m.source)[module::src::tsk::generate], p.n_threads ? p.n_threads : 1));
 #endif
 
-	// allocate a common monitor module to reduce all the monitors
-	u.monitor_red = std::unique_ptr<tools::Monitor_BFER_reduction>(new tools::Monitor_BFER_reduction(
-		u.chain_main->get_modules<module::Monitor_BFER<>>()));
-	u.monitor_red->set_reduce_frequency(std::chrono::milliseconds(500));
+	for (size_t c = 0; c < u.chains.size(); c++)
+	{
+		std::ofstream f("chain_stage_" + std::to_string(c) + ".dot");
+		u.chains[c]->export_dot(f);
+	}
+
 	// create a sigma noise type
 	u.noise = std::unique_ptr<tools::Sigma<>>(new tools::Sigma<>());
 	// report the noise values (Es/N0 and Eb/N0)
 	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_noise<>(*u.noise)));
 	// report the bit/frame error rates
-	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_BFER<>(*u.monitor_red)));
+	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_BFER<>(*m.monitor)));
 	// report the simulation throughputs
-	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_throughput<>(*u.monitor_red)));
+	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_throughput<>(*m.monitor)));
 	// create a terminal that will display the collected data from the reporters
 	u.terminal = std::unique_ptr<tools::Terminal>(p.terminal->build(u.reporters));
 
 	// configuration of the chain tasks
-	for (auto& type : u.chain_main->get_tasks_per_types()) for (auto& tsk : type)
-	{
-		tsk->set_debug      (false); // disable the debug mode
-		tsk->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
-		tsk->set_stats      (true ); // enable the statistics
+	for (auto &chain : u.chains)
+		for (auto& type : chain->get_tasks_per_types()) for (auto& tsk : type)
+		{
+			tsk->set_debug      (false); // disable the debug mode
+			tsk->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
+			tsk->set_stats      (true ); // enable the statistics
 
-		// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
-		if (!tsk->is_debug() && !tsk->is_stats())
-			tsk->set_fast(true);
-	}
-
-#ifdef ADAPTOR
-	// configuration of the chain tasks
-	for (auto& type : u.chain_pre->get_tasks_per_types()) for (auto& tsk : type)
-	{
-		tsk->set_debug      (false); // disable the debug mode
-		tsk->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
-		tsk->set_stats      (true ); // enable the statistics
-
-		// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
-		if (!tsk->is_debug() && !tsk->is_stats())
-			tsk->set_fast(true);
-	}
-
-	// configuration of the chain tasks
-	for (auto& type : u.chain_post->get_tasks_per_types()) for (auto& tsk : type)
-	{
-		tsk->set_debug      (false); // disable the debug mode
-		tsk->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
-		tsk->set_stats      (true ); // enable the statistics
-
-		// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
-		if (!tsk->is_debug() && !tsk->is_stats())
-			tsk->set_fast(true);
-	}
-#endif
+			// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
+			if (!tsk->is_debug() && !tsk->is_stats())
+				tsk->set_fast(true);
+		}
 }
