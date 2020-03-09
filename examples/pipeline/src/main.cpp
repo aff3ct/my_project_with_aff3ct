@@ -12,15 +12,9 @@
 #include <aff3ct.hpp>
 using namespace aff3ct;
 
-#define MULTI_THREADED
-
 struct params
 {
-#ifdef MULTI_THREADED
 	size_t n_threads = std::thread::hardware_concurrency();
-#else
-	size_t n_threads = 1;
-#endif
 	float  ebn0      = 20.00f; // SNR value
 	float  R;                  // code rate (R=K/N)
 
@@ -36,10 +30,6 @@ void init_params(int argc, char** argv, params &p);
 
 struct modules
 {
-#ifdef MULTI_THREADED
-	std::unique_ptr<module::Adaptor_1_to_n> adaptor_1_to_n;
-	std::unique_ptr<module::Adaptor_n_to_1> adaptor_n_to_1;
-#endif
 	std::unique_ptr<module::Source<>>       source;
 	std::unique_ptr<module::Modem<>>        modem;
 	std::unique_ptr<module::Channel<>>      channel;
@@ -56,7 +46,7 @@ struct utils
 	            std::unique_ptr<tools::Sigma<>  > noise;     // a sigma noise type
 	std::vector<std::unique_ptr<tools::Reporter>> reporters; // list of reporters displayed in the terminal
 	            std::unique_ptr<tools::Terminal > terminal;  // manage the output text in the terminal
-	std::vector<std::unique_ptr<tools::Chain>   > chains;
+	            std::unique_ptr<tools::Pipeline>  pipeline;
 };
 void init_utils(const params &p, const modules &m, utils &u);
 
@@ -78,20 +68,6 @@ int main(int argc, char** argv)
 
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	using namespace module;
-
-#ifdef MULTI_THREADED
-	(*m.adaptor_1_to_n)[adp::sck::push_1      ::in1 ].bind((*m.source        )[src::sck::generate   ::U_K ]);
-	(*m.encoder       )[enc::sck::encode      ::U_K ].bind((*m.adaptor_1_to_n)[adp::sck::pull_n     ::out1]);
-	(*m.adaptor_n_to_1)[adp::sck::push_n      ::in1 ].bind((*m.adaptor_1_to_n)[adp::sck::pull_n     ::out1]);
-	(*m.modem         )[mdm::sck::modulate    ::X_N1].bind((*m.encoder       )[enc::sck::encode     ::X_N ]);
-	(*m.channel       )[chn::sck::add_noise   ::X_N ].bind((*m.modem         )[mdm::sck::modulate   ::X_N2]);
-	(*m.modem         )[mdm::sck::demodulate  ::Y_N1].bind((*m.channel       )[chn::sck::add_noise  ::Y_N ]);
-	(*m.decoder       )[dec::sck::decode_siho ::Y_N ].bind((*m.modem         )[mdm::sck::demodulate ::Y_N2]);
-	(*m.adaptor_n_to_1)[adp::sck::push_n      ::in2 ].bind((*m.decoder       )[dec::sck::decode_siho::V_K ]);
-	(*m.monitor       )[mnt::sck::check_errors::U   ].bind((*m.adaptor_n_to_1)[adp::sck::pull_1     ::out1]);
-	(*m.monitor       )[mnt::sck::check_errors::V   ].bind((*m.adaptor_n_to_1)[adp::sck::pull_1     ::out2]);
-	(*m.sink          )[snk::sck::send        ::V   ].bind((*m.adaptor_n_to_1)[adp::sck::pull_1     ::out2]);
-#else
 	(*m.encoder)[enc::sck::encode      ::U_K ].bind((*m.source )[src::sck::generate   ::U_K ]);
 	(*m.modem  )[mdm::sck::modulate    ::X_N1].bind((*m.encoder)[enc::sck::encode     ::X_N ]);
 	(*m.channel)[chn::sck::add_noise   ::X_N ].bind((*m.modem  )[mdm::sck::modulate   ::X_N2]);
@@ -100,38 +76,27 @@ int main(int argc, char** argv)
 	(*m.monitor)[mnt::sck::check_errors::U   ].bind((*m.source )[src::sck::generate   ::U_K ]);
 	(*m.monitor)[mnt::sck::check_errors::V   ].bind((*m.decoder)[dec::sck::decode_siho::V_K ]);
 	(*m.sink   )[snk::sck::send        ::V   ].bind((*m.decoder)[dec::sck::decode_siho::V_K ]);
-#endif
 
 	utils u; init_utils(p, m, u); // create and initialize the utils
 
 	// set the noise
 	m.codec->set_noise(*u.noise);
-	for (auto &chain : u.chains)
-		for (auto &m : chain->get_modules<tools::Interface_get_set_noise>())
-			m->set_noise(*u.noise);
+	for (auto &m : u.pipeline->get_modules<tools::Interface_get_set_noise>())
+		m->set_noise(*u.noise);
 
 	// registering to noise updates
 	u.noise->record_callback_update([&m](){ m.codec->notify_noise_update(); });
-	for (auto &chain : u.chains)
-		for (auto &m : chain->get_modules<tools::Interface_notify_noise_update>())
-			u.noise->record_callback_update([m](){ m->notify_noise_update(); });
+	for (auto &m : u.pipeline->get_modules<tools::Interface_notify_noise_update>())
+		u.noise->record_callback_update([m](){ m->notify_noise_update(); });
 
 	// set different seeds in the modules that uses PRNG
 	std::mt19937 prng;
-	for (auto &chain : u.chains)
-		for (auto &m : chain->get_modules<tools::Interface_set_seed>())
-			m->set_seed(prng());
-
-	auto stop_threads = [&u]()
-	{
-		for (auto &chain : u.chains)
-			for (auto &m : chain->get_modules<tools::Interface_waiting>())
-				m->cancel_waiting();
-	};
+	for (auto &m : u.pipeline->get_modules<tools::Interface_set_seed>())
+		m->set_seed(prng());
 
 	// compute the current sigma for the channel noise
 	const auto esn0  = tools::ebn0_to_esn0 (p.ebn0, p.R, p.modem->bps);
-	const auto sigma = tools::esn0_to_sigma(esn0, p.modem->cpm_upf );
+	const auto sigma = tools::esn0_to_sigma(esn0, p.modem->cpm_upf   );
 
 	u.noise->set_values(sigma, p.ebn0, esn0);
 
@@ -139,31 +104,20 @@ int main(int argc, char** argv)
 	u.terminal->legend();
 	u.terminal->start_temp_report();
 
-	std::vector<std::thread> threads;
-	for (auto &chain : u.chains)
-		threads.push_back(std::thread([&chain, &u, &m, &stop_threads](){
-			chain->exec([&u, &m]()
-			{
-				return m.source->is_over() || u.terminal->is_interrupt();
-			});
-			stop_threads();
-		}));
-
-	for (auto &t : threads)
-		t.join();
+	u.pipeline->exec([&u, &m]() { return m.source->is_over() || u.terminal->is_interrupt(); });
 
 	// display the performance (BER and FER) in the terminal
 	u.terminal->final_report();
 
 	// display the statistics of the tasks (if enabled)
-	for (size_t c = 0; c < u.chains.size(); c++)
+	auto stages = u.pipeline->get_stages();
+	for (size_t s = 0; s < stages.size(); s++)
 	{
-		const int n_threads = u.chains[c]->get_n_threads();
-		std::cout << "#" << std::endl << "# Chain stage " << c << " (" << n_threads << " thread(s)): " << std::endl;
-		tools::Stats::show(u.chains[c]->get_tasks_per_types(), true);
-		std::cout << "#" << std::endl;
+		const int n_threads = stages[s]->get_n_threads();
+		std::cout << "#" << std::endl << "# Pipeline stage " << s << " (" << n_threads << " thread(s)): " << std::endl;
+		tools::Stats::show(stages[s]->get_tasks_per_types(), true);
 	}
-	std::cout << "# End of the simulation" << std::endl;
+	std::cout << "#" << std::endl << "# End of the simulation" << std::endl;
 
 	return 0;
 }
@@ -210,42 +164,38 @@ void init_modules(const params &p, modules &m)
 	m.sink    = std::unique_ptr<module::Sink        <>>(p.sink   ->build());
 	m.encoder = &m.codec->get_encoder();
 	m.decoder = &m.codec->get_decoder_siho();
-
-#ifdef MULTI_THREADED
-	m.adaptor_1_to_n = std::unique_ptr<module::Adaptor_1_to_n>(new module::Adaptor_1_to_n(p.codec->enc->K,
-	                                                                                      typeid(int),
-	                                                                                      1024,
-	                                                                                      false,
-	                                                                                      p.source->n_frames));
-
-	m.adaptor_n_to_1 = std::unique_ptr<module::Adaptor_n_to_1>(new module::Adaptor_n_to_1({(size_t)p.codec->enc->K, (size_t)p.codec->enc->K},
-	                                                                                      {typeid(int), typeid(int)},
-	                                                                                      1024,
-	                                                                                      false,
-	                                                                                      p.source->n_frames));
-
-	m.adaptor_1_to_n->set_custom_name("Adp_1_to_n");
-	m.adaptor_n_to_1->set_custom_name("Adp_n_to_1");
-#endif
 }
 
 void init_utils(const params &p, const modules &m, utils &u)
 {
-#ifdef MULTI_THREADED
-	u.chains.resize(3);
-	u.chains[0].reset(new tools::Chain((*m.source        )[module::src::tsk::generate],                             1));
-	u.chains[1].reset(new tools::Chain((*m.adaptor_1_to_n)[module::adp::tsk::pull_n  ], p.n_threads ? p.n_threads : 1));
-	u.chains[2].reset(new tools::Chain((*m.adaptor_n_to_1)[module::adp::tsk::pull_1  ],                             1));
-#else
-	u.chains.resize(1);
-	u.chains[0].reset(new tools::Chain((*m.source)[module::src::tsk::generate], p.n_threads ? p.n_threads : 1));
-#endif
+	u.pipeline.reset(new tools::Pipeline((*m.source)[module::src::tsk::generate], // first task of the sequence
+	                                     { // pipeline stage 0
+	                                       { { &(*m.source )[module::src::tsk::generate    ] },   // first tasks of stage 0
+	                                         { &(*m.source )[module::src::tsk::generate    ] } }, // last  tasks of stage 0
+	                                       // pipeline stage 1
+	                                       { { &(*m.encoder)[module::enc::tsk::encode      ] },   // first tasks of stage 1
+	                                         { &(*m.decoder)[module::dec::tsk::decode_siho ] } }, // last  tasks of stage 1
+	                                       // pipeline stage 2
+	                                       { { &(*m.monitor)[module::mnt::tsk::check_errors],     // first tasks of stage 2
+	                                           &(*m.sink   )[module::snk::tsk::send        ] },
+	                                         { /* empty vector of last tasks */              } }, // last  tasks of stage 2
+	                                     },
+	                                     {
+	                                       1,                             // number of threads in the stage 0
+	                                       p.n_threads ? p.n_threads : 1, // number of threads in the stage 1
+	                                       1                              // number of threads in the stage 2
+	                                     },
+	                                     {
+	                                       1024, // synchronization buffer size between stages 0 and 1
+	                                       1024, // synchronization buffer size between stages 1 and 2
+	                                     },
+	                                     {
+	                                       false, // type of waiting between stages 0 and 1 (true = active, false = passive)
+	                                       false, // type of waiting between stages 1 and 2 (true = active, false = passive)
+	                                     }));
 
-	for (size_t c = 0; c < u.chains.size(); c++)
-	{
-		std::ofstream f("chain_stage_" + std::to_string(c) + ".dot");
-		u.chains[c]->export_dot(f);
-	}
+	std::ofstream f("pipeline.dot");
+	u.pipeline->export_dot(f);
 
 	// create a sigma noise type
 	u.noise = std::unique_ptr<tools::Sigma<>>(new tools::Sigma<>());
@@ -258,16 +208,15 @@ void init_utils(const params &p, const modules &m, utils &u)
 	// create a terminal that will display the collected data from the reporters
 	u.terminal = std::unique_ptr<tools::Terminal>(p.terminal->build(u.reporters));
 
-	// configuration of the chain tasks
-	for (auto &chain : u.chains)
-		for (auto& type : chain->get_tasks_per_types()) for (auto& tsk : type)
-		{
-			tsk->set_debug      (false); // disable the debug mode
-			tsk->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
-			tsk->set_stats      (true ); // enable the statistics
+	// configuration of the pipeline tasks
+	for (auto& type : u.pipeline->get_tasks_per_types()) for (auto& tsk : type)
+	{
+		tsk->set_debug      (false); // disable the debug mode
+		tsk->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
+		tsk->set_stats      (true ); // enable the statistics
 
-			// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
-			if (!tsk->is_debug() && !tsk->is_stats())
-				tsk->set_fast(true);
-		}
+		// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
+		if (!tsk->is_debug() && !tsk->is_stats())
+			tsk->set_fast(true);
+	}
 }

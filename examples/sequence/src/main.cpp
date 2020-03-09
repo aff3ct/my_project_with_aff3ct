@@ -51,7 +51,7 @@ struct utils
 	std::vector<std::unique_ptr<tools::Reporter              >> reporters;   // list of reporters displayed in the terminal
 	            std::unique_ptr<tools::Terminal              >  terminal;    // manage the output text in the terminal
 	            std::unique_ptr<tools::Monitor_BFER_reduction>  monitor_red; // main monitor object that reduce all the thread monitors
-	            std::unique_ptr<tools::Chain                 >  chain;
+	            std::unique_ptr<tools::Sequence              >  sequence;
 };
 void init_utils(const params &p, const modules &m, utils &u);
 
@@ -85,17 +85,17 @@ int main(int argc, char** argv)
 
 	// set the noise
 	m.codec->set_noise(*u.noise);
-	for (auto &m : u.chain->get_modules<tools::Interface_get_set_noise>())
+	for (auto &m : u.sequence->get_modules<tools::Interface_get_set_noise>())
 		m->set_noise(*u.noise);
 
 	// registering to noise updates
 	u.noise->record_callback_update([&m](){ m.codec->notify_noise_update(); });
-	for (auto &m : u.chain->get_modules<tools::Interface_notify_noise_update>())
+	for (auto &m : u.sequence->get_modules<tools::Interface_notify_noise_update>())
 		u.noise->record_callback_update([m](){ m->notify_noise_update(); });
 
 	// set different seeds in the modules that uses PRNG
 	std::mt19937 prng;
-	for (auto &m : u.chain->get_modules<tools::Interface_set_seed>())
+	for (auto &m : u.sequence->get_modules<tools::Interface_set_seed>())
 		m->set_seed(prng());
 
 	// display the legend in the terminal
@@ -113,8 +113,8 @@ int main(int argc, char** argv)
 		// display the performance (BER and FER) in real time (in a separate thread)
 		u.terminal->start_temp_report();
 
-		// execute the simulation chain (multi-threaded)
-		u.chain->exec([&u]() { return u.monitor_red->is_done() || u.terminal->is_interrupt(); });
+		// execute the simulation sequence (multi-threaded)
+		u.sequence->exec([&u]() { return u.monitor_red->is_done() || u.terminal->is_interrupt(); });
 
 		// final reduction
 		u.monitor_red->reduce();
@@ -132,7 +132,7 @@ int main(int argc, char** argv)
 
 	// display the statistics of the tasks (if enabled)
 	std::cout << "#" << std::endl;
-	tools::Stats::show(u.chain->get_modules_per_types(), true);
+	tools::Stats::show(u.sequence->get_modules_per_types(), true);
 	std::cout << "# End of the simulation" << std::endl;
 
 	return 0;
@@ -181,11 +181,11 @@ void init_modules(const params &p, modules &m)
 
 void init_utils(const params &p, const modules &m, utils &u)
 {
-	u.chain = std::unique_ptr<tools::Chain>(new tools::Chain((*m.source)[module::src::tsk::generate],
+	u.sequence = std::unique_ptr<tools::Sequence>(new tools::Sequence((*m.source)[module::src::tsk::generate],
 		p.n_threads ? p.n_threads : 1));
 	// allocate a common monitor module to reduce all the monitors
 	u.monitor_red = std::unique_ptr<tools::Monitor_BFER_reduction>(new tools::Monitor_BFER_reduction(
-		u.chain->get_modules<module::Monitor_BFER<>>()));
+		u.sequence->get_modules<module::Monitor_BFER<>>()));
 	u.monitor_red->set_reduce_frequency(std::chrono::milliseconds(500));
 	// create a sigma noise type
 	u.noise = std::unique_ptr<tools::Sigma<>>(new tools::Sigma<>());
@@ -198,8 +198,8 @@ void init_utils(const params &p, const modules &m, utils &u)
 	// create a terminal that will display the collected data from the reporters
 	u.terminal = std::unique_ptr<tools::Terminal>(p.terminal->build(u.reporters));
 
-	// configuration of the chain tasks
-	for (auto& mod : u.chain->get_modules<module::Module>(false))
+	// configuration of the sequence tasks
+	for (auto& mod : u.sequence->get_modules<module::Module>(false))
 		for (auto& tsk : mod->tasks)
 		{
 			tsk->set_debug      (false); // disable the debug mode
