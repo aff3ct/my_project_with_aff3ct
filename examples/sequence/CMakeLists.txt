@@ -14,7 +14,6 @@ file(GLOB_RECURSE SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
 
 # Create the executable from sources
 add_executable(my_project ${SRC_FILES})
-set_target_properties(my_project PROPERTIES POSITION_INDEPENDENT_CODE ON) # set -fpie
 
 # Link with the "Threads library (required to link with AFF3CT after)
 set(CMAKE_THREAD_PREFER_PTHREAD ON)
@@ -25,3 +24,5 @@ find_package(Threads REQUIRED)
 set (AFF3CT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
 find_package(AFF3CT CONFIG 2.3.5 REQUIRED)
 target_link_libraries(my_project PRIVATE aff3ct::aff3ct-static-lib)
+
+set_target_properties(my_project PROPERTIES POSITION_INDEPENDENT_CODE ON) # set -fpie
