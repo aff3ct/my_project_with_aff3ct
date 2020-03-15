@@ -72,7 +72,7 @@ build-linux-clang:
     - export EXAMPLES="bootstrap tasks systemc factory sequence subsequence pipeline openmp"
     - export CXX="clang++"
     - export CFLAGS="-Wall -Wno-overloaded-virtual -funroll-loops -msse4.2 -Wno-deprecated-declarations"
-    - export LFLAGS="-static -static-libgcc -static-libstdc++"
+    - export LFLAGS="-pie -static -static-libgcc -static-libstdc++"
     - export BUILD="build_linux_clang"
     - source ./ci/tools/threads.sh
     - source ./ci/tools/aff3ct-git-version.sh
@@ -199,7 +199,7 @@ build-macos-clang:
     - export EXAMPLES="bootstrap tasks factory sequence subsequence pipeline openmp"
     - export CXX="clang++"
     - export CFLAGS="-Wall -Wno-overloaded-virtual -funroll-loops -msse4.2"
-    - export LFLAGS="-static -static-libgcc -static-libstdc++"
+    - export LFLAGS="-pie -static -static-libgcc -static-libstdc++"
     - export BUILD="build_macos_clang"
     - source ./ci/tools/threads.sh
     - source ./ci/tools/aff3ct-git-version.sh
