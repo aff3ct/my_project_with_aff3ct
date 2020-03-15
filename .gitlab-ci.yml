@@ -64,8 +64,8 @@ build-linux-clang:
       - ./examples/systemc/build_linux_clang/bin/
       - ./examples/tasks/build_linux_clang/bin/
       - ./examples/sequence/build_linux_clang/bin/
-      - ./examples/subsequence/build_linux_gcc/bin/
-      - ./examples/pipeline/build_linux_gcc/bin/
+      - ./examples/subsequence/build_linux_clang/bin/
+      - ./examples/pipeline/build_linux_clang/bin/
       - ./examples/openmp/build_linux_clang/bin/
   script:
     - export EXAMPLES="bootstrap tasks systemc factory sequence subsequence pipeline openmp"
