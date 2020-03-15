@@ -65,8 +65,7 @@ if [[ $is_systemc == YES ]]; then
 	mkdir ${BUILD}_systemc
 	cd ${BUILD}_systemc
 	cmake .. -G"Unix Makefiles" -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="$CFLAGS" \
-	         -DCMAKE_EXE_LINKER_FLAGS="$LFLAGS" -DAFF3CT_COMPILE_EXE="OFF" -DAFF3CT_COMPILE_STATIC_LIB="ON" \
-	         -DAFF3CT_SYSTEMC_MODULE="ON"
+	         -DAFF3CT_COMPILE_EXE="OFF" -DAFF3CT_COMPILE_STATIC_LIB="ON" -DAFF3CT_SYSTEMC_MODULE="ON"
 	rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
 	make -j $THREADS
 	rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
