@@ -36,5 +36,3 @@ if (OpenMP_FOUND)
         set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
     endif()
 endif(OpenMP_FOUND)
-
-set_target_properties(my_project PROPERTIES POSITION_INDEPENDENT_CODE ON) # set -fpie
