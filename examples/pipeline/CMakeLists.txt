@@ -11,6 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set (EXECUTABLE_OUTPUT_PATH bin/)
 
 file(GLOB_RECURSE SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
+set_target_properties(my_project PROPERTIES POSITION_INDEPENDENT_CODE ON) # set -fpie
 
 # Create the executable from sources
 add_executable(my_project ${SRC_FILES})
