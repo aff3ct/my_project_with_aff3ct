@@ -88,12 +88,8 @@ for example in ${EXAMPLES[*]}; do
 	fi
 	mkdir $BUILD
 	cd $BUILD
-	if [[ $example == systemc ]]; then
-		cmake .. -G"Unix Makefiles" -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="$CFLAGS"
-	else
-		cmake .. -G"Unix Makefiles" -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="$CFLAGS" \
-		         -DCMAKE_EXE_LINKER_FLAGS="$LFLAGS"
-	fi
+	cmake .. -G"Unix Makefiles" -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="$CFLAGS" \
+	         -DCMAKE_EXE_LINKER_FLAGS="$LFLAGS"
 	rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
 	make -j $THREADS
 	rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
