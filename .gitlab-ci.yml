@@ -72,7 +72,6 @@ build-linux-clang:
     - export EXAMPLES="bootstrap tasks systemc factory sequence subsequence pipeline openmp"
     - export CXX="clang++"
     - export CFLAGS="-Wall -Wno-overloaded-virtual -funroll-loops -msse4.2 -Wno-deprecated-declarations"
-    - export LFLAGS="-pie -static -static-libgcc -static-libstdc++"
     - export BUILD="build_linux_clang"
     - source ./ci/tools/threads.sh
     - source ./ci/tools/aff3ct-git-version.sh
@@ -199,7 +198,6 @@ build-macos-clang:
     - export EXAMPLES="bootstrap tasks factory sequence subsequence pipeline openmp"
     - export CXX="clang++"
     - export CFLAGS="-Wall -Wno-overloaded-virtual -funroll-loops -msse4.2"
-    - export LFLAGS="-pie -static -static-libgcc -static-libstdc++"
     - export BUILD="build_macos_clang"
     - source ./ci/tools/threads.sh
     - source ./ci/tools/aff3ct-git-version.sh
@@ -211,7 +209,7 @@ test-linux-run-bootstrap:
     - linux
     - sse4.2
   script:
-    - ./ci/test-linux-macos-run.sh bootstrap " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh bootstrap " " build_linux_gcc build_linux_gcc-4.8 build_linux_icpc
 
 test-linux-run-systemc:
   stage: test
@@ -220,7 +218,7 @@ test-linux-run-systemc:
     - sse4.2
     - systemc
   script:
-    - ./ci/test-linux-macos-run.sh systemc " " build_linux_gcc build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh systemc " " build_linux_gcc build_linux_icpc
 
 test-linux-run-tasks:
   stage: test
@@ -228,7 +226,7 @@ test-linux-run-tasks:
    - linux
    - sse4.2
   script:
-    - ./ci/test-linux-macos-run.sh tasks " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh tasks " " build_linux_gcc build_linux_gcc-4.8 build_linux_icpc
 
 test-linux-run-factory:
   stage: test
@@ -236,7 +234,7 @@ test-linux-run-factory:
     - linux
     - sse4.2
   script:
-    - ./ci/test-linux-macos-run.sh factory "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh factory "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_icpc
 
 test-linux-run-sequence:
   stage: test
@@ -244,7 +242,7 @@ test-linux-run-sequence:
     - linux
     - sse4.2
   script:
-    - ./ci/test-linux-macos-run.sh sequence "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh sequence "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_icpc
 
 test-linux-run-subsequence:
   stage: test
@@ -252,7 +250,7 @@ test-linux-run-subsequence:
     - linux
     - sse4.2
   script:
-    - ./ci/test-linux-macos-run.sh subsequence "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh subsequence "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_icpc
 
 # test-linux-run-openmp:
 #   stage: test
@@ -262,45 +260,45 @@ test-linux-run-subsequence:
 #   script:
 #     - ./ci/test-linux-macos-run.sh openmp "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
 
-test-macos-run-bootstrap:
-  stage: test
-  tags:
-   - macos
-   - sse4.2
-  script:
-    - ./ci/test-linux-macos-run.sh bootstrap " " build_macos_clang
+# test-macos-run-bootstrap:
+#   stage: test
+#   tags:
+#    - macos
+#    - sse4.2
+#   script:
+#     - ./ci/test-linux-macos-run.sh bootstrap " " build_macos_clang
 
-test-macos-run-tasks:
-  stage: test
-  tags:
-   - macos
-   - sse4.2
-  script:
-    - ./ci/test-linux-macos-run.sh tasks " " build_macos_clang
+# test-macos-run-tasks:
+#   stage: test
+#   tags:
+#    - macos
+#    - sse4.2
+#   script:
+#     - ./ci/test-linux-macos-run.sh tasks " " build_macos_clang
 
-test-macos-run-factory:
-  stage: test
-  tags:
-   - macos
-   - sse4.2
-  script:
-    - ./ci/test-linux-macos-run.sh factory "-K 32 -N 128" build_macos_clang
+# test-macos-run-factory:
+#   stage: test
+#   tags:
+#    - macos
+#    - sse4.2
+#   script:
+#     - ./ci/test-linux-macos-run.sh factory "-K 32 -N 128" build_macos_clang
 
-test-macos-run-sequence:
-  stage: test
-  tags:
-   - macos
-   - sse4.2
-  script:
-    - ./ci/test-linux-macos-run.sh sequence "-K 32 -N 128" build_macos_clang
+# test-macos-run-sequence:
+#   stage: test
+#   tags:
+#    - macos
+#    - sse4.2
+#   script:
+#     - ./ci/test-linux-macos-run.sh sequence "-K 32 -N 128" build_macos_clang
 
-test-macos-run-subsequence:
-  stage: test
-  tags:
-   - macos
-   - sse4.2
-  script:
-    - ./ci/test-linux-macos-run.sh subsequence "-K 32 -N 128" build_macos_clang
+# test-macos-run-subsequence:
+#   stage: test
+#   tags:
+#    - macos
+#    - sse4.2
+#   script:
+#     - ./ci/test-linux-macos-run.sh subsequence "-K 32 -N 128" build_macos_clang
 
 # test-macos-run-openmp:
 #   stage: test
