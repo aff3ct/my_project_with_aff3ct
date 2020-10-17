@@ -4,14 +4,14 @@ cmake_policy(SET CMP0054 NEW)
 project (my_project)
 
 # Enable C++11
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Specify bin path
 set (EXECUTABLE_OUTPUT_PATH bin/)
 
 # Create the executable from sources
-add_executable(my_project ${CMAKE_CURRENT_SOURCE_DIR}/src/cython.cpp)
+add_executable(my_project ${CMAKE_CURRENT_SOURCE_DIR}/src/codec.cpp)
 
 # Link with the "Threads library (required to link with AFF3CT after)
 set(CMAKE_THREAD_PREFER_PTHREAD ON)

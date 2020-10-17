@@ -42,6 +42,10 @@ If you did not `make install` in the previous steps (i.e., building aff3ct), you
 
 Then, test the cython module
 
-	$ python -c "import cython_example; cython_example.py_world(32)"
+	$ python -c "import codec; print(codec.py_generate_frozen_bits(10, 16, 20))"
 
-<!-- The documentation of this example is available [here](https://aff3ct.readthedocs.io/en/latest/user/library/library.html#bootstrap). -->
+If you see `ImportError: libaff3ct-2.3.4.so: cannot open shared object file: No such file or directory`, mostly the dynamic library is not set properly. Try `echo $LD_LIBRARY_PATH` and it should contains `libaff3ct-2.3.4.so`.
+
+You can try a short demo script by
+
+	$ python polar_codec.py
