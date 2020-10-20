@@ -2,7 +2,7 @@
 #include "aff3ct.hpp"
 #include "math.h"
 
-template <typename T> auto print_vector(std::vector<T> vec) {
+template <typename T> void print_vector(std::vector<T> vec) {
   std::for_each(vec.begin(), vec.end(),
                 [&](const auto i) { std::cout << i << ' '; });
   std::cout << std::endl;

@@ -14,7 +14,8 @@ using namespace aff3ct;
  * @param snr_max Estimated SNR (in dB)
  * @return auto std::vector<bool> of frozen bits
  */
-auto generate_frozen_bits(const int k, const int n, const float snr_max) {
+std::vector<bool> generate_frozen_bits(const int k, const int n,
+                                       const float snr_max) {
   // calculate constants
   auto r = static_cast<float>(k * 1.0 / n);
   const auto esn0 = tools::ebn0_to_esn0(snr_max, r);
@@ -42,9 +43,9 @@ auto generate_frozen_bits(const int k, const int n, const float snr_max) {
  * @param info_bits std::vector<int>, information bits (length k)
  * @return auto Encoded codewords, std::vector<int> of length n
  */
-auto polar_encode(const int k, const int n,
-                  const std::vector<bool> &frozen_bits,
-                  const std::vector<int> &info_bits) {
+std::vector<int> polar_encode(const int k, const int n,
+                              const std::vector<bool> &frozen_bits,
+                              const std::vector<int> &info_bits) {
   // populate vector
   std::vector<int> encoded_bits(n);
 
@@ -63,9 +64,10 @@ auto polar_encode(const int k, const int n,
  * @param info_bits std::vector<int>, information bits (length k)
  * @return auto Encoded codewords, std::vector<int> of length n
  */
-auto polar_encode_multiple(const int k, const int n,
-                           const std::vector<bool> &frozen_bits,
-                           const std::vector<std::vector<int>> &info_bits) {
+std::vector<std::vector<int>>
+polar_encode_multiple(const int k, const int n,
+                      const std::vector<bool> &frozen_bits,
+                      const std::vector<std::vector<int>> &info_bits) {
   // populate vector
   std::vector<std::vector<int>> encoded_bits;
 
@@ -88,9 +90,9 @@ auto polar_encode_multiple(const int k, const int n,
  * @param received std::vector<float> soft symbols, BPSK, length n
  * @return auto Decoded information bits, std::vector<int> of length k
  */
-auto polar_decode(const int k, const int n,
-                  const std::vector<bool> &frozen_bits,
-                  const std::vector<float> &received) {
+std::vector<int> polar_decode(const int k, const int n,
+                              const std::vector<bool> &frozen_bits,
+                              const std::vector<float> &received) {
   // populate vector
   std::vector<int> decoded_bits(k);
 
@@ -111,9 +113,10 @@ auto polar_decode(const int k, const int n,
  * @return auto Decoded information bits, std::vector<std::vector<int>> of
  * n_frame rows, k columns
  */
-auto polar_decode_multiple(const int k, const int n,
-                           const std::vector<bool> &frozen_bits,
-                           const std::vector<std::vector<float>> &received) {
+std::vector<std::vector<int>>
+polar_decode_multiple(const int k, const int n,
+                      const std::vector<bool> &frozen_bits,
+                      const std::vector<std::vector<float>> &received) {
   // populate vectors
   std::vector<std::vector<int>> decoded_bits;
 

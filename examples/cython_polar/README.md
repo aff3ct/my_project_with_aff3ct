@@ -22,7 +22,7 @@ Compile the code on Windows (Visual Studio project)
 	$ devenv /build Release my_project.sln
 
 The source code of this mini project is in `src/cython.cpp`.
-The compiled binary is in `build/bin/my_project`.
+The compiled binary is in `build/bin/codec`.
 
 # How to compile this example as a Cython extension
 
