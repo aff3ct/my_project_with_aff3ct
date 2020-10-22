@@ -8,9 +8,9 @@ def discover_library(path):
 
 library = discover_library("../../lib/aff3ct/build/lib")
 
-codec = Extension(
-    name="codec",
-    sources=["codec.pyx"],
+codec_polar = Extension(
+    name="codec_polar",
+    sources=["codec_polar.pyx"],
     libraries=[library],
     library_dirs=["../../lib/aff3ct/build/lib"],
     include_dirs=["../../lib/aff3ct/include", "../../lib/aff3ct/lib/cli/src", "../../lib/aff3ct/lib/MIPP/src", "../../lib/aff3ct/lib/MIPP/src", "../../lib/aff3ct/lib/rang/include"],
@@ -19,6 +19,6 @@ codec = Extension(
     extra_link_args=["-std=c++11"]
 )
 setup(
-    name="codec",
-    ext_modules=cythonize([codec])
+    name="codec_polar",
+    ext_modules=cythonize([codec_polar])
 )

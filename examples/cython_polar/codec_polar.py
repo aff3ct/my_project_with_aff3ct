@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from codec import *
+from codec_polar import *
 
 marker = ["o", "^", "s", "X", "d", "o", "^", "s", "*", "d"]
 

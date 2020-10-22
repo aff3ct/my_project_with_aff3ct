@@ -1,6 +1,11 @@
-#include "codec.hpp"
-#include "aff3ct.hpp"
-#include "math.h"
+#include <cmath>
+#include <memory>
+#include <iostream>
+#include <algorithm>
+#include <aff3ct.hpp>
+using namespace aff3ct;
+
+#include "codec_polar.hpp"
 
 template <typename T> void print_vector(std::vector<T> vec) {
   std::for_each(vec.begin(), vec.end(),
