@@ -213,6 +213,15 @@ test-linux-run-bootstrap:
   tags:
     - linux
     - sse4.2
+  needs:
+    - job: build-linux-gcc
+      artifacts: true
+    - job: build-linux-gcc-4.8
+      artifacts: true
+    - job: build-linux-clang
+      artifacts: true
+    - job: build-linux-icpc
+      artifacts: true
   script:
     - ./ci/test-linux-macos-run.sh bootstrap " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
 
@@ -222,6 +231,13 @@ test-linux-run-systemc:
     - linux
     - sse4.2
     - systemc
+  needs:
+    - job: build-linux-gcc
+      artifacts: true
+    - job: build-linux-clang
+      artifacts: true
+    - job: build-linux-icpc
+      artifacts: true
   script:
     - ./ci/test-linux-macos-run.sh systemc " " build_linux_gcc build_linux_clang build_linux_icpc
 
@@ -230,6 +246,15 @@ test-linux-run-tasks:
   tags:
    - linux
    - sse4.2
+  needs:
+    - job: build-linux-gcc
+      artifacts: true
+    - job: build-linux-gcc-4.8
+      artifacts: true
+    - job: build-linux-clang
+      artifacts: true
+    - job: build-linux-icpc
+      artifacts: true
   script:
     - ./ci/test-linux-macos-run.sh tasks " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
 
@@ -238,6 +263,15 @@ test-linux-run-factory:
   tags:
     - linux
     - sse4.2
+  needs:
+    - job: build-linux-gcc
+      artifacts: true
+    - job: build-linux-gcc-4.8
+      artifacts: true
+    - job: build-linux-clang
+      artifacts: true
+    - job: build-linux-icpc
+      artifacts: true
   script:
     - ./ci/test-linux-macos-run.sh factory "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
 
@@ -246,6 +280,15 @@ test-linux-run-sequence:
   tags:
     - linux
     - sse4.2
+  needs:
+    - job: build-linux-gcc
+      artifacts: true
+    - job: build-linux-gcc-4.8
+      artifacts: true
+    - job: build-linux-clang
+      artifacts: true
+    - job: build-linux-icpc
+      artifacts: true
   script:
     - ./ci/test-linux-macos-run.sh sequence "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
 
@@ -254,6 +297,15 @@ test-linux-run-subsequence:
   tags:
     - linux
     - sse4.2
+  needs:
+    - job: build-linux-gcc
+      artifacts: true
+    - job: build-linux-gcc-4.8
+      artifacts: true
+    - job: build-linux-clang
+      artifacts: true
+    - job: build-linux-icpc
+      artifacts: true
   script:
     - ./ci/test-linux-macos-run.sh subsequence "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
 
@@ -262,6 +314,15 @@ test-linux-run-cython_polar:
   tags:
     - linux
     - sse4.2
+  needs:
+    - job: build-linux-gcc
+      artifacts: true
+    - job: build-linux-gcc-4.8
+      artifacts: true
+    - job: build-linux-clang
+      artifacts: true
+    - job: build-linux-icpc
+      artifacts: true
   script:
     ./ci/test-linux-macos-run.sh cython_polar " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
 
@@ -270,6 +331,15 @@ test-linux-run-cython_polar:
 #   tags:
 #     - linux
 #     - sse4.2
+#   needs:
+#     - job: build-linux-gcc
+#       artifacts: true
+#     - job: build-linux-gcc-4.8
+#       artifacts: true
+#     - job: build-linux-clang
+#       artifacts: true
+#     - job: build-linux-icpc
+#       artifacts: true
 #   script:
 #     - ./ci/test-linux-macos-run.sh openmp "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
 
@@ -278,6 +348,9 @@ test-macos-run-bootstrap:
   tags:
    - macos
    - sse4.2
+  needs:
+    - job: build-macos-clang
+      artifacts: true
   script:
     - ./ci/test-linux-macos-run.sh bootstrap " " build_macos_clang
 
@@ -286,6 +359,9 @@ test-macos-run-tasks:
   tags:
    - macos
    - sse4.2
+  needs:
+    - job: build-macos-clang
+      artifacts: true
   script:
     - ./ci/test-linux-macos-run.sh tasks " " build_macos_clang
 
@@ -294,6 +370,9 @@ test-macos-run-factory:
   tags:
    - macos
    - sse4.2
+  needs:
+    - job: build-macos-clang
+      artifacts: true
   script:
     - ./ci/test-linux-macos-run.sh factory "-K 32 -N 128" build_macos_clang
 
@@ -302,6 +381,9 @@ test-macos-run-sequence:
   tags:
    - macos
    - sse4.2
+  needs:
+    - job: build-macos-clang
+      artifacts: true
   script:
     - ./ci/test-linux-macos-run.sh sequence "-K 32 -N 128" build_macos_clang
 
@@ -310,6 +392,9 @@ test-macos-run-subsequence:
   tags:
    - macos
    - sse4.2
+  needs:
+    - job: build-macos-clang
+      artifacts: true
   script:
     - ./ci/test-linux-macos-run.sh subsequence "-K 32 -N 128" build_macos_clang
 
@@ -318,6 +403,9 @@ test-macos-run-cython_polar:
   tags:
    - macos
    - sse4.2
+  needs:
+    - job: build-macos-clang
+      artifacts: true
   script:
     - ./ci/test-linux-macos-run.sh cython_polar " " build_macos_clang
 
@@ -326,6 +414,9 @@ test-macos-run-cython_polar:
 #   tags:
 #    - macos
 #    - sse4.2
+#   needs:
+#    - job: build-macos-clang
+#      artifacts: true
 #   script:
 #     - ./ci/test-linux-macos-run.sh openmp "-K 32 -N 128" build_macos_clang
 
@@ -334,6 +425,11 @@ test-macos-run-cython_polar:
 #   tags:
 #    - windows
 #    - avx
+#   needs:
+#    - job: build-windows-gcc
+#      artifacts: true
+#    - job: build-windows-msvc
+#      artifacts: true
 #   script:
 #     - ./ci/test-windows-run.bat bootstrap " " build_windows_gcc build_windows_msvc
 
@@ -342,6 +438,11 @@ test-macos-run-cython_polar:
 #   tags:
 #    - windows
 #    - avx
+#   needs:
+#    - job: build-windows-gcc
+#      artifacts: true
+#    - job: build-windows-msvc
+#      artifacts: true
 #   script:
 #     - ./ci/test-windows-run.bat tasks " " build_windows_gcc build_windows_msvc
 
@@ -350,6 +451,11 @@ test-macos-run-cython_polar:
 #   tags:
 #    - windows
 #    - avx
+#   needs:
+#    - job: build-windows-gcc
+#      artifacts: true
+#    - job: build-windows-msvc
+#      artifacts: true
 #   script:
 #     - ./ci/test-windows-run.bat factory "-K 32 -N 128" build_windows_gcc build_windows_msvc
 
@@ -358,6 +464,11 @@ test-macos-run-cython_polar:
 #   tags:
 #    - windows
 #    - avx
+#   needs:
+#    - job: build-windows-gcc
+#      artifacts: true
+#    - job: build-windows-msvc
+#      artifacts: true
 #   script:
 #     - ./ci/test-windows-run.bat openmp "-K 32 -N 128" build_windows_gcc build_windows_msvc
 
@@ -366,6 +477,11 @@ test-macos-run-cython_polar:
 #   tags:
 #    - windows
 #    - avx
+#   needs:
+#    - job: build-windows-gcc
+#      artifacts: true
+#    - job: build-windows-msvc
+#      artifacts: true
 #   script:
 #     - ./ci/test-windows-run.bat sequence "-K 32 -N 128" build_windows_gcc build_windows_msvc
 
@@ -374,6 +490,11 @@ test-macos-run-cython_polar:
 #   tags:
 #    - windows
 #    - avx
+#   needs:
+#    - job: build-windows-gcc
+#      artifacts: true
+#    - job: build-windows-msvc
+#      artifacts: true
 #   script:
 #     - ./ci/test-windows-run.bat subsequence "-K 32 -N 128" build_windows_gcc build_windows_msvc
 
@@ -382,6 +503,11 @@ test-macos-run-cython_polar:
 #   tags:
 #    - windows
 #    - avx
+#   needs:
+#    - job: build-windows-gcc
+#      artifacts: true
+#    - job: build-windows-msvc
+#      artifacts: true
 #   script:
 #     - ./ci/test-windows-run.bat cython_polar " " build_windows_gcc build_windows_msvc
 
@@ -392,7 +518,9 @@ test-linux-wrap-cython_polar:
    - sse4.2
    - gcc
    - python3.6
-
+  needs:
+    - job: build-linux-gcc
+      artifacts: true
   script:
     - cd examples/cython_polar
     - pip3 install --user -r requirements.txt
