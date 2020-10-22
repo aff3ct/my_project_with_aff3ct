@@ -28,15 +28,15 @@ The compiled binary is in `build/bin/my_project`.
 
 Make sure you have followed the instructions from `README.md` file at the root of this repo before starting compiling.
 
-Make sure you have installed the `Cython`, i.e.,
+Make sure you have installed the `cython`, `numpy` and `matplotlib`, i.e.,
 
-	$ pip install cython
+	$ pip3 install --user -r requirements.txt
 
 Be sure to check `libraries` attribute in `setup.py` matches what you have built in `lib/aff3ct/build/lib`.
 
 Then build the Cython extension
 
-	$ python setup.py build_ext -i
+	$ python3 setup.py build_ext -i
 
 If you did not `make install` in the previous steps (i.e., building aff3ct), you will need to let the python know where to load the static library
 
@@ -44,10 +44,10 @@ If you did not `make install` in the previous steps (i.e., building aff3ct), you
 
 Then, test the cython module
 
-	$ python -c "import codec_polar; print(codec_polar.py_generate_frozen_bits(10, 16, 20))"
+	$ python3 -c "import codec_polar; print(codec_polar.py_generate_frozen_bits(10, 16, 20))"
 
 If you see `ImportError: libaff3ct-2.3.5.so: cannot open shared object file: No such file or directory`, mostly the dynamic library is not set properly. Try `echo $LD_LIBRARY_PATH` and it should contains `libaff3ct-2.3.5.so`.
 
-You can try a short demo script by
+You can try a short demo script by (Python >= `3.6` is required)
 
-	$ python codec_polar.py
+	$ python3 codec_polar.py

@@ -40,8 +40,10 @@ build-linux-gcc:
       - ./examples/subsequence/build_linux_gcc/bin/
       - ./examples/pipeline/build_linux_gcc/bin/
       - ./examples/openmp/build_linux_gcc/bin/
+      - ./examples/cython_polar/build_linux_gcc/bin/
+      - ./lib/aff3ct/build_linux_gcc/lib/
   script:
-    - export EXAMPLES="bootstrap tasks systemc factory sequence subsequence pipeline openmp"
+    - export EXAMPLES="bootstrap tasks systemc factory sequence subsequence pipeline openmp cython_polar"
     - export CXX="g++"
     - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations"
     - export BUILD="build_linux_gcc"
@@ -67,8 +69,9 @@ build-linux-clang:
       - ./examples/subsequence/build_linux_clang/bin/
       - ./examples/pipeline/build_linux_clang/bin/
       - ./examples/openmp/build_linux_clang/bin/
+      - ./examples/cython_polar/build_linux_clang/bin/
   script:
-    - export EXAMPLES="bootstrap tasks systemc factory sequence subsequence pipeline openmp"
+    - export EXAMPLES="bootstrap tasks systemc factory sequence subsequence pipeline openmp cython_polar"
     - export CXX="clang++"
     - export CFLAGS="-Wall -Wno-overloaded-virtual -funroll-loops -msse4.2 -Wno-deprecated-declarations"
     - export BUILD="build_linux_clang"
@@ -93,8 +96,9 @@ build-linux-gcc-4.8:
       - ./examples/subsequence/build_linux_gcc-4.8/bin/
       - ./examples/pipeline/build_linux_gcc-4.8/bin/
       - ./examples/openmp/build_linux_gcc-4.8/bin/
+      - ./examples/cython_polar/build_linux_gcc-4.8/bin/
   script:
-    - export EXAMPLES="bootstrap tasks systemc factory sequence subsequence pipeline openmp"
+    - export EXAMPLES="bootstrap tasks systemc factory sequence subsequence pipeline openmp cython_polar"
     - export CXX="g++-4.8"
     - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations"
     - export BUILD="build_linux_gcc-4.8"
@@ -120,8 +124,9 @@ build-linux-icpc:
       - ./examples/subsequence/build_linux_icpc/bin/
       - ./examples/pipeline/build_linux_icpc/bin/
       - ./examples/openmp/build_linux_icpc/bin/
+      - ./examples/cython_polar/build_linux_icpc/bin/
   script:
-    - export EXAMPLES="bootstrap tasks systemc factory sequence subsequence pipeline openmp"
+    - export EXAMPLES="bootstrap tasks systemc factory sequence subsequence pipeline openmp cython_polar"
     - export CXX="icpc"
     - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations -std=c++11"
     - export BUILD="build_linux_icpc"
@@ -144,8 +149,9 @@ build-windows-gcc:
       - ./examples/subsequence/build_windows_gcc/bin/
       - ./examples/pipeline/build_windows_gcc/bin/
       - ./examples/openmp/build_windows_gcc/bin/
+      - ./examples/cython_polar/build_windows_gcc/bin/
   script:
-    - set "EXAMPLES=bootstrap tasks factory sequence subsequence pipeline openmp"
+    - set "EXAMPLES=bootstrap tasks factory sequence subsequence pipeline openmp cython_polar"
     - set "CFLAGS=-Wall -Wno-deprecated-declarations -funroll-loops -mavx"
     - set "BUILD=build_windows_gcc"
     - call ./ci/tools/threads.bat
@@ -167,8 +173,9 @@ build-windows-msvc:
       - ./examples/subsequence/build_windows_msvc/bin/
       - ./examples/pipeline/build_windows_msvc/bin/
       - ./examples/openmp/build_windows_msvc/bin/
+      - ./examples/cython_polar/build_windows_msvc/bin/
   script:
-    - set "EXAMPLES=bootstrap tasks factory sequence subsequence pipeline openmp"
+    - set "EXAMPLES=bootstrap tasks factory sequence subsequence pipeline openmp cython_polar"
     - set "CFLAGS=-D_CRT_SECURE_NO_DEPRECATE /EHsc /arch:AVX"
     - set "BUILD=build_windows_msvc"
     - call ./ci/tools/threads.bat
@@ -191,8 +198,9 @@ build-macos-clang:
       - ./examples/subsequence/build_macos_clang/bin/
       - ./examples/pipeline/build_macos_clang/bin/
       - ./examples/openmp/build_macos_clang/bin/
+      - ./examples/cython_polar/build_macos_clang/bin/
   script:
-    - export EXAMPLES="bootstrap tasks factory sequence subsequence pipeline openmp"
+    - export EXAMPLES="bootstrap tasks factory sequence subsequence pipeline openmp cython_polar"
     - export CXX="clang++"
     - export CFLAGS="-Wall -Wno-overloaded-virtual -funroll-loops -msse4.2"
     - export BUILD="build_macos_clang"
@@ -249,6 +257,14 @@ test-linux-run-subsequence:
   script:
     - ./ci/test-linux-macos-run.sh subsequence "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
 
+test-linux-run-cython_polar:
+  stage: test
+  tags:
+    - linux
+    - sse4.2
+  script:
+    ./ci/test-linux-macos-run.sh cython_polar " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+
 # test-linux-run-openmp:
 #   stage: test
 #   tags:
@@ -296,6 +312,14 @@ test-macos-run-subsequence:
    - sse4.2
   script:
     - ./ci/test-linux-macos-run.sh subsequence "-K 32 -N 128" build_macos_clang
+
+test-macos-run-cython_polar:
+  stage: test
+  tags:
+   - macos
+   - sse4.2
+  script:
+    - ./ci/test-linux-macos-run.sh cython_polar " " build_macos_clang
 
 # test-macos-run-openmp:
 #   stage: test
@@ -352,3 +376,26 @@ test-macos-run-subsequence:
 #    - avx
 #   script:
 #     - ./ci/test-windows-run.bat subsequence "-K 32 -N 128" build_windows_gcc build_windows_msvc
+
+# test-windows-run-cython_polar:
+#   stage: test
+#   tags:
+#    - windows
+#    - avx
+#   script:
+#     - ./ci/test-windows-run.bat cython_polar " " build_windows_gcc build_windows_msvc
+
+test-linux-wrap-cython_polar:
+  stage: test
+  tags:
+   - linux
+   - sse4.2
+   - gcc
+   - python3.6
+
+  script:
+    - cd examples/cython_polar
+    - pip3 install --user -r requirements.txt
+    - python3 setup.py build_ext -i
+    - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../../lib/aff3ct/build_linux_gcc/lib
+    - python3 -c "import codec_polar; print(codec_polar.py_generate_frozen_bits(10, 16, 20))"
