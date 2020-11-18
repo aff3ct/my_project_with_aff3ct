@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 
-examples=(bootstrap tasks systemc factory chain)
+examples=(bootstrap tasks factory openmp sequence subsequence pipeline cython_polar)
 
 touch src_files.txt
 for example in ${examples[*]}; do

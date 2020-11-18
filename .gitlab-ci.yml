@@ -29,12 +29,10 @@ build-linux-gcc:
     - gcc
     - cmake
     - x86
-    - systemc
   artifacts:
     paths:
       - ./examples/bootstrap/build_linux_gcc/bin/
       - ./examples/factory/build_linux_gcc/bin/
-      - ./examples/systemc/build_linux_gcc/bin/
       - ./examples/tasks/build_linux_gcc/bin/
       - ./examples/sequence/build_linux_gcc/bin/
       - ./examples/subsequence/build_linux_gcc/bin/
@@ -43,7 +41,7 @@ build-linux-gcc:
       - ./examples/cython_polar/build_linux_gcc/bin/
       - ./lib_aff3ct/
   script:
-    - export EXAMPLES="bootstrap tasks systemc factory sequence subsequence pipeline openmp cython_polar"
+    - export EXAMPLES="bootstrap tasks factory sequence subsequence pipeline openmp cython_polar"
     - export CXX="g++"
     - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations"
     - export BUILD="build_linux_gcc"
@@ -60,12 +58,10 @@ build-linux-clang:
     - clang
     - cmake
     - x86
-    - systemc
   artifacts:
     paths:
       - ./examples/bootstrap/build_linux_clang/bin/
       - ./examples/factory/build_linux_clang/bin/
-      - ./examples/systemc/build_linux_clang/bin/
       - ./examples/tasks/build_linux_clang/bin/
       - ./examples/sequence/build_linux_clang/bin/
       - ./examples/subsequence/build_linux_clang/bin/
@@ -73,7 +69,7 @@ build-linux-clang:
       - ./examples/openmp/build_linux_clang/bin/
       - ./examples/cython_polar/build_linux_clang/bin/
   script:
-    - export EXAMPLES="bootstrap tasks systemc factory sequence subsequence pipeline openmp cython_polar"
+    - export EXAMPLES="bootstrap tasks factory sequence subsequence pipeline openmp cython_polar"
     - export CXX="clang++"
     - export CFLAGS="-Wall -Wno-overloaded-virtual -funroll-loops -msse4.2 -Wno-deprecated-declarations"
     - export BUILD="build_linux_clang"
@@ -87,12 +83,10 @@ build-linux-gcc-4.8:
     - linux
     - gcc-4.8
     - cmake
-    - systemc
   artifacts:
     paths:
       - ./examples/bootstrap/build_linux_gcc-4.8/bin/
       - ./examples/factory/build_linux_gcc-4.8/bin/
-      - ./examples/systemc/build_linux_gcc-4.8/bin/
       - ./examples/tasks/build_linux_gcc-4.8/bin/
       - ./examples/sequence/build_linux_gcc-4.8/bin/
       - ./examples/subsequence/build_linux_gcc-4.8/bin/
@@ -100,7 +94,7 @@ build-linux-gcc-4.8:
       - ./examples/openmp/build_linux_gcc-4.8/bin/
       - ./examples/cython_polar/build_linux_gcc-4.8/bin/
   script:
-    - export EXAMPLES="bootstrap tasks systemc factory sequence subsequence pipeline openmp cython_polar"
+    - export EXAMPLES="bootstrap tasks factory sequence subsequence pipeline openmp cython_polar"
     - export CXX="g++-4.8"
     - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations"
     - export BUILD="build_linux_gcc-4.8"
@@ -115,12 +109,10 @@ build-linux-icpc:
     - icpc
     - cmake
     - x86
-    - systemc
   artifacts:
     paths:
       - ./examples/bootstrap/build_linux_icpc/bin/
       - ./examples/factory/build_linux_icpc/bin/
-      - ./examples/systemc/build_linux_icpc/bin/
       - ./examples/tasks/build_linux_icpc/bin/
       - ./examples/sequence/build_linux_icpc/bin/
       - ./examples/subsequence/build_linux_icpc/bin/
@@ -128,7 +120,7 @@ build-linux-icpc:
       - ./examples/openmp/build_linux_icpc/bin/
       - ./examples/cython_polar/build_linux_icpc/bin/
   script:
-    - export EXAMPLES="bootstrap tasks systemc factory sequence subsequence pipeline openmp cython_polar"
+    - export EXAMPLES="bootstrap tasks factory sequence subsequence pipeline openmp cython_polar"
     - export CXX="icpc"
     - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations -std=c++11"
     - export BUILD="build_linux_icpc"
@@ -226,22 +218,6 @@ test-linux-run-bootstrap:
       artifacts: true
   script:
     - ./ci/test-linux-macos-run.sh bootstrap " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
-
-test-linux-run-systemc:
-  stage: test
-  tags:
-    - linux
-    - sse4.2
-    - systemc
-  needs:
-    - job: build-linux-gcc
-      artifacts: true
-    - job: build-linux-clang
-      artifacts: true
-    - job: build-linux-icpc
-      artifacts: true
-  script:
-    - ./ci/test-linux-macos-run.sh systemc " " build_linux_gcc build_linux_clang build_linux_icpc
 
 test-linux-run-tasks:
   stage: test

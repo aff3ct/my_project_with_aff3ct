@@ -1,6 +1,7 @@
 #include <type_traits>
 #include <functional>
 #include <exception>
+#include <algorithm>
 #include <iostream>
 #include <cstdlib>
 #include <memory>
@@ -75,18 +76,23 @@ int main(int argc, char** argv)
 	using namespace module;
 
 	// make the binding of the subsequence
-	(*m.modem  )[mdm::sck::modulate    ::X_N1].bind((*m.encoder)[enc::sck::encode     ::X_N ]);
-	(*m.channel)[chn::sck::add_noise   ::X_N ].bind((*m.modem  )[mdm::sck::modulate   ::X_N2]);
-	(*m.modem  )[mdm::sck::demodulate  ::Y_N1].bind((*m.channel)[chn::sck::add_noise  ::Y_N ]);
-	(*m.decoder)[dec::sck::decode_siho ::Y_N ].bind((*m.modem  )[mdm::sck::demodulate ::Y_N2]);
+	(*m.modem  )[mdm::sck::modulate   ::X_N1].bind((*m.encoder)[enc::sck::encode    ::X_N ]);
+	(*m.channel)[chn::sck::add_noise  ::X_N ].bind((*m.modem  )[mdm::sck::modulate  ::X_N2]);
+	(*m.modem  )[mdm::sck::demodulate ::Y_N1].bind((*m.channel)[chn::sck::add_noise ::Y_N ]);
+	(*m.decoder)[dec::sck::decode_siho::Y_N ].bind((*m.modem  )[mdm::sck::demodulate::Y_N2]);
+
+	std::vector<float> sigma(1);
+	(*m.channel)[chn::sck::add_noise ::noise].bind(sigma);
+	(*m.modem  )[mdm::sck::demodulate::noise].bind(sigma);
 
 	// create a sequence and the associated subsequence
 	tools::Sequence partial_sequence((*m.encoder)[enc::tsk::encode], (*m.decoder)[dec::tsk::decode_siho]);
 	module::Subsequence subsequence(partial_sequence);
+	subsequence.set_custom_name("my_subseq");
 
 	subsequence [ssq::tsk::exec        ][0].bind((*m.source)[src::sck::generate::U_K]);
 	(*m.monitor)[mnt::sck::check_errors::U].bind((*m.source)[src::sck::generate::U_K]);
-	(*m.monitor)[mnt::sck::check_errors::V].bind(subsequence[ssq::tsk::exec    ][1  ]);
+	(*m.monitor)[mnt::sck::check_errors::V].bind(subsequence[ssq::tsk::exec    ][2  ]);
 
 	utils u; init_utils(p, m, u); // create and initialize the utils
 
@@ -112,10 +118,10 @@ int main(int argc, char** argv)
 	for (auto ebn0 = p.ebn0_min; ebn0 < p.ebn0_max; ebn0 += p.ebn0_step)
 	{
 		// compute the current sigma for the channel noise
-		const auto esn0  = tools::ebn0_to_esn0 (ebn0, p.R, p.modem->bps);
-		const auto sigma = tools::esn0_to_sigma(esn0, p.modem->cpm_upf );
+		const auto esn0 = tools::ebn0_to_esn0(ebn0, p.R, p.modem->bps);
+		std::fill(sigma.begin(), sigma.end(), tools::esn0_to_sigma(esn0, p.modem->cpm_upf));
 
-		u.noise->set_values(sigma, ebn0, esn0);
+		u.noise->set_values(sigma[0], ebn0, esn0);
 
 		// display the performance (BER and FER) in real time (in a separate thread)
 		u.terminal->start_temp_report();

@@ -1,5 +1,6 @@
 #include <functional>
 #include <exception>
+#include <algorithm>
 #include <iostream>
 #include <cstdlib>
 #include <chrono>
@@ -100,9 +101,7 @@ int main(int argc, char** argv)
 }
 
 	// set the noise and register modules to "noise changed" callback
-	m.codec  ->set_noise(*u.noise); u.noise->record_callback_update([&m](){ m.codec  ->notify_noise_update(); });
-	m.modem  ->set_noise(*u.noise); u.noise->record_callback_update([&m](){ m.modem  ->notify_noise_update(); });
-	m.channel->set_noise(*u.noise); u.noise->record_callback_update([&m](){ m.channel->notify_noise_update(); });
+	m.codec->set_noise(*u.noise); u.noise->record_callback_update([&m](){ m.codec->notify_noise_update(); });
 
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	using namespace module;
@@ -114,16 +113,20 @@ int main(int argc, char** argv)
 	(*m.monitor)[mnt::sck::check_errors::U   ].bind((*m.source )[src::sck::generate   ::U_K ]);
 	(*m.monitor)[mnt::sck::check_errors::V   ].bind((*m.decoder)[dec::sck::decode_siho::V_K ]);
 
+	std::vector<float> sigma(1);
+	(*m.channel)[chn::sck::add_noise ::noise].bind(sigma);
+	(*m.modem  )[mdm::sck::demodulate::noise].bind(sigma);
+
 	// loop over the various SNRs
 	for (auto ebn0 = p.ebn0_min; ebn0 < p.ebn0_max; ebn0 += p.ebn0_step)
 	{
 		// compute the current sigma for the channel noise
-		const auto esn0  = tools::ebn0_to_esn0 (ebn0, p.R, p.modem->bps);
-		const auto sigma = tools::esn0_to_sigma(esn0, p.modem->cpm_upf );
+		const auto esn0 = tools::ebn0_to_esn0 (ebn0, p.R, p.modem->bps);
+		std::fill(sigma.begin(), sigma.end(), tools::esn0_to_sigma(esn0, p.modem->cpm_upf));
 
 #pragma omp single
 {
-		u.noise->set_values(sigma, ebn0, esn0);
+		u.noise->set_values(sigma[0], ebn0, esn0);
 
 		// display the performance (BER and FER) in real time (in a separate thread)
 		u.terminal->start_temp_report();

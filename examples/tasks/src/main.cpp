@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -61,26 +62,27 @@ int main(int argc, char** argv)
 
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	using namespace module;
-	(*m.encoder)[enc::sck::encode      ::U_K ].bind((*m.source )[src::sck::generate   ::U_K ]);
-	(*m.modem  )[mdm::sck::modulate    ::X_N1].bind((*m.encoder)[enc::sck::encode     ::X_N ]);
-	(*m.channel)[chn::sck::add_noise   ::X_N ].bind((*m.modem  )[mdm::sck::modulate   ::X_N2]);
-	(*m.modem  )[mdm::sck::demodulate  ::Y_N1].bind((*m.channel)[chn::sck::add_noise  ::Y_N ]);
-	(*m.decoder)[dec::sck::decode_siho ::Y_N ].bind((*m.modem  )[mdm::sck::demodulate ::Y_N2]);
-	(*m.monitor)[mnt::sck::check_errors::U   ].bind((*m.encoder)[enc::sck::encode     ::U_K ]);
-	(*m.monitor)[mnt::sck::check_errors::V   ].bind((*m.decoder)[dec::sck::decode_siho::V_K ]);
+
+	(*m.encoder)[enc::sck::encode      ::U_K  ].bind((*m.source )[src::sck::generate   ::U_K ]);
+	(*m.modem  )[mdm::sck::modulate    ::X_N1 ].bind((*m.encoder)[enc::sck::encode     ::X_N ]);
+	(*m.channel)[chn::sck::add_noise   ::X_N  ].bind((*m.modem  )[mdm::sck::modulate   ::X_N2]);
+	(*m.modem  )[mdm::sck::demodulate  ::Y_N1 ].bind((*m.channel)[chn::sck::add_noise  ::Y_N ]);
+	(*m.decoder)[dec::sck::decode_siho ::Y_N  ].bind((*m.modem  )[mdm::sck::demodulate ::Y_N2]);
+	(*m.monitor)[mnt::sck::check_errors::U    ].bind((*m.encoder)[enc::sck::encode     ::U_K ]);
+	(*m.monitor)[mnt::sck::check_errors::V    ].bind((*m.decoder)[dec::sck::decode_siho::V_K ]);
+
+	std::vector<float> sigma(1);
+	(*m.channel)[chn::sck::add_noise ::noise].bind(sigma);
+	(*m.modem  )[mdm::sck::demodulate::noise].bind(sigma);
 
 	// loop over the various SNRs
 	for (auto ebn0 = p.ebn0_min; ebn0 < p.ebn0_max; ebn0 += p.ebn0_step)
 	{
 		// compute the current sigma for the channel noise
-		const auto esn0  = tools::ebn0_to_esn0 (ebn0, p.R);
-		const auto sigma = tools::esn0_to_sigma(esn0     );
+		const auto esn0 = tools::ebn0_to_esn0(ebn0, p.R);
+		std::fill(sigma.begin(), sigma.end(), tools::esn0_to_sigma(esn0));
 
-		u.noise->set_values(sigma, ebn0, esn0);
-
-		// update the sigma of the modem and the channel
-		m.modem  ->set_noise(*u.noise);
-		m.channel->set_noise(*u.noise);
+		u.noise->set_values(sigma[0], ebn0, esn0);
 
 		// display the performance (BER and FER) in real time (in a separate thread)
 		u.terminal->start_temp_report();

@@ -35,6 +35,7 @@ struct buffers
 	std::vector<int  > ref_bits;
 	std::vector<int  > enc_bits;
 	std::vector<float> symbols;
+	std::vector<float> sigma;
 	std::vector<float> noisy_symbols;
 	std::vector<float> LLRs;
 	std::vector<int  > dec_bits;
@@ -74,14 +75,10 @@ int main(int argc, char** argv)
 	for (auto ebn0 = p.ebn0_min; ebn0 < p.ebn0_max; ebn0 += p.ebn0_step)
 	{
 		// compute the current sigma for the channel noise
-		const auto esn0  = tools::ebn0_to_esn0 (ebn0, p.R);
-		const auto sigma = tools::esn0_to_sigma(esn0     );
+		const auto esn0 = tools::ebn0_to_esn0(ebn0, p.R);
+		std::fill(b.sigma.begin(), b.sigma.end(), tools::esn0_to_sigma(esn0));
 
-		u.noise->set_values(sigma, ebn0, esn0);
-
-		// update the sigma of the modem and the channel
-		m.modem  ->set_noise(*u.noise);
-		m.channel->set_noise(*u.noise);
+		u.noise->set_values(b.sigma[0], ebn0, esn0);
 
 		// display the performance (BER and FER) in real time (in a separate thread)
 		u.terminal->start_temp_report();
@@ -89,13 +86,13 @@ int main(int argc, char** argv)
 		// run the simulation chain
 		while (!m.monitor->fe_limit_achieved() && !u.terminal->is_interrupt())
 		{
-			m.source ->generate    (                 b.ref_bits     );
-			m.encoder->encode      (b.ref_bits,      b.enc_bits     );
-			m.modem  ->modulate    (b.enc_bits,      b.symbols      );
-			m.channel->add_noise   (b.symbols,       b.noisy_symbols);
-			m.modem  ->demodulate  (b.noisy_symbols, b.LLRs         );
-			m.decoder->decode_siho (b.LLRs,          b.dec_bits     );
-			m.monitor->check_errors(b.dec_bits,      b.ref_bits     );
+			m.source ->generate    (                          b.ref_bits     );
+			m.encoder->encode      (         b.ref_bits,      b.enc_bits     );
+			m.modem  ->modulate    (         b.enc_bits,      b.symbols      );
+			m.channel->add_noise   (b.sigma, b.symbols,       b.noisy_symbols);
+			m.modem  ->demodulate  (b.sigma, b.noisy_symbols, b.LLRs         );
+			m.decoder->decode_siho (         b.LLRs,          b.dec_bits     );
+			m.monitor->check_errors(         b.dec_bits,      b.ref_bits     );
 		}
 
 		// display the performance (BER and FER) in the terminal
@@ -145,6 +142,7 @@ void init_buffers(const params &p, buffers &b)
 	b.ref_bits      = std::vector<int  >(p.K);
 	b.enc_bits      = std::vector<int  >(p.N);
 	b.symbols       = std::vector<float>(p.N);
+	b.sigma         = std::vector<float>(  1);
 	b.noisy_symbols = std::vector<float>(p.N);
 	b.LLRs          = std::vector<float>(p.N);
 	b.dec_bits      = std::vector<int  >(p.K);
