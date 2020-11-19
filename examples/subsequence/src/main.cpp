@@ -82,8 +82,8 @@ int main(int argc, char** argv)
 	(*m.decoder)[dec::sck::decode_siho::Y_N ].bind((*m.modem  )[mdm::sck::demodulate::Y_N2]);
 
 	std::vector<float> sigma(1);
-	(*m.channel)[chn::sck::add_noise ::noise].bind(sigma);
-	(*m.modem  )[mdm::sck::demodulate::noise].bind(sigma);
+	(*m.channel)[chn::sck::add_noise ::CP].bind(sigma);
+	(*m.modem  )[mdm::sck::demodulate::CP].bind(sigma);
 
 	// create a sequence and the associated subsequence
 	tools::Sequence partial_sequence((*m.encoder)[enc::tsk::encode], (*m.decoder)[dec::tsk::decode_siho]);

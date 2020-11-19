@@ -81,8 +81,8 @@ int main(int argc, char** argv)
 	(*m.monitor)[mnt::sck::check_errors::V   ].bind((*m.decoder)[dec::sck::decode_siho::V_K ]);
 
 	std::vector<float> sigma(1);
-	(*m.channel)[chn::sck::add_noise ::noise].bind(sigma);
-	(*m.modem  )[mdm::sck::demodulate::noise].bind(sigma);
+	(*m.channel)[chn::sck::add_noise ::CP].bind(sigma);
+	(*m.modem  )[mdm::sck::demodulate::CP].bind(sigma);
 
 	// loop over the various SNRs
 	for (auto ebn0 = p.ebn0_min; ebn0 < p.ebn0_max; ebn0 += p.ebn0_step)

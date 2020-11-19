@@ -79,8 +79,8 @@ int main(int argc, char** argv)
 	(*m.sink   )[snk::sck::send        ::V   ].bind((*m.decoder)[dec::sck::decode_siho::V_K ]);
 
 	std::vector<float> sigma(1);
-	(*m.channel)[chn::sck::add_noise ::noise].bind(sigma);
-	(*m.modem  )[mdm::sck::demodulate::noise].bind(sigma);
+	(*m.channel)[chn::sck::add_noise ::CP].bind(sigma);
+	(*m.modem  )[mdm::sck::demodulate::CP].bind(sigma);
 
 	utils u; init_utils(p, m, u); // create and initialize the utils
 
