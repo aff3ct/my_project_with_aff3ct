@@ -109,7 +109,8 @@ int main(int argc, char** argv)
 	u.terminal->legend();
 	u.terminal->start_temp_report();
 
-	u.pipeline->exec([&u, &m]() { return m.source->is_over() || u.terminal->is_interrupt(); });
+	// will automatically stop when `m.source->is_done()` will be `true` (end of input file) or if user press `Ctrl+c`
+	u.pipeline->exec([&u]() { return u.terminal->is_interrupt(); });
 
 	// display the performance (BER and FER) in the terminal
 	u.terminal->final_report();
