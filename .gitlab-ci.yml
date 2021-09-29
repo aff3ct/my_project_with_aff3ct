@@ -11,6 +11,7 @@ before_script:
   - git submodule update --init --recursive
 
 analysis-cppcheck:
+  image: registry.gitlab.com/aff3ct/aff3ct/x86_64_ubuntu_cppcheck:v1.9
   stage: analysis
   artifacts:
     name: analysis-cppcheck-logs
@@ -18,30 +19,33 @@ analysis-cppcheck:
     paths:
       - cppcheck/
   tags:
-    - cppcheck
+    - x86_64
+    - linux
+    - docker
   script:
     - ./ci/analysis-cppcheck.sh
 
 build-linux-gcc:
+  image: registry.gitlab.com/aff3ct/aff3ct/x86_64_ubuntu_gcc:v9.3.0
   stage: build
   tags:
+    - x86_64
     - linux
-    - gcc
-    - cmake
-    - x86
+    - docker
   artifacts:
     paths:
       - ./examples/bootstrap/build_linux_gcc/bin/
       - ./examples/factory/build_linux_gcc/bin/
       - ./examples/tasks/build_linux_gcc/bin/
       - ./examples/sequence/build_linux_gcc/bin/
+      - ./examples/sequence_tests/build_linux_gcc/bin/
       - ./examples/subsequence/build_linux_gcc/bin/
       - ./examples/pipeline/build_linux_gcc/bin/
       - ./examples/openmp/build_linux_gcc/bin/
       - ./examples/cython_polar/build_linux_gcc/bin/
       - ./lib_aff3ct/
   script:
-    - export EXAMPLES="bootstrap tasks factory sequence subsequence pipeline openmp cython_polar"
+    - export EXAMPLES="bootstrap tasks factory sequence sequence_tests subsequence pipeline openmp cython_polar"
     - export CXX="g++"
     - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations"
     - export BUILD="build_linux_gcc"
@@ -52,24 +56,25 @@ build-linux-gcc:
     - cp ./lib/aff3ct/build_linux_gcc/lib/libaff3ct-$AFF3CT_GIT_VERSION.a lib_aff3ct
 
 build-linux-clang:
+  image: registry.gitlab.com/aff3ct/aff3ct/x86_64_ubuntu_clang:v10.0.0
   stage: build
   tags:
+    - x86_64
     - linux
-    - clang
-    - cmake
-    - x86
+    - docker
   artifacts:
     paths:
       - ./examples/bootstrap/build_linux_clang/bin/
       - ./examples/factory/build_linux_clang/bin/
       - ./examples/tasks/build_linux_clang/bin/
       - ./examples/sequence/build_linux_clang/bin/
+      - ./examples/sequence_tests/build_linux_clang/bin/
       - ./examples/subsequence/build_linux_clang/bin/
       - ./examples/pipeline/build_linux_clang/bin/
       - ./examples/openmp/build_linux_clang/bin/
       - ./examples/cython_polar/build_linux_clang/bin/
   script:
-    - export EXAMPLES="bootstrap tasks factory sequence subsequence pipeline openmp cython_polar"
+    - export EXAMPLES="bootstrap tasks factory sequence sequence_tests subsequence pipeline openmp cython_polar"
     - export CXX="clang++"
     - export CFLAGS="-Wall -Wno-overloaded-virtual -funroll-loops -msse4.2 -Wno-deprecated-declarations"
     - export BUILD="build_linux_clang"
@@ -77,50 +82,26 @@ build-linux-clang:
     - source ./ci/tools/aff3ct-git-version.sh
     - ./ci/build-linux-macos.sh
 
-build-linux-gcc-4.8:
-  stage: build
-  tags:
-    - linux
-    - gcc-4.8
-    - cmake
-  artifacts:
-    paths:
-      - ./examples/bootstrap/build_linux_gcc-4.8/bin/
-      - ./examples/factory/build_linux_gcc-4.8/bin/
-      - ./examples/tasks/build_linux_gcc-4.8/bin/
-      - ./examples/sequence/build_linux_gcc-4.8/bin/
-      - ./examples/subsequence/build_linux_gcc-4.8/bin/
-      - ./examples/pipeline/build_linux_gcc-4.8/bin/
-      - ./examples/openmp/build_linux_gcc-4.8/bin/
-      - ./examples/cython_polar/build_linux_gcc-4.8/bin/
-  script:
-    - export EXAMPLES="bootstrap tasks factory sequence subsequence pipeline openmp cython_polar"
-    - export CXX="g++-4.8"
-    - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations"
-    - export BUILD="build_linux_gcc-4.8"
-    - source ./ci/tools/threads.sh
-    - source ./ci/tools/aff3ct-git-version.sh
-    - ./ci/build-linux-macos.sh
-
 build-linux-icpc:
+  image: intel/oneapi-hpckit
   stage: build
   tags:
+    - x86_64
     - linux
-    - icpc
-    - cmake
-    - x86
+    - docker
   artifacts:
     paths:
       - ./examples/bootstrap/build_linux_icpc/bin/
       - ./examples/factory/build_linux_icpc/bin/
       - ./examples/tasks/build_linux_icpc/bin/
       - ./examples/sequence/build_linux_icpc/bin/
+      - ./examples/sequence_tests/build_linux_icpc/bin/
       - ./examples/subsequence/build_linux_icpc/bin/
       - ./examples/pipeline/build_linux_icpc/bin/
       - ./examples/openmp/build_linux_icpc/bin/
       - ./examples/cython_polar/build_linux_icpc/bin/
   script:
-    - export EXAMPLES="bootstrap tasks factory sequence subsequence pipeline openmp cython_polar"
+    - export EXAMPLES="bootstrap tasks factory sequence sequence_tests subsequence pipeline openmp cython_polar"
     - export CXX="icpc"
     - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations -std=c++11"
     - export BUILD="build_linux_icpc"
@@ -129,72 +110,69 @@ build-linux-icpc:
     - ./ci/build-linux-macos.sh
 
 build-windows-gcc:
+  image: registry.gitlab.com/aff3ct/aff3ct/x86_64_windows_gcc:v8.1.0
   stage: build
   tags:
+    - x86_64
     - windows
-    - gcc
-    - cmake
   artifacts:
     paths:
       - ./examples/bootstrap/build_windows_gcc/bin/
       - ./examples/factory/build_windows_gcc/bin/
       - ./examples/tasks/build_windows_gcc/bin/
       - ./examples/sequence/build_windows_gcc/bin/
+      - ./examples/sequence_tests/build_windows_gcc/bin/
       - ./examples/subsequence/build_windows_gcc/bin/
       - ./examples/pipeline/build_windows_gcc/bin/
       - ./examples/openmp/build_windows_gcc/bin/
       - ./examples/cython_polar/build_windows_gcc/bin/
   script:
-    - set "EXAMPLES=bootstrap tasks factory sequence subsequence pipeline openmp cython_polar"
-    - set "CFLAGS=-Wall -Wno-deprecated-declarations -funroll-loops -mavx"
-    - set "BUILD=build_windows_gcc"
-    - call ./ci/tools/threads.bat
-    - call ./ci/tools/aff3ct-git-version.bat
+    - $env:EXAMPLES="bootstrap tasks factory sequence sequence_tests subsequence pipeline openmp cython_polar"
+    - $env:CFLAGS="-Wall -Wno-deprecated-declarations -funroll-loops -mavx"
+    - $env:BUILD="build_windows_gcc"
     - ./ci/build-windows-gcc.bat
 
 build-windows-msvc:
+  image: registry.gitlab.com/aff3ct/aff3ct/x86_64_windows_msvc:v15
   stage: build
   tags:
+    - x86_64
     - windows
-    - msvc
-    - cmake
   artifacts:
     paths:
       - ./examples/bootstrap/build_windows_msvc/bin/
       - ./examples/factory/build_windows_msvc/bin/
       - ./examples/tasks/build_windows_msvc/bin/
       - ./examples/sequence/build_windows_msvc/bin/
+      - ./examples/sequence_tests/build_windows_msvc/bin/
       - ./examples/subsequence/build_windows_msvc/bin/
       - ./examples/pipeline/build_windows_msvc/bin/
       - ./examples/openmp/build_windows_msvc/bin/
       - ./examples/cython_polar/build_windows_msvc/bin/
   script:
-    - set "EXAMPLES=bootstrap tasks factory sequence subsequence pipeline openmp cython_polar"
-    - set "CFLAGS=-D_CRT_SECURE_NO_DEPRECATE /EHsc /arch:AVX"
-    - set "BUILD=build_windows_msvc"
-    - call ./ci/tools/threads.bat
-    - call ./ci/tools/aff3ct-git-version.bat
+    - $env:EXAMPLES="bootstrap tasks factory sequence sequence_tests subsequence pipeline openmp cython_polar"
+    - $env:CFLAGS="-D_CRT_SECURE_NO_DEPRECATE /EHsc /arch:AVX"
+    - $env:BUILD="build_windows_msvc"
     - ./ci/build-windows-msvc.bat
 
 build-macos-clang:
   stage: build
   tags:
+    - x86_64
     - macos
-    - apple-clang
-    - cmake
-    - x86
   artifacts:
     paths:
       - ./examples/bootstrap/build_macos_clang/bin/
       - ./examples/factory/build_macos_clang/bin/
       - ./examples/tasks/build_macos_clang/bin/
       - ./examples/sequence/build_macos_clang/bin/
+      - ./examples/sequence_tests/build_macos_clang/bin/
       - ./examples/subsequence/build_macos_clang/bin/
       - ./examples/pipeline/build_macos_clang/bin/
       - ./examples/openmp/build_macos_clang/bin/
       - ./examples/cython_polar/build_macos_clang/bin/
   script:
-    - export EXAMPLES="bootstrap tasks factory sequence subsequence pipeline openmp cython_polar"
+    - export EXAMPLES="bootstrap tasks factory sequence sequence_tests subsequence pipeline openmp cython_polar"
     - export CXX="clang++"
     - export CFLAGS="-Wall -Wno-overloaded-virtual -funroll-loops -msse4.2"
     - export BUILD="build_macos_clang"
@@ -203,129 +181,155 @@ build-macos-clang:
     - ./ci/build-linux-macos.sh
 
 test-linux-run-bootstrap:
+  image: ubuntu:20.04
   stage: test
   tags:
-    - linux
+    - x86_64
     - sse4.2
+    - linux
+    - docker
   needs:
     - job: build-linux-gcc
-      artifacts: true
-    - job: build-linux-gcc-4.8
       artifacts: true
     - job: build-linux-clang
       artifacts: true
     - job: build-linux-icpc
       artifacts: true
   script:
-    - ./ci/test-linux-macos-run.sh bootstrap " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh bootstrap " " build_linux_gcc build_linux_clang build_linux_icpc
 
 test-linux-run-tasks:
+  image: ubuntu:20.04
   stage: test
   tags:
-   - linux
-   - sse4.2
+    - x86_64
+    - sse4.2
+    - linux
+    - docker
   needs:
     - job: build-linux-gcc
-      artifacts: true
-    - job: build-linux-gcc-4.8
       artifacts: true
     - job: build-linux-clang
       artifacts: true
     - job: build-linux-icpc
       artifacts: true
   script:
-    - ./ci/test-linux-macos-run.sh tasks " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh tasks " " build_linux_gcc build_linux_clang build_linux_icpc
 
 test-linux-run-factory:
+  image: ubuntu:20.04
   stage: test
   tags:
-    - linux
+    - x86_64
     - sse4.2
+    - linux
+    - docker
   needs:
     - job: build-linux-gcc
-      artifacts: true
-    - job: build-linux-gcc-4.8
       artifacts: true
     - job: build-linux-clang
       artifacts: true
     - job: build-linux-icpc
       artifacts: true
   script:
-    - ./ci/test-linux-macos-run.sh factory "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh factory "-K 32 -N 128" build_linux_gcc build_linux_clang build_linux_icpc
 
 test-linux-run-sequence:
+  image: ubuntu:20.04
   stage: test
   tags:
-    - linux
+    - x86_64
     - sse4.2
+    - linux
+    - docker
   needs:
     - job: build-linux-gcc
-      artifacts: true
-    - job: build-linux-gcc-4.8
       artifacts: true
     - job: build-linux-clang
       artifacts: true
     - job: build-linux-icpc
       artifacts: true
   script:
-    - ./ci/test-linux-macos-run.sh sequence "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh sequence "-K 32 -N 128" build_linux_gcc build_linux_clang build_linux_icpc
+
+test-linux-run-sequence-tests:
+  image: ubuntu:20.04
+  stage: test
+  tags:
+    - x86_64
+    - sse4.2
+    - linux
+    - docker
+  needs:
+    - job: build-linux-gcc
+      artifacts: true
+    - job: build-linux-clang
+      artifacts: true
+    - job: build-linux-icpc
+      artifacts: true
+  script:
+    - ./ci/test-linux-macos-run.sh sequence_tests " " build_linux_gcc build_linux_clang build_linux_icpc
 
 test-linux-run-subsequence:
+  image: ubuntu:20.04
   stage: test
   tags:
-    - linux
+    - x86_64
     - sse4.2
+    - linux
+    - docker
   needs:
     - job: build-linux-gcc
-      artifacts: true
-    - job: build-linux-gcc-4.8
       artifacts: true
     - job: build-linux-clang
       artifacts: true
     - job: build-linux-icpc
       artifacts: true
   script:
-    - ./ci/test-linux-macos-run.sh subsequence "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh subsequence "-K 32 -N 128" build_linux_gcc build_linux_clang build_linux_icpc
 
 # test-linux-run-openmp:
-#   stage: test
-#   tags:
-#     - linux
-#     - sse4.2
+#  image: ubuntu:20.04
+#  stage: test
+#  tags:
+#    - x86_64
+#    - sse4.2
+#    - linux
+#    - docker
 #   needs:
 #     - job: build-linux-gcc
-#       artifacts: true
-#     - job: build-linux-gcc-4.8
 #       artifacts: true
 #     - job: build-linux-clang
 #       artifacts: true
 #     - job: build-linux-icpc
 #       artifacts: true
 #   script:
-#     - ./ci/test-linux-macos-run.sh openmp "-K 32 -N 128" build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+#     - ./ci/test-linux-macos-run.sh openmp "-K 32 -N 128" build_linux_gcc build_linux_clang build_linux_icpc
 
 test-linux-run-cython_polar:
+  image: ubuntu:20.04
   stage: test
   tags:
-    - linux
+    - x86_64
     - sse4.2
+    - linux
+    - docker
   needs:
     - job: build-linux-gcc
-      artifacts: true
-    - job: build-linux-gcc-4.8
       artifacts: true
     - job: build-linux-clang
       artifacts: true
     - job: build-linux-icpc
       artifacts: true
   script:
-    ./ci/test-linux-macos-run.sh cython_polar " " build_linux_gcc build_linux_gcc-4.8 build_linux_clang build_linux_icpc
+    ./ci/test-linux-macos-run.sh cython_polar " " build_linux_gcc build_linux_clang build_linux_icpc
 
 test-macos-run-bootstrap:
   stage: test
   tags:
-   - macos
+   - x86_64
    - sse4.2
+   - macos
   needs:
     - job: build-macos-clang
       artifacts: true
@@ -335,8 +339,9 @@ test-macos-run-bootstrap:
 test-macos-run-tasks:
   stage: test
   tags:
-   - macos
+   - x86_64
    - sse4.2
+   - macos
   needs:
     - job: build-macos-clang
       artifacts: true
@@ -346,8 +351,9 @@ test-macos-run-tasks:
 test-macos-run-factory:
   stage: test
   tags:
-   - macos
+   - x86_64
    - sse4.2
+   - macos
   needs:
     - job: build-macos-clang
       artifacts: true
@@ -357,8 +363,9 @@ test-macos-run-factory:
 test-macos-run-sequence:
   stage: test
   tags:
-   - macos
+   - x86_64
    - sse4.2
+   - macos
   needs:
     - job: build-macos-clang
       artifacts: true
@@ -368,8 +375,9 @@ test-macos-run-sequence:
 test-macos-run-subsequence:
   stage: test
   tags:
-   - macos
+   - x86_64
    - sse4.2
+   - macos
   needs:
     - job: build-macos-clang
       artifacts: true
@@ -379,8 +387,9 @@ test-macos-run-subsequence:
 # test-macos-run-openmp:
 #   stage: test
 #   tags:
-#    - macos
-#    - sse4.2
+#   - x86_64
+#   - sse4.2
+#   - macos
 #   needs:
 #    - job: build-macos-clang
 #      artifacts: true
@@ -390,8 +399,9 @@ test-macos-run-subsequence:
 test-macos-run-cython_polar:
   stage: test
   tags:
-   - macos
+   - x86_64
    - sse4.2
+   - macos
   needs:
     - job: build-macos-clang
       artifacts: true
@@ -490,12 +500,13 @@ test-macos-run-cython_polar:
 #     - ./ci/test-windows-run.bat cython_polar " " build_windows_gcc build_windows_msvc
 
 test-linux-wrap-cython_polar:
+  image: registry.gitlab.com/aff3ct/aff3ct/x86_64_ubuntu_python:v3.8.5
   stage: test
   tags:
-   - linux
-   - sse4.2
-   - gcc
-   - python3.6
+    - x86_64
+    - sse4.2
+    - linux
+    - docker
   needs:
     - job: build-linux-gcc
       artifacts: true

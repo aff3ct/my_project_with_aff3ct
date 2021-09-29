@@ -1,5 +1,7 @@
 @echo on
 
+call ./ci/tools/threads.bat
+
 cd examples
 
 set i=1

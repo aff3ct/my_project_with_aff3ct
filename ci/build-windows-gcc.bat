@@ -1,5 +1,8 @@
 @echo on
 
+call ./ci/tools/threads.bat
+call ./ci/tools/aff3ct-git-version.bat
+
 rem Compile the AFF3CT library
 cd lib\aff3ct
 mkdir %BUILD%
