@@ -13,9 +13,15 @@
 #include <aff3ct.hpp>
 using namespace aff3ct;
 
+//#define STEP_BY_STEP
+
 struct params
 {
+#ifndef STEP_BY_STEP
 	size_t n_threads = std::thread::hardware_concurrency();
+#else
+	size_t n_threads = 1;
+#endif
 	float  ebn0_min  =  0.00f; // minimum SNR value
 	float  ebn0_max  = 10.01f; // maximum SNR value
 	float  ebn0_step =  1.00f; // SNR step
@@ -74,13 +80,13 @@ int main(int argc, char** argv)
 
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	using namespace module;
-	(*m.encoder)[enc::sck::encode      ::U_K ].bind((*m.source )[src::sck::generate   ::U_K ]);
-	(*m.modem  )[mdm::sck::modulate    ::X_N1].bind((*m.encoder)[enc::sck::encode     ::X_N ]);
-	(*m.channel)[chn::sck::add_noise   ::X_N ].bind((*m.modem  )[mdm::sck::modulate   ::X_N2]);
-	(*m.modem  )[mdm::sck::demodulate  ::Y_N1].bind((*m.channel)[chn::sck::add_noise  ::Y_N ]);
-	(*m.decoder)[dec::sck::decode_siho ::Y_N ].bind((*m.modem  )[mdm::sck::demodulate ::Y_N2]);
-	(*m.monitor)[mnt::sck::check_errors::U   ].bind((*m.source )[src::sck::generate   ::U_K ]);
-	(*m.monitor)[mnt::sck::check_errors::V   ].bind((*m.decoder)[dec::sck::decode_siho::V_K ]);
+	(*m.encoder)[enc::sck::encode      ::U_K ] = (*m.source )[src::sck::generate   ::U_K ];
+	(*m.modem  )[mdm::sck::modulate    ::X_N1] = (*m.encoder)[enc::sck::encode     ::X_N ];
+	(*m.channel)[chn::sck::add_noise   ::X_N ] = (*m.modem  )[mdm::sck::modulate   ::X_N2];
+	(*m.modem  )[mdm::sck::demodulate  ::Y_N1] = (*m.channel)[chn::sck::add_noise  ::Y_N ];
+	(*m.decoder)[dec::sck::decode_siho ::Y_N ] = (*m.modem  )[mdm::sck::demodulate ::Y_N2];
+	(*m.monitor)[mnt::sck::check_errors::U   ] = (*m.source )[src::sck::generate   ::U_K ];
+	(*m.monitor)[mnt::sck::check_errors::V   ] = (*m.decoder)[dec::sck::decode_siho::V_K ];
 
 	std::vector<float> sigma(1);
 	(*m.channel)[chn::sck::add_noise ::CP].bind(sigma);
@@ -119,7 +125,17 @@ int main(int argc, char** argv)
 		u.terminal->start_temp_report();
 
 		// execute the simulation sequence (multi-threaded)
+#ifndef STEP_BY_STEP
 		u.sequence->exec([&u]() { return u.monitor_red->is_done() || u.terminal->is_interrupt(); });
+#else
+		Task* cur_task;
+		do
+			while ((cur_task = u.sequence->exec_step()));
+			/*{
+				std::cout << "cur_task->get_name() = " << cur_task->get_name() << std::endl;
+			}*/
+		while (!u.sequence->is_done() && !u.monitor_red->is_done() && !u.terminal->is_interrupt());
+#endif
 
 		// final reduction
 		u.monitor_red->reduce();

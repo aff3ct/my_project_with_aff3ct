@@ -8,6 +8,8 @@
 #include <aff3ct.hpp>
 using namespace aff3ct;
 
+//#define STEP_BY_STEP
+
 int main(int argc, char** argv)
 {
 	size_t n_threads = std::thread::hardware_concurrency();
@@ -49,10 +51,10 @@ int main(int argc, char** argv)
 	}
 
 	// sockets binding
-	(*incs[0])[module::inc::sck::increment::in].bind(initializer[module::ini::sck::initialize::out]);
+	(*incs[0])[module::inc::sck::increment::in] = initializer[module::ini::sck::initialize::out];
 	for (size_t s = 0; s < incs.size() -1; s++)
-		(*incs[s+1])[module::inc::sck::increment::in].bind((*incs[s])[module::inc::sck::increment::out]);
-	finalizer[module::fin::sck::finalize::in].bind((*incs[incs.size()-1])[module::inc::sck::increment::out]);
+		(*incs[s+1])[module::inc::sck::increment::in] = (*incs[s])[module::inc::sck::increment::out];
+	finalizer[module::fin::sck::finalize::in] = (*incs[incs.size()-1])[module::inc::sck::increment::out];
 
 	tools::Sequence sequence_chain(initializer[module::ini::tsk::initialize], n_threads);
 	sequence_chain.set_n_frames(n_inter_frames);
@@ -82,9 +84,16 @@ int main(int argc, char** argv)
 	}
 
 	std::atomic<unsigned int> counter(0);
-	// execute the simulation sequence (multi-threaded)
 	auto t_start = std::chrono::steady_clock::now();
+#ifndef STEP_BY_STEP
+	// execute the sequence (multi-threaded)
 	sequence_chain.exec([&counter, limit]() { return ++counter >= limit; });
+#else
+	do
+		for (size_t tid = 0; tid < n_threads; tid++)
+			while (sequence_chain.exec_step(tid));
+	while (++counter < (limit / n_threads));
+#endif
 	std::chrono::nanoseconds duration = std::chrono::steady_clock::now() - t_start;
 
 	auto elapsed_time = duration.count() / 1000.f / 1000.f;
@@ -143,15 +152,15 @@ int main(int argc, char** argv)
 	// limit = 1;
 	std::cout << "limit = " << limit << std::endl;
 
-	switcher  [module::swi::tsk::select ][1]   .bind(initializer[module::ini::sck::initialize::out]);
-	iterator  [module::ite::tsk::iterate]      .bind(switcher   [module::swi::tsk::select][3]);
-	switcher  [module::swi::tsk::commute][0]   .bind(switcher   [module::swi::tsk::select][2]);
-	switcher  [module::swi::tsk::commute][1]   .bind(iterator   [module::ite::sck::iterate::out]);
-	(*incs[0])[module::inc::sck::increment::in].bind(switcher   [module::swi::tsk::commute][2]);
+	switcher  [module::swi::tsk::select ][1]    = initializer[module::ini::sck::initialize::out];
+	iterator  [module::ite::tsk::iterate]       = switcher   [module::swi::tsk::select][3];
+	switcher  [module::swi::tsk::commute][0]    = switcher   [module::swi::tsk::select][2];
+	switcher  [module::swi::tsk::commute][1]    = iterator   [module::ite::sck::iterate::out];
+	(*incs[0])[module::inc::sck::increment::in] = switcher   [module::swi::tsk::commute][2];
 	for (size_t s = 0; s < incs.size() -1; s++)
-		(*incs[s+1])[module::inc::sck::increment::in].bind((*incs[s])[module::inc::sck::increment::out]);
-	switcher  [module::swi::tsk::select][0]    .bind((*incs[incs.size()-1])[module::inc::sck::increment::out]);
-	finalizer [module::fin::sck::finalize::in] .bind(switcher   [module::swi::tsk::commute][3]);
+		(*incs[s+1])[module::inc::sck::increment::in] = (*incs[s])[module::inc::sck::increment::out];
+	switcher  [module::swi::tsk::select][0]     = (*incs[incs.size()-1])[module::inc::sck::increment::out];
+	finalizer [module::fin::sck::finalize::in]  = switcher   [module::swi::tsk::commute][3];
 
 	tools::Sequence sequence_for_loop(initializer[module::ini::tsk::initialize], n_threads);
 	sequence_for_loop.set_n_frames(n_inter_frames);
@@ -185,7 +194,15 @@ int main(int argc, char** argv)
 
 	counter = 0;
 	t_start = std::chrono::steady_clock::now();
+#ifndef STEP_BY_STEP
+	// execute the sequence (multi-threaded)
 	sequence_for_loop.exec([&counter, limit]() { return ++counter >= limit; });
+#else
+	do
+		for (size_t tid = 0; tid < n_threads; tid++)
+			while (sequence_for_loop.exec_step(tid));
+	while (++counter < (limit / n_threads));
+#endif
 	duration = std::chrono::steady_clock::now() - t_start;
 
 	elapsed_time = duration.count() / 1000.f / 1000.f;
@@ -241,15 +258,15 @@ int main(int argc, char** argv)
 	// limit = 1;
 	std::cout << "limit = " << limit << std::endl;
 
-	switcher  [module::swi::tsk::select ][1]   .bind(initializer[module::ini::sck::initialize::out]);
-	iterator  [module::ite::tsk::iterate]      .bind(switcher   [module::swi::tsk::select][3]);
-	switcher  [module::swi::tsk::commute][1]   .bind(iterator   [module::ite::sck::iterate::out]);
-	(*incs[0])[module::inc::sck::increment::in].bind(switcher   [module::swi::tsk::select][2]);
+	switcher  [module::swi::tsk::select ][1]    = initializer[module::ini::sck::initialize::out];
+	iterator  [module::ite::tsk::iterate]       = switcher   [module::swi::tsk::select][3];
+	switcher  [module::swi::tsk::commute][1]    = iterator   [module::ite::sck::iterate::out];
+	(*incs[0])[module::inc::sck::increment::in] = switcher   [module::swi::tsk::select][2];
 	for (size_t s = 0; s < incs.size() -1; s++)
-		(*incs[s+1])[module::inc::sck::increment::in].bind((*incs[s])[module::inc::sck::increment::out]);
-	switcher  [module::swi::tsk::commute][0]   .bind((*incs[5]) [module::inc::sck::increment::out]);
-	switcher  [module::swi::tsk::select ][0]   .bind(switcher   [module::swi::tsk::commute][2]);
-	finalizer [module::fin::sck::finalize::in] .bind(switcher   [module::swi::tsk::commute][3]);
+		(*incs[s+1])[module::inc::sck::increment::in] = (*incs[s])[module::inc::sck::increment::out];
+	switcher  [module::swi::tsk::commute][0]    = (*incs[5]) [module::inc::sck::increment::out];
+	switcher  [module::swi::tsk::select ][0]    = switcher   [module::swi::tsk::commute][2];
+	finalizer [module::fin::sck::finalize::in]  = switcher   [module::swi::tsk::commute][3];
 
 	tools::Sequence sequence_do_while_loop(initializer[module::ini::tsk::initialize], n_threads);
 	sequence_do_while_loop.set_n_frames(n_inter_frames);
@@ -283,7 +300,15 @@ int main(int argc, char** argv)
 
 	counter = 0;
 	t_start = std::chrono::steady_clock::now();
+#ifndef STEP_BY_STEP
+	// execute the sequence (multi-threaded)
 	sequence_do_while_loop.exec([&counter, limit]() { return ++counter >= limit; });
+#else
+	do
+		for (size_t tid = 0; tid < n_threads; tid++)
+			while (sequence_do_while_loop.exec_step(tid));
+	while (++counter < (limit / n_threads));
+#endif
 	duration = std::chrono::steady_clock::now() - t_start;
 
 	elapsed_time = duration.count() / 1000.f / 1000.f;
@@ -337,23 +362,23 @@ int main(int argc, char** argv)
 	module::Controller_static controller;
 	module::Switcher switchex(3, data_length, typeid(int));
 
-	controller[module::ctr::tsk::control      ].bind(initializer[module::ini::sck::initialize::out]);
-	switchex  [module::swi::tsk::commute   ][0].bind(initializer[module::ini::sck::initialize::out]);
-	switchex  [module::swi::tsk::commute   ][1].bind(controller [module::ctr::sck::control   ::out]);
+	controller[module::ctr::tsk::control      ] = initializer[module::ini::sck::initialize::out];
+	switchex  [module::swi::tsk::commute   ][0] = initializer[module::ini::sck::initialize::out];
+	switchex  [module::swi::tsk::commute   ][1] = controller [module::ctr::sck::control   ::out];
 	// path 0
-	(*incs[0])[module::inc::sck::increment::in].bind(switchex   [module::swi::tsk::commute     ][2]);
-	(*incs[1])[module::inc::sck::increment::in].bind((*incs[0]) [module::inc::sck::increment ::out]);
-	(*incs[2])[module::inc::sck::increment::in].bind((*incs[1]) [module::inc::sck::increment ::out]);
-	switchex  [module::swi::tsk::select    ][0].bind((*incs[2]) [module::inc::sck::increment ::out]);
+	(*incs[0])[module::inc::sck::increment::in] = switchex   [module::swi::tsk::commute     ][2];
+	(*incs[1])[module::inc::sck::increment::in] = (*incs[0]) [module::inc::sck::increment ::out];
+	(*incs[2])[module::inc::sck::increment::in] = (*incs[1]) [module::inc::sck::increment ::out];
+	switchex  [module::swi::tsk::select    ][0] = (*incs[2]) [module::inc::sck::increment ::out];
 	// path 1
-	(*incs[3])[module::inc::sck::increment::in].bind(switchex   [module::swi::tsk::commute     ][3]);
-	(*incs[4])[module::inc::sck::increment::in].bind((*incs[3]) [module::inc::sck::increment ::out]);
-	switchex  [module::swi::tsk::select    ][1].bind((*incs[4]) [module::inc::sck::increment ::out]);
+	(*incs[3])[module::inc::sck::increment::in] = switchex   [module::swi::tsk::commute     ][3];
+	(*incs[4])[module::inc::sck::increment::in] = (*incs[3]) [module::inc::sck::increment ::out];
+	switchex  [module::swi::tsk::select    ][1] = (*incs[4]) [module::inc::sck::increment ::out];
 	// path 2
-	(*incs[5])[module::inc::sck::increment::in].bind(switchex   [module::swi::tsk::commute     ][4]);
-	switchex  [module::swi::tsk::select    ][2].bind((*incs[5]) [module::inc::sck::increment ::out]);
+	(*incs[5])[module::inc::sck::increment::in] = switchex   [module::swi::tsk::commute     ][4];
+	switchex  [module::swi::tsk::select    ][2] = (*incs[5]) [module::inc::sck::increment ::out];
 	// end
-	finalizer [module::fin::sck::finalize ::in].bind(switchex   [module::swi::tsk::select      ][3]);
+	finalizer [module::fin::sck::finalize ::in] = switchex   [module::swi::tsk::select      ][3];
 
 	tools::Sequence sequence_exclusive_paths(initializer[module::ini::tsk::initialize], n_threads);
 	sequence_exclusive_paths.set_n_frames(n_inter_frames);
@@ -397,7 +422,15 @@ int main(int argc, char** argv)
 
 		counter = 0;
 		t_start = std::chrono::steady_clock::now();
+#ifndef STEP_BY_STEP
+		// execute the sequence (multi-threaded)
 		sequence_exclusive_paths.exec([&counter, limit]() { return ++counter >= limit; });
+#else
+		do
+			for (size_t tid = 0; tid < n_threads; tid++)
+				while (sequence_exclusive_paths.exec_step(tid));
+		while (++counter < (limit / n_threads));
+#endif
 		duration = std::chrono::steady_clock::now() - t_start;
 
 		elapsed_time = duration.count() / 1000.f / 1000.f;
@@ -464,20 +497,20 @@ int main(int argc, char** argv)
 	// limit = 1;
 	std::cout << "limit = " << limit << std::endl;
 
-	switcher2 [module::swi::tsk::select ][1]   .bind(initializer[module::ini::sck::initialize::out]);
-	iterator2 [module::ite::tsk::iterate]      .bind(switcher2  [module::swi::tsk::select][3]);
-	switcher2 [module::swi::tsk::commute][0]   .bind(switcher2  [module::swi::tsk::select][2]);
-	switcher2 [module::swi::tsk::commute][1]   .bind(iterator2  [module::ite::sck::iterate::out]);
-	switcher  [module::swi::tsk::select ][1]   .bind(switcher2  [module::swi::tsk::commute][2]);
-	iterator  [module::ite::tsk::iterate]      .bind(switcher   [module::swi::tsk::select ][3]);
-	switcher  [module::swi::tsk::commute][0]   .bind(switcher   [module::swi::tsk::select ][2]);
-	switcher  [module::swi::tsk::commute][1]   .bind(iterator   [module::ite::sck::iterate::out]);
-	(*incs[0])[module::inc::sck::increment::in].bind(switcher   [module::swi::tsk::commute][2]);
+	switcher2 [module::swi::tsk::select ][1]    = initializer[module::ini::sck::initialize::out];
+	iterator2 [module::ite::tsk::iterate]       = switcher2  [module::swi::tsk::select][3];
+	switcher2 [module::swi::tsk::commute][0]    = switcher2  [module::swi::tsk::select][2];
+	switcher2 [module::swi::tsk::commute][1]    = iterator2  [module::ite::sck::iterate::out];
+	switcher  [module::swi::tsk::select ][1]    = switcher2  [module::swi::tsk::commute][2];
+	iterator  [module::ite::tsk::iterate]       = switcher   [module::swi::tsk::select ][3];
+	switcher  [module::swi::tsk::commute][0]    = switcher   [module::swi::tsk::select ][2];
+	switcher  [module::swi::tsk::commute][1]    = iterator   [module::ite::sck::iterate::out];
+	(*incs[0])[module::inc::sck::increment::in] = switcher   [module::swi::tsk::commute][2];
 	for (size_t s = 0; s < incs.size() -1; s++)
-		(*incs[s+1])[module::inc::sck::increment::in].bind((*incs[s])[module::inc::sck::increment::out]);
-	switcher  [module::swi::tsk::select][0]    .bind((*incs[incs.size()-1])[module::inc::sck::increment::out]);
-	switcher2 [module::swi::tsk::select][0]    .bind(switcher   [module::swi::tsk::commute][3]);
-	finalizer [module::fin::sck::finalize::in] .bind(switcher2  [module::swi::tsk::commute][3]);
+		(*incs[s+1])[module::inc::sck::increment::in] = (*incs[s])[module::inc::sck::increment::out];
+	switcher  [module::swi::tsk::select][0]     = (*incs[incs.size()-1])[module::inc::sck::increment::out];
+	switcher2 [module::swi::tsk::select][0]     = switcher   [module::swi::tsk::commute][3];
+	finalizer [module::fin::sck::finalize::in]  = switcher2  [module::swi::tsk::commute][3];
 
 	tools::Sequence sequence_nested_loops(initializer[module::ini::tsk::initialize], n_threads);
 	sequence_nested_loops.set_n_frames(n_inter_frames);
@@ -511,7 +544,15 @@ int main(int argc, char** argv)
 
 	counter = 0;
 	t_start = std::chrono::steady_clock::now();
+#ifndef STEP_BY_STEP
+	// execute the sequence (multi-threaded)
 	sequence_nested_loops.exec([&counter, limit]() { return ++counter >= limit; });
+#else
+	do
+		for (size_t tid = 0; tid < n_threads; tid++)
+			while (sequence_nested_loops.exec_step(tid));
+	while (++counter < (limit / n_threads));
+#endif
 	duration = std::chrono::steady_clock::now() - t_start;
 
 	elapsed_time = duration.count() / 1000.f / 1000.f;
