@@ -1,3 +1,6 @@
+variables:
+  GIT_SUBMODULE_STRATEGY: none
+
 stages:
   - analysis
   - build
@@ -7,8 +10,6 @@ before_script:
   - hostname
   - whoami
 # - pwd
-  - git submodule sync --recursive
-  - git submodule update --init --recursive
 
 analysis-cppcheck:
   image: registry.gitlab.com/aff3ct/aff3ct/x86_64_ubuntu_cppcheck:v1.9
@@ -32,6 +33,8 @@ build-linux-gcc:
     - x86_64
     - linux
     - docker
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
   artifacts:
     paths:
       - ./examples/bootstrap/build_linux_gcc/bin/
@@ -62,6 +65,8 @@ build-linux-clang:
     - x86_64
     - linux
     - docker
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
   artifacts:
     paths:
       - ./examples/bootstrap/build_linux_clang/bin/
@@ -89,6 +94,8 @@ build-linux-clang:
 #     - x86_64
 #     - linux
 #     - docker
+#   variables:
+#     GIT_SUBMODULE_STRATEGY: recursive
 #   artifacts:
 #     paths:
 #       - ./examples/bootstrap/build_linux_icpc/bin/
@@ -115,6 +122,8 @@ build-windows-gcc:
   tags:
     - x86_64
     - windows
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
   artifacts:
     paths:
       - ./examples/bootstrap/build_windows_gcc/bin/
@@ -138,6 +147,8 @@ build-windows-msvc:
   tags:
     - x86_64
     - windows
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
   artifacts:
     paths:
       - ./examples/bootstrap/build_windows_msvc/bin/
@@ -160,6 +171,8 @@ build-macos-clang:
   tags:
     - x86_64
     - macos
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
   artifacts:
     paths:
       - ./examples/bootstrap/build_macos_clang/bin/
