@@ -82,32 +82,32 @@ build-linux-clang:
     - source ./ci/tools/aff3ct-git-version.sh
     - ./ci/build-linux-macos.sh
 
-build-linux-icpc:
-  image: intel/oneapi-hpckit
-  stage: build
-  tags:
-    - x86_64
-    - linux
-    - docker
-  artifacts:
-    paths:
-      - ./examples/bootstrap/build_linux_icpc/bin/
-      - ./examples/factory/build_linux_icpc/bin/
-      - ./examples/tasks/build_linux_icpc/bin/
-      - ./examples/sequence/build_linux_icpc/bin/
-      - ./examples/sequence_tests/build_linux_icpc/bin/
-      - ./examples/subsequence/build_linux_icpc/bin/
-      - ./examples/pipeline/build_linux_icpc/bin/
-      - ./examples/openmp/build_linux_icpc/bin/
-      - ./examples/cython_polar/build_linux_icpc/bin/
-  script:
-    - export EXAMPLES="bootstrap tasks factory sequence sequence_tests subsequence pipeline openmp cython_polar"
-    - export CXX="icpc"
-    - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations -std=c++11"
-    - export BUILD="build_linux_icpc"
-    - source ./ci/tools/threads.sh
-    - source ./ci/tools/aff3ct-git-version.sh
-    - ./ci/build-linux-macos.sh
+# build-linux-icpc:
+#   image: intel/oneapi-hpckit
+#   stage: build
+#   tags:
+#     - x86_64
+#     - linux
+#     - docker
+#   artifacts:
+#     paths:
+#       - ./examples/bootstrap/build_linux_icpc/bin/
+#       - ./examples/factory/build_linux_icpc/bin/
+#       - ./examples/tasks/build_linux_icpc/bin/
+#       - ./examples/sequence/build_linux_icpc/bin/
+#       - ./examples/sequence_tests/build_linux_icpc/bin/
+#       - ./examples/subsequence/build_linux_icpc/bin/
+#       - ./examples/pipeline/build_linux_icpc/bin/
+#       - ./examples/openmp/build_linux_icpc/bin/
+#       - ./examples/cython_polar/build_linux_icpc/bin/
+#   script:
+#     - export EXAMPLES="bootstrap tasks factory sequence sequence_tests subsequence pipeline openmp cython_polar"
+#     - export CXX="icpc"
+#     - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations -std=c++11"
+#     - export BUILD="build_linux_icpc"
+#     - source ./ci/tools/threads.sh
+#     - source ./ci/tools/aff3ct-git-version.sh
+#     - ./ci/build-linux-macos.sh
 
 build-windows-gcc:
   image: registry.gitlab.com/aff3ct/aff3ct/x86_64_windows_gcc:v8.1.0
@@ -193,10 +193,11 @@ test-linux-run-bootstrap:
       artifacts: true
     - job: build-linux-clang
       artifacts: true
-    - job: build-linux-icpc
-      artifacts: true
+    # - job: build-linux-icpc
+    #   artifacts: true
   script:
-    - ./ci/test-linux-macos-run.sh bootstrap " " build_linux_gcc build_linux_clang build_linux_icpc
+    # - ./ci/test-linux-macos-run.sh bootstrap " " build_linux_gcc build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh bootstrap " " build_linux_gcc build_linux_clang
 
 test-linux-run-tasks:
   image: ubuntu:20.04
@@ -211,10 +212,11 @@ test-linux-run-tasks:
       artifacts: true
     - job: build-linux-clang
       artifacts: true
-    - job: build-linux-icpc
-      artifacts: true
+    # - job: build-linux-icpc
+    #   artifacts: true
   script:
-    - ./ci/test-linux-macos-run.sh tasks " " build_linux_gcc build_linux_clang build_linux_icpc
+    # - ./ci/test-linux-macos-run.sh tasks " " build_linux_gcc build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh tasks " " build_linux_gcc build_linux_clang
 
 test-linux-run-factory:
   image: ubuntu:20.04
@@ -229,10 +231,11 @@ test-linux-run-factory:
       artifacts: true
     - job: build-linux-clang
       artifacts: true
-    - job: build-linux-icpc
-      artifacts: true
+    # - job: build-linux-icpc
+    #   artifacts: true
   script:
-    - ./ci/test-linux-macos-run.sh factory "-K 32 -N 128" build_linux_gcc build_linux_clang build_linux_icpc
+    # - ./ci/test-linux-macos-run.sh factory "-K 32 -N 128" build_linux_gcc build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh factory "-K 32 -N 128" build_linux_gcc build_linux_clang
 
 test-linux-run-sequence:
   image: ubuntu:20.04
@@ -247,10 +250,11 @@ test-linux-run-sequence:
       artifacts: true
     - job: build-linux-clang
       artifacts: true
-    - job: build-linux-icpc
-      artifacts: true
+    # - job: build-linux-icpc
+    #   artifacts: true
   script:
-    - ./ci/test-linux-macos-run.sh sequence "-K 32 -N 128" build_linux_gcc build_linux_clang build_linux_icpc
+    # - ./ci/test-linux-macos-run.sh sequence "-K 32 -N 128" build_linux_gcc build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh sequence "-K 32 -N 128" build_linux_gcc build_linux_clang
 
 test-linux-run-sequence-tests:
   image: ubuntu:20.04
@@ -265,10 +269,12 @@ test-linux-run-sequence-tests:
       artifacts: true
     - job: build-linux-clang
       artifacts: true
-    - job: build-linux-icpc
-      artifacts: true
+    # - job: build-linux-icpc
+    #   artifacts: true
   script:
-    - ./ci/test-linux-macos-run.sh sequence_tests " " build_linux_gcc build_linux_clang build_linux_icpc
+    - source ./ci/tools/threads.sh
+    # - ./ci/test-linux-macos-run.sh sequence_tests "$THREADS" build_linux_gcc build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh sequence_tests "$THREADS" build_linux_gcc build_linux_clang
 
 test-linux-run-subsequence:
   image: ubuntu:20.04
@@ -283,28 +289,32 @@ test-linux-run-subsequence:
       artifacts: true
     - job: build-linux-clang
       artifacts: true
-    - job: build-linux-icpc
-      artifacts: true
+    # - job: build-linux-icpc
+    #   artifacts: true
   script:
-    - ./ci/test-linux-macos-run.sh subsequence "-K 32 -N 128" build_linux_gcc build_linux_clang build_linux_icpc
+    # - ./ci/test-linux-macos-run.sh subsequence "-K 32 -N 128" build_linux_gcc build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh subsequence "-K 32 -N 128" build_linux_gcc build_linux_clang
 
-# test-linux-run-openmp:
-#  image: ubuntu:20.04
-#  stage: test
-#  tags:
-#    - x86_64
-#    - sse4.2
-#    - linux
-#    - docker
-#   needs:
-#     - job: build-linux-gcc
-#       artifacts: true
-#     - job: build-linux-clang
-#       artifacts: true
-#     - job: build-linux-icpc
-#       artifacts: true
-#   script:
-#     - ./ci/test-linux-macos-run.sh openmp "-K 32 -N 128" build_linux_gcc build_linux_clang build_linux_icpc
+test-linux-run-openmp:
+  image: ubuntu:20.04
+  stage: test
+  tags:
+    - x86_64
+    - sse4.2
+    - linux
+    - docker
+  needs:
+    - job: build-linux-gcc
+      artifacts: true
+    - job: build-linux-clang
+      artifacts: true
+    # - job: build-linux-icpc
+    #   artifacts: true
+  script:
+    - source ./ci/tools/threads.sh
+    - export OMP_NUM_THREADS=$THREADS
+    # - ./ci/test-linux-macos-run.sh openmp "-K 32 -N 128" build_linux_gcc build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh openmp "-K 32 -N 128" build_linux_gcc build_linux_clang
 
 test-linux-run-cython_polar:
   image: ubuntu:20.04
@@ -319,10 +329,11 @@ test-linux-run-cython_polar:
       artifacts: true
     - job: build-linux-clang
       artifacts: true
-    - job: build-linux-icpc
-      artifacts: true
+    # - job: build-linux-icpc
+    #   artifacts: true
   script:
-    ./ci/test-linux-macos-run.sh cython_polar " " build_linux_gcc build_linux_clang build_linux_icpc
+    # ./ci/test-linux-macos-run.sh cython_polar " " build_linux_gcc build_linux_clang build_linux_icpc
+    ./ci/test-linux-macos-run.sh cython_polar " " build_linux_gcc build_linux_clang
 
 test-macos-run-bootstrap:
   stage: test
@@ -371,6 +382,19 @@ test-macos-run-sequence:
       artifacts: true
   script:
     - ./ci/test-linux-macos-run.sh sequence "-K 32 -N 128" build_macos_clang
+
+test-macos-run-sequence-tests:
+  stage: test
+  tags:
+   - x86_64
+   - sse4.2
+   - macos
+  needs:
+    - job: build-macos-clang
+      artifacts: true
+  script:
+    - source ./ci/tools/threads.sh
+    - ./ci/test-linux-macos-run.sh sequence_tests "$THREADS" build_macos_clang
 
 test-macos-run-subsequence:
   stage: test
