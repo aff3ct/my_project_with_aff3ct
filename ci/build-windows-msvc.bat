@@ -12,7 +12,8 @@ mkdir %BUILD%
 cd %BUILD%
 cmake .. -G"Visual Studio 15 2017 Win64" -DCMAKE_CXX_FLAGS="%CFLAGS% /MP%THREADS%" -DAFF3CT_COMPILE_EXE="OFF" -DAFF3CT_COMPILE_STATIC_LIB="ON"
 if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
-devenv /build Release aff3ct.sln
+rem devenv /build Release aff3ct.sln
+msbuild aff3ct.sln /t:Build /p:Configuration=Release
 if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
 rem devenv /build Release aff3ct.sln /project INSTALL > nul
 rem if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
@@ -36,7 +37,8 @@ mkdir %BUILD%
 cd %BUILD%
 cmake .. -G"Visual Studio 15 2017 Win64" -DCMAKE_CXX_FLAGS="%CFLAGS% /MP%THREADS%"
 if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
-devenv /build Release my_project.sln
+rem devenv /build Release my_project.sln
+msbuild my_project.sln /t:Build /p:Configuration=Release
 if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
 copy bin\Release\my_project.exe bin\
 rd /s /q "bin\Release\"
