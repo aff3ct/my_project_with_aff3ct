@@ -309,7 +309,7 @@ test-linux-run-subsequence:
     - ./ci/test-linux-macos-run.sh subsequence "-K 32 -N 128" build_linux_gcc build_linux_clang
 
 test-linux-run-openmp:
-  image: ubuntu:20.04
+  image: registry.gitlab.com/aff3ct/aff3ct/x86_64_ubuntu_gcc:v9.3.0
   stage: test
   tags:
     - x86_64
@@ -327,7 +327,7 @@ test-linux-run-openmp:
     - source ./ci/tools/threads.sh
     - export OMP_NUM_THREADS=$THREADS
     # - ./ci/test-linux-macos-run.sh openmp "-K 32 -N 128" build_linux_gcc build_linux_clang build_linux_icpc
-    - ./ci/test-linux-macos-run.sh openmp "-K 32 -N 128" build_linux_gcc build_linux_clang
+    - ./ci/test-linux-macos-run.sh openmp "-K 32 -N 128" build_linux_gcc
 
 test-linux-run-cython_polar:
   image: ubuntu:20.04
