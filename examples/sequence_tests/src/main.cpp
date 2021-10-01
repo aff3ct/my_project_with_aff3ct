@@ -38,6 +38,8 @@ int main(int argc, char** argv)
 	// limit = 1;
 	std::cout << "limit = " << limit << std::endl;
 
+	unsigned int test_results = 0;
+
 	// modules creation
 	module::Initializer<> initializer(data_length);
 	module::Finalizer  <> finalizer  (data_length);
@@ -128,6 +130,7 @@ int main(int argc, char** argv)
 		tid++;
 	}
 	std::cout << (tests_passed ? "Tests passed!" : "Tests failed :-(") << std::endl;
+	test_results += !tests_passed;
 
 	// display the statistics of the tasks (if enabled)
 	tools::Stats::show(sequence_chain.get_modules_per_types(), true);
@@ -232,6 +235,7 @@ int main(int argc, char** argv)
 		tid++;
 	}
 	std::cout << (tests_passed ? "Tests passed!" : "Tests failed :-(") << std::endl;
+	test_results += !tests_passed;
 
 	// display the statistics of the tasks (if enabled)
 	tools::Stats::show(sequence_for_loop.get_modules_per_types(), true);
@@ -338,6 +342,7 @@ int main(int argc, char** argv)
 		tid++;
 	}
 	std::cout << (tests_passed ? "Tests passed!" : "Tests failed :-(") << std::endl;
+	test_results += !tests_passed;
 
 	// display the statistics of the tasks (if enabled)
 	tools::Stats::show(sequence_do_while_loop.get_modules_per_types(), true);
@@ -460,6 +465,7 @@ int main(int argc, char** argv)
 			tid++;
 		}
 		std::cout << (tests_passed ? "Tests passed!" : "Tests failed :-(") << std::endl;
+		test_results += !tests_passed;
 
 		// display the statistics of the tasks (if enabled)
 		tools::Stats::show(sequence_exclusive_paths.get_modules_per_types(), true);
@@ -582,9 +588,10 @@ int main(int argc, char** argv)
 		tid++;
 	}
 	std::cout << (tests_passed ? "Tests passed!" : "Tests failed :-(") << std::endl;
+	test_results += !tests_passed;
 
 	// display the statistics of the tasks (if enabled)
 	tools::Stats::show(sequence_nested_loops.get_modules_per_types(), true);
 
-	return 0;
+	return test_results;
 }
