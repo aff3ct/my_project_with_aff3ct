@@ -547,6 +547,8 @@ test-linux-wrap-cython_polar:
   needs:
     - job: build-linux-gcc
       artifacts: true
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
   script:
     - rm -rf ./lib/aff3ct/build || true
     - mkdir ./lib/aff3ct/build
