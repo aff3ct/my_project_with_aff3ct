@@ -46,9 +46,10 @@ build-linux-gcc:
       - ./examples/pipeline/build_linux_gcc/bin/
       - ./examples/openmp/build_linux_gcc/bin/
       - ./examples/cython_polar/build_linux_gcc/bin/
+      - ./examples/turbo_decoder/build_linux_gcc/bin/
       - ./lib_aff3ct/
   script:
-    - export EXAMPLES="bootstrap tasks factory sequence sequence_tests subsequence pipeline openmp cython_polar"
+    - export EXAMPLES="bootstrap tasks factory sequence sequence_tests subsequence pipeline openmp cython_polar turbo_decoder"
     - export CXX="g++"
     - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations"
     - export BUILD="build_linux_gcc"
@@ -78,8 +79,9 @@ build-linux-clang:
       - ./examples/pipeline/build_linux_clang/bin/
       - ./examples/openmp/build_linux_clang/bin/
       - ./examples/cython_polar/build_linux_clang/bin/
+      - ./examples/turbo_decoder/build_linux_clang/bin/
   script:
-    - export EXAMPLES="bootstrap tasks factory sequence sequence_tests subsequence pipeline openmp cython_polar"
+    - export EXAMPLES="bootstrap tasks factory sequence sequence_tests subsequence pipeline openmp cython_polar turbo_decoder"
     - export CXX="clang++"
     - export CFLAGS="-Wall -Wno-overloaded-virtual -funroll-loops -msse4.2 -Wno-deprecated-declarations"
     - export BUILD="build_linux_clang"
@@ -107,8 +109,9 @@ build-linux-clang:
 #       - ./examples/pipeline/build_linux_icpc/bin/
 #       - ./examples/openmp/build_linux_icpc/bin/
 #       - ./examples/cython_polar/build_linux_icpc/bin/
+#       - ./examples/turbo_decoder/build_linux_icpc/bin/
 #   script:
-#     - export EXAMPLES="bootstrap tasks factory sequence sequence_tests subsequence pipeline openmp cython_polar"
+#     - export EXAMPLES="bootstrap tasks factory sequence sequence_tests subsequence pipeline openmp cython_polar turbo_decoder"
 #     - export CXX="icpc"
 #     - export CFLAGS="-Wall -funroll-loops -msse4.2 -Wno-deprecated-declarations -std=c++11"
 #     - export BUILD="build_linux_icpc"
@@ -135,8 +138,9 @@ build-windows-gcc:
       - ./examples/pipeline/build_windows_gcc/bin/
       - ./examples/openmp/build_windows_gcc/bin/
       - ./examples/cython_polar/build_windows_gcc/bin/
+      - ./examples/turbo_decoder/build_windows_gcc/bin/
   script:
-    - $env:EXAMPLES="bootstrap tasks factory sequence sequence_tests subsequence pipeline openmp cython_polar"
+    - $env:EXAMPLES="bootstrap tasks factory sequence sequence_tests subsequence pipeline openmp cython_polar turbo_decoder"
     - $env:CFLAGS="-Wall -Wno-deprecated-declarations -funroll-loops -mavx"
     - $env:BUILD="build_windows_gcc"
     - ./ci/build-windows-gcc.bat
@@ -160,8 +164,9 @@ build-windows-msvc:
       - ./examples/pipeline/build_windows_msvc/bin/
       - ./examples/openmp/build_windows_msvc/bin/
       - ./examples/cython_polar/build_windows_msvc/bin/
+      - ./examples/turbo_decoder/build_windows_msvc/bin/
   script:
-    - $env:EXAMPLES="bootstrap tasks factory sequence sequence_tests subsequence pipeline openmp cython_polar"
+    - $env:EXAMPLES="bootstrap tasks factory sequence sequence_tests subsequence pipeline openmp cython_polar turbo_decoder"
     - $env:CFLAGS="-D_CRT_SECURE_NO_DEPRECATE /EHsc /arch:AVX"
     - $env:BUILD="build_windows_msvc"
     - ./ci/build-windows-msvc.bat
@@ -184,8 +189,9 @@ build-macos-clang:
       - ./examples/pipeline/build_macos_clang/bin/
       - ./examples/openmp/build_macos_clang/bin/
       - ./examples/cython_polar/build_macos_clang/bin/
+      - ./examples/turbo_decoder/build_macos_clang/bin/
   script:
-    - export EXAMPLES="bootstrap tasks factory sequence sequence_tests subsequence pipeline openmp cython_polar"
+    - export EXAMPLES="bootstrap tasks factory sequence sequence_tests subsequence pipeline openmp cython_polar turbo_decoder"
     - export CXX="clang++"
     - export CFLAGS="-Wall -Wno-overloaded-virtual -funroll-loops -msse4.2"
     - export BUILD="build_macos_clang"
@@ -348,6 +354,26 @@ test-linux-run-cython_polar:
     # ./ci/test-linux-macos-run.sh cython_polar " " build_linux_gcc build_linux_clang build_linux_icpc
     ./ci/test-linux-macos-run.sh cython_polar " " build_linux_gcc build_linux_clang
 
+test-linux-run-turbo-decoder:
+  image: ubuntu:20.04
+  stage: test
+  tags:
+    - x86_64
+    - sse4.2
+    - linux
+    - docker
+  needs:
+    - job: build-linux-gcc
+      artifacts: true
+    - job: build-linux-clang
+      artifacts: true
+    # - job: build-linux-icpc
+    #   artifacts: true
+  script:
+    - source ./ci/tools/threads.sh
+    # - ./ci/test-linux-macos-run.sh sequence_tests "$THREADS" build_linux_gcc build_linux_clang build_linux_icpc
+    - ./ci/test-linux-macos-run.sh turbo_decoder " " build_linux_gcc build_linux_clang
+
 test-macos-run-bootstrap:
   stage: test
   tags:
@@ -445,6 +471,18 @@ test-macos-run-cython_polar:
   script:
     - ./ci/test-linux-macos-run.sh cython_polar " " build_macos_clang
 
+test-macos-run-turbo-decoder:
+  stage: test
+  tags:
+   - x86_64
+   - sse4.2
+   - macos
+  needs:
+    - job: build-macos-clang
+      artifacts: true
+  script:
+    - ./ci/test-linux-macos-run.sh turbo_decoder " " build_macos_clang
+
 # test-windows-run-bootstrap:
 #   stage: test
 #   tags:
@@ -535,6 +573,19 @@ test-macos-run-cython_polar:
 #      artifacts: true
 #   script:
 #     - ./ci/test-windows-run.bat cython_polar " " build_windows_gcc build_windows_msvc
+
+# test-windows-run-turbo-decoder:
+#   stage: test
+#   tags:
+#    - windows
+#    - avx
+#   needs:
+#    - job: build-windows-gcc
+#      artifacts: true
+#    - job: build-windows-msvc
+#      artifacts: true
+#   script:
+#     - ./ci/test-windows-run.bat turbo_decoder " " build_windows_gcc build_windows_msvc
 
 test-linux-wrap-cython_polar:
   image: registry.gitlab.com/aff3ct/aff3ct/x86_64_ubuntu_python:v3.8.5

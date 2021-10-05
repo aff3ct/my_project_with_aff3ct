@@ -36,13 +36,13 @@ int main(int argc, char** argv)
 	unsigned N_ = 2 * K +4;
 	unsigned N = 2 * N_ +4;
 	unsigned I = 4;
-	unsigned FE = 1000;
+	unsigned FE = 100;
 	unsigned nthreads = std::thread::hardware_concurrency();
 
 	float R = (K * 1.f) / (N * 1.f);
-	float ebn0_min = 2.f;
-	float ebn0_max = 5.01f;
-	float ebn0_step = 0.25f;
+	float ebn0_min = 2.5f;
+	float ebn0_max = 3.31f;
+	float ebn0_step = 0.1f;
 
 	Source_random_fast<> src(K, 12);
 
@@ -71,6 +71,7 @@ int main(int argc, char** argv)
 
 	Iterator cnt(I);
 	Initializer<float> zeros(N_);
+	zeros.set_custom_name("Init_zeros");
 	zeros.set_init_data(std::vector<float>(N_, 0.f));
 
 	Monitor_BFER<> mnt(K, FE);
