@@ -69,14 +69,15 @@ int main(int argc, char** argv)
 
 	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
 	using namespace module;
-	(*m.encoder)[enc::sck::encode      ::U_K ].bind((*m.source )[src::sck::generate   ::U_K ]);
-	(*m.modem  )[mdm::sck::modulate    ::X_N1].bind((*m.encoder)[enc::sck::encode     ::X_N ]);
-	(*m.channel)[chn::sck::add_noise   ::X_N ].bind((*m.modem  )[mdm::sck::modulate   ::X_N2]);
-	(*m.modem  )[mdm::sck::demodulate  ::Y_N1].bind((*m.channel)[chn::sck::add_noise  ::Y_N ]);
-	(*m.decoder)[dec::sck::decode_siho ::Y_N ].bind((*m.modem  )[mdm::sck::demodulate ::Y_N2]);
-	(*m.monitor)[mnt::sck::check_errors::U   ].bind((*m.source )[src::sck::generate   ::U_K ]);
-	(*m.monitor)[mnt::sck::check_errors::V   ].bind((*m.decoder)[dec::sck::decode_siho::V_K ]);
-	(*m.sink   )[snk::sck::send        ::V   ].bind((*m.decoder)[dec::sck::decode_siho::V_K ]);
+	(*m.encoder)[enc::sck::encode      ::U_K   ].bind((*m.source )[src::sck::generate   ::U_K   ]);
+	(*m.modem  )[mdm::sck::modulate    ::X_N1  ].bind((*m.encoder)[enc::sck::encode     ::X_N   ]);
+	(*m.channel)[chn::sck::add_noise   ::X_N   ].bind((*m.modem  )[mdm::sck::modulate   ::X_N2  ]);
+	(*m.modem  )[mdm::sck::demodulate  ::Y_N1  ].bind((*m.channel)[chn::sck::add_noise  ::Y_N   ]);
+	(*m.decoder)[dec::sck::decode_siho ::Y_N   ].bind((*m.modem  )[mdm::sck::demodulate ::Y_N2  ]);
+	(*m.monitor)[mnt::sck::check_errors::U     ].bind((*m.source )[src::sck::generate   ::U_K   ]);
+	(*m.monitor)[mnt::sck::check_errors::V     ].bind((*m.decoder)[dec::sck::decode_siho::V_K   ]);
+	(*m.sink   )[snk::sck::send_k      ::real_K].bind((*m.source )[src::sck::generate   ::real_K]);
+	(*m.sink   )[snk::sck::send_k      ::V     ].bind((*m.decoder)[dec::sck::decode_siho::V_K   ]);
 
 	std::vector<float> sigma(1);
 	(*m.channel)[chn::sck::add_noise ::CP].bind(sigma);
@@ -183,7 +184,7 @@ void init_utils(const params &p, const modules &m, utils &u)
 	                                         { &(*m.decoder)[module::dec::tsk::decode_siho ] } }, // last  tasks of stage 1
 	                                       // pipeline stage 2
 	                                       { { &(*m.monitor)[module::mnt::tsk::check_errors],     // first tasks of stage 2
-	                                           &(*m.sink   )[module::snk::tsk::send        ] },
+	                                           &(*m.sink   )[module::snk::tsk::send_k      ] },
 	                                         { /* empty vector of last tasks */              } }, // last  tasks of stage 2
 	                                     },
 	                                     {
