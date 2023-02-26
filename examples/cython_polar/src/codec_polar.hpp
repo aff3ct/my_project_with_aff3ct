@@ -57,7 +57,7 @@ std::vector<int> polar_encode(const int k, const int n,
  * @param k The number of information bits
  * @param n The codeword length
  * @param frozen_bits std::vector<bool>, frozen bits (length k)
- * @param info_bits std::vector<int>, information bits (length k)
+ * @param info_bits std::vector<std::vector<int>>, information bits (length k)
  * @return auto Encoded codewords, std::vector<int> of length n
  */
 std::vector<std::vector<int>>
@@ -104,7 +104,7 @@ std::vector<int> polar_decode(const int k, const int n,
  * @param k The number of information bits
  * @param n The codeword length
  * @param frozen_bits std::vector<bool>, frozen bits (length k)
- * @param received std::vector<float> soft symbols, BPSK, n_frame rows, n
+ * @param received std::vector<std::vector<float>> soft symbols, BPSK, n_frame rows, n
  * columns
  * @return auto Decoded information bits, std::vector<std::vector<int>> of
  * n_frame rows, k columns
@@ -116,7 +116,7 @@ polar_decode_multiple(const int k, const int n,
   // populate vectors
   std::vector<std::vector<int>> decoded_bits;
 
-  // encode
+  // decode
   aff3ct::module::Decoder_polar_SC_naive<int> polar_decoder(k, n, frozen_bits);
   for (auto frame : received) {
     std::vector<int> decoded(k);
