@@ -34,6 +34,15 @@ You can go in this folder to see the next steps.
 > Those examples are documented 
 > [here](https://aff3ct.readthedocs.io/en/latest/user/library/examples.html).
 
+> [!note]
+> If you want to compile Julia examples, you need to explicitly link StreamPU 
+> with `libjulia` (CMake `-DSPU_LINK_JULIA="ON"` option):
+> ```bash
+> cmake .. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_FLAGS="-Wall -funroll-loops -march=native" \
+>           -DAFF3CT_COMPILE_EXE="OFF" -DAFF3CT_COMPILE_STATIC_LIB="ON" -DAFF3CT_COMPILE_SHARED_LIB="ON" \
+>           -DSPU_LINK_JULIA="ON"
+> ```
+
 > [!warning]
 > If you are encountering some problems with
 > [`cpptrace`](https://github.com/jeremy-rifkin/cpptrace) (typically when you 
